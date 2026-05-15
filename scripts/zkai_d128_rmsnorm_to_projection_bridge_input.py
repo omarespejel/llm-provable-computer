@@ -21,9 +21,12 @@ from typing import Any
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 SOURCE_JSON = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json"
+DERIVED_SOURCE_JSON = EVIDENCE_DIR / "zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json"
 TARGET_JSON = EVIDENCE_DIR / "zkai-d128-layerwise-comparator-target-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv"
+DERIVED_JSON_OUT = EVIDENCE_DIR / "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json"
+DERIVED_TSV_OUT = EVIDENCE_DIR / "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.tsv"
 
 SCHEMA = "zkai-d128-rmsnorm-to-projection-bridge-air-proof-input-v1"
 DECISION = "GO_INPUT_FOR_D128_RMSNORM_TO_PROJECTION_BRIDGE_AIR_PROOF"
@@ -84,6 +87,14 @@ VALIDATION_COMMANDS = [
     "just gate-fast",
     "just gate",
 ]
+DERIVED_VALIDATION_COMMANDS = [
+    "python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input",
+    "cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
+]
+ALLOWED_VALIDATION_COMMANDS = (VALIDATION_COMMANDS, DERIVED_VALIDATION_COMMANDS)
 
 TSV_COLUMNS = (
     "target_id",
@@ -233,6 +244,11 @@ def validate_target(target: Any) -> str:
 
 def load_source(path: pathlib.Path = SOURCE_JSON) -> dict[str, Any]:
     source = load_json(path, MAX_SOURCE_JSON_BYTES, "source RMSNorm public-row evidence")
+    if "rmsnorm_public_row_payload" in source:
+        nested = source["rmsnorm_public_row_payload"]
+        if not isinstance(nested, dict):
+            raise D128BridgeInputError("source rmsnorm_public_row_payload must be an object")
+        source = nested
     validate_source(source)
     return source
 
@@ -259,12 +275,6 @@ def validate_source(source: Any) -> None:
         "rmsnorm_output_row_commitment",
     ):
         require_commitment(source.get(field), f"source {field}")
-    if source["statement_commitment"] != SOURCE_RMSNORM_STATEMENT_COMMITMENT:
-        raise D128BridgeInputError("source RMSNorm statement commitment drift")
-    if source["public_instance_commitment"] != SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT:
-        raise D128BridgeInputError("source RMSNorm public-instance commitment drift")
-    if source["rmsnorm_output_row_commitment"] != SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT:
-        raise D128BridgeInputError("source RMSNorm output row commitment drift")
     rows = source.get("rows")
     if not isinstance(rows, list) or len(rows) != WIDTH:
         raise D128BridgeInputError("source rows mismatch")
@@ -279,7 +289,20 @@ def validate_source(source: Any) -> None:
         raise D128BridgeInputError("source RMSNorm output row commitment drift")
 
 
-def build_payload(source: dict[str, Any] | None = None, target: dict[str, Any] | None = None) -> dict[str, Any]:
+def validation_commands_for_source(path: pathlib.Path) -> list[str]:
+    try:
+        if path.resolve() == DERIVED_SOURCE_JSON.resolve():
+            return list(DERIVED_VALIDATION_COMMANDS)
+    except OSError:
+        pass
+    return list(VALIDATION_COMMANDS)
+
+
+def build_payload(
+    source: dict[str, Any] | None = None,
+    target: dict[str, Any] | None = None,
+    validation_commands: list[str] | None = None,
+) -> dict[str, Any]:
     source = load_source() if source is None else source
     validate_source(source)
     target = load_target() if target is None else target
@@ -317,7 +340,7 @@ def build_payload(source: dict[str, Any] | None = None, target: dict[str, Any] |
         "non_claims": list(NON_CLAIMS),
         "proof_verifier_hardening": list(PROOF_VERIFIER_HARDENING),
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": list(VALIDATION_COMMANDS),
+        "validation_commands": list(VALIDATION_COMMANDS if validation_commands is None else validation_commands),
     }
     statement = statement_commitment(payload, target_commitment)
     payload["statement_commitment"] = statement
@@ -374,11 +397,12 @@ def validate_payload(payload: Any, *, target: dict[str, Any] | None = None) -> N
         "non_claims": NON_CLAIMS,
         "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": VALIDATION_COMMANDS,
     }
     for field, expected in constants.items():
         if payload.get(field) != expected:
             raise D128BridgeInputError(f"payload field mismatch: {field}")
+    if payload.get("validation_commands") not in ALLOWED_VALIDATION_COMMANDS:
+        raise D128BridgeInputError("validation commands drift")
     for field in (
         "source_rmsnorm_statement_commitment",
         "source_rmsnorm_public_instance_commitment",
@@ -412,8 +436,6 @@ def validate_payload(payload: Any, *, target: dict[str, Any] | None = None) -> N
         raise D128BridgeInputError("source RMSNorm output commitment recomputation drift")
     if sequence_commitment(projection_values, PROJECTION_INPUT_ROW_DOMAIN) != payload["projection_input_row_commitment"]:
         raise D128BridgeInputError("projection input commitment recomputation drift")
-    if payload["projection_input_row_commitment"] != PROJECTION_INPUT_ROW_COMMITMENT:
-        raise D128BridgeInputError("projection input commitment drift")
     target = load_target() if target is None else target
     target_commitment = validate_target(target)
     statement = statement_commitment(payload, target_commitment)
@@ -527,7 +549,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    payload = build_payload(load_source(args.source_json), load_target(args.target_json))
+    payload = build_payload(
+        load_source(args.source_json),
+        load_target(args.target_json),
+        validation_commands=validation_commands_for_source(args.source_json),
+    )
     if args.write_json is not None or args.write_tsv is not None:
         write_outputs(payload, args.write_json, args.write_tsv)
     if args.json:

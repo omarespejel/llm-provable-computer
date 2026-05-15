@@ -14,6 +14,9 @@ if SPEC is None or SPEC.loader is None:
     raise RuntimeError(f"failed to load d128 bridge input generator from {SCRIPT_PATH}")
 BRIDGE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BRIDGE)
+DERIVED_RMSNORM_SOURCE = (
+    ROOT / "docs" / "engineering" / "evidence" / "zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json"
+)
 
 
 class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
@@ -80,17 +83,37 @@ class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
         with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source RMSNorm output row commitment"):
             BRIDGE.validate_source(source)
 
-    def test_source_validation_rejects_statement_commitment_drift(self) -> None:
+    def test_source_validation_rejects_malformed_statement_commitment(self) -> None:
         source = copy.deepcopy(BRIDGE.load_source())
-        source["statement_commitment"] = "blake2b-256:" + "aa" * 32
-        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source RMSNorm statement commitment"):
+        source["statement_commitment"] = "blake2b-256:" + "AA" * 32
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source statement_commitment"):
             BRIDGE.validate_source(source)
 
-    def test_source_validation_rejects_public_instance_commitment_drift(self) -> None:
+    def test_source_validation_rejects_malformed_public_instance_commitment(self) -> None:
         source = copy.deepcopy(BRIDGE.load_source())
-        source["public_instance_commitment"] = "blake2b-256:" + "bb" * 32
-        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source RMSNorm public-instance commitment"):
+        source["public_instance_commitment"] = "not-a-commitment"
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source public_instance_commitment"):
             BRIDGE.validate_source(source)
+
+    def test_load_source_accepts_attention_derived_payload_when_self_consistent(self) -> None:
+        source = BRIDGE.load_source(DERIVED_RMSNORM_SOURCE)
+        self.assertNotEqual(source["statement_commitment"], BRIDGE.SOURCE_RMSNORM_STATEMENT_COMMITMENT)
+        self.assertNotEqual(
+            source["public_instance_commitment"],
+            BRIDGE.SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
+        )
+        self.assertNotEqual(
+            source["rmsnorm_output_row_commitment"],
+            BRIDGE.SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT,
+        )
+
+        payload = BRIDGE.build_payload(source=source)
+        self.assertEqual(payload["source_rmsnorm_statement_commitment"], source["statement_commitment"])
+        self.assertEqual(
+            payload["source_rmsnorm_output_row_commitment"],
+            source["rmsnorm_output_row_commitment"],
+        )
+        BRIDGE.validate_payload(payload)
 
     def test_target_validation_rejects_target_commitment_drift(self) -> None:
         target = copy.deepcopy(BRIDGE.load_target())

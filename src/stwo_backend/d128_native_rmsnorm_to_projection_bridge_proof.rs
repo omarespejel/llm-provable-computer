@@ -71,8 +71,10 @@ const ZKAI_D128_BRIDGE_EXPECTED_TRACE_COMMITMENTS: usize = 2;
 const ZKAI_D128_BRIDGE_EXPECTED_PROOF_COMMITMENTS: usize = 3;
 const TARGET_COMMITMENT: &str =
     "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18";
+#[cfg(test)]
 const SOURCE_RMSNORM_STATEMENT_COMMITMENT: &str =
     "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8";
+#[cfg(test)]
 const SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT: &str =
     "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72";
 const PROOF_NATIVE_PARAMETER_KIND: &str =
@@ -111,6 +113,13 @@ const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
 
 const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --write-json docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input",
+    "cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
+];
+const EXPECTED_DERIVED_VALIDATION_COMMANDS: &[&str] = &[
+    "python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input",
     "cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend",
     "just gate-fast",
@@ -327,14 +336,12 @@ fn validate_bridge_input(input: &ZkAiD128RmsnormToProjectionBridgeInput) -> Resu
         ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION,
         "source RMSNorm public-row proof version",
     )?;
-    expect_eq(
+    require_blake2b_commitment(
         &input.source_rmsnorm_statement_commitment,
-        SOURCE_RMSNORM_STATEMENT_COMMITMENT,
         "source RMSNorm statement commitment",
     )?;
-    expect_eq(
+    require_blake2b_commitment(
         &input.source_rmsnorm_public_instance_commitment,
-        SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
         "source RMSNorm public-instance commitment",
     )?;
     expect_eq(
@@ -347,9 +354,8 @@ fn validate_bridge_input(input: &ZkAiD128RmsnormToProjectionBridgeInput) -> Resu
         PROJECTION_INPUT_ROW_COMMITMENT_DOMAIN,
         "projection input row domain",
     )?;
-    expect_eq(
+    require_blake2b_commitment(
         &input.source_rmsnorm_output_row_commitment,
-        ZKAI_D128_RMSNORM_OUTPUT_ROW_COMMITMENT,
         "source RMSNorm output row commitment",
     )?;
     expect_eq(
@@ -362,25 +368,18 @@ fn validate_bridge_input(input: &ZkAiD128RmsnormToProjectionBridgeInput) -> Resu
             "projection input row commitment must not relabel as full output activation commitment",
         ));
     }
-    expect_eq(
+    require_blake2b_commitment(
         &input.projection_input_row_commitment,
-        ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT,
         "projection input row commitment",
     )?;
-    expect_eq(
+    require_blake2b_commitment(&input.statement_commitment, "statement commitment")?;
+    require_blake2b_commitment(
         &input.public_instance_commitment,
-        ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
         "public instance commitment",
     )?;
-    expect_eq(
+    require_blake2b_commitment(
         &input.proof_native_parameter_commitment,
-        ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_NATIVE_PARAMETER_COMMITMENT,
         "proof-native parameter commitment",
-    )?;
-    expect_eq(
-        &input.statement_commitment,
-        ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
-        "statement commitment",
     )?;
     expect_str_set_eq(
         input.non_claims.iter().map(String::as_str),
@@ -397,11 +396,7 @@ fn validate_bridge_input(input: &ZkAiD128RmsnormToProjectionBridgeInput) -> Resu
         ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_NEXT_BACKEND_STEP,
         "next backend step",
     )?;
-    expect_str_set_eq(
-        input.validation_commands.iter().map(String::as_str),
-        EXPECTED_VALIDATION_COMMANDS,
-        "validation commands",
-    )?;
+    expect_validation_commands(input.validation_commands.iter().map(String::as_str))?;
     if input.rows.len() != ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_WIDTH {
         return Err(bridge_error(format!(
             "row vector length mismatch: got {}, expected {}",
@@ -816,6 +811,51 @@ fn expect_str_set_eq<'a>(
     Ok(())
 }
 
+fn str_set_eq<'a>(actual: impl IntoIterator<Item = &'a str>, expected: &[&str]) -> bool {
+    let mut actual_vec: Vec<&str> = actual.into_iter().collect();
+    let mut expected_vec = expected.to_vec();
+    actual_vec.sort_unstable();
+    expected_vec.sort_unstable();
+    actual_vec == expected_vec
+}
+
+fn expect_validation_commands<'a>(actual: impl IntoIterator<Item = &'a str>) -> Result<()> {
+    let actual_vec: Vec<&str> = actual.into_iter().collect();
+    if str_set_eq(actual_vec.iter().copied(), EXPECTED_VALIDATION_COMMANDS)
+        || str_set_eq(
+            actual_vec.iter().copied(),
+            EXPECTED_DERIVED_VALIDATION_COMMANDS,
+        )
+    {
+        return Ok(());
+    }
+    Err(bridge_error(format!(
+        "validation commands mismatch: got {actual_vec:?}, expected base or attention-derived bridge commands"
+    )))
+}
+
+fn require_blake2b_commitment(value: &str, label: &str) -> Result<()> {
+    let Some(digest) = value.strip_prefix("blake2b-256:") else {
+        return Err(bridge_error(format!(
+            "{label} must be a blake2b-256 commitment"
+        )));
+    };
+    if digest.len() != 64 || !digest.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(bridge_error(format!(
+            "{label} must be a 32-byte lowercase hex digest"
+        )));
+    }
+    if !digest
+        .bytes()
+        .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(bridge_error(format!(
+            "{label} must be a 32-byte lowercase hex digest"
+        )));
+    }
+    Ok(())
+}
+
 fn bridge_error(message: impl Into<String>) -> VmError {
     VmError::InvalidConfig(format!(
         "d128 RMSNorm-to-projection bridge proof rejected: {}",
@@ -831,10 +871,57 @@ mod tests {
     const INPUT_JSON: &str = include_str!(
         "../../docs/engineering/evidence/zkai-d128-rmsnorm-to-projection-bridge-proof-2026-05.json"
     );
+    const DERIVED_INPUT_JSON: &str = include_str!(
+        "../../docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json"
+    );
+    const DERIVED_PROJECTION_BOUNDARY_JSON: &str = include_str!(
+        "../../docs/engineering/evidence/zkai-attention-derived-d128-projection-boundary-2026-05.json"
+    );
 
     fn input() -> ZkAiD128RmsnormToProjectionBridgeInput {
         zkai_d128_rmsnorm_to_projection_bridge_input_from_json_str(INPUT_JSON)
             .expect("bridge input")
+    }
+
+    fn derived_input() -> ZkAiD128RmsnormToProjectionBridgeInput {
+        zkai_d128_rmsnorm_to_projection_bridge_input_from_json_str(DERIVED_INPUT_JSON)
+            .expect("derived bridge input")
+    }
+
+    fn adapted_derived_bridge_input() -> ZkAiD128RmsnormToProjectionBridgeInput {
+        let mut value: Value = serde_json::from_str(INPUT_JSON).expect("native bridge json");
+        let derived: Value = serde_json::from_str(DERIVED_PROJECTION_BOUNDARY_JSON)
+            .expect("derived projection json");
+        let derived_bridge = derived
+            .get("bridge_payload")
+            .and_then(Value::as_object)
+            .expect("derived bridge payload");
+        for (key, derived_value) in derived_bridge {
+            if matches!(
+                key.as_str(),
+                "schema"
+                    | "decision"
+                    | "non_claims"
+                    | "proof_verifier_hardening"
+                    | "validation_commands"
+                    | "next_backend_step"
+            ) {
+                continue;
+            }
+            if value.get(key).is_some() {
+                value[key] = derived_value.clone();
+            }
+        }
+        let mut candidate: ZkAiD128RmsnormToProjectionBridgeInput =
+            serde_json::from_value(value.clone()).expect("candidate bridge input");
+        candidate.statement_commitment = statement_commitment(&candidate);
+        candidate.public_instance_commitment =
+            public_instance_commitment(&candidate.statement_commitment, candidate.width);
+        candidate.proof_native_parameter_commitment =
+            proof_native_parameter_commitment(&candidate.statement_commitment);
+        let raw = serde_json::to_string(&candidate).expect("candidate json");
+        zkai_d128_rmsnorm_to_projection_bridge_input_from_json_str(&raw)
+            .expect("adapted derived bridge input")
     }
 
     #[test]
@@ -847,6 +934,10 @@ mod tests {
         assert_eq!(
             input.source_rmsnorm_output_row_commitment,
             ZKAI_D128_RMSNORM_OUTPUT_ROW_COMMITMENT
+        );
+        assert_eq!(
+            input.source_rmsnorm_public_instance_commitment,
+            SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT
         );
         assert_eq!(
             input.projection_input_row_commitment,
@@ -870,6 +961,58 @@ mod tests {
         );
         assert_eq!(input.rows[0].rmsnorm_normed_q8, -387);
         assert_eq!(input.rows[0].projection_input_q8, -387);
+    }
+
+    #[test]
+    fn bridge_accepts_attention_derived_rmsnorm_source_when_self_consistent() {
+        let input = adapted_derived_bridge_input();
+        assert_ne!(
+            input.source_rmsnorm_statement_commitment,
+            SOURCE_RMSNORM_STATEMENT_COMMITMENT
+        );
+        assert_ne!(
+            input.source_rmsnorm_output_row_commitment,
+            ZKAI_D128_RMSNORM_OUTPUT_ROW_COMMITMENT
+        );
+        assert_ne!(
+            input.projection_input_row_commitment,
+            ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT
+        );
+        assert_eq!(
+            input.source_rmsnorm_output_row_commitment,
+            sequence_commitment(
+                &input
+                    .rows
+                    .iter()
+                    .map(|row| row.rmsnorm_normed_q8)
+                    .collect::<Vec<_>>(),
+                RMSNORM_OUTPUT_ROW_COMMITMENT_DOMAIN,
+                ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_WIDTH,
+            )
+        );
+        assert_eq!(input.statement_commitment, statement_commitment(&input));
+        assert_eq!(
+            input.public_instance_commitment,
+            public_instance_commitment(&input.statement_commitment, input.width)
+        );
+    }
+
+    #[test]
+    fn bridge_accepts_generated_attention_derived_bridge_input() {
+        let input = derived_input();
+        assert_ne!(
+            input.source_rmsnorm_statement_commitment,
+            SOURCE_RMSNORM_STATEMENT_COMMITMENT
+        );
+        assert_eq!(
+            input.source_rmsnorm_output_row_commitment,
+            "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9"
+        );
+        assert_eq!(
+            input.projection_input_row_commitment,
+            "blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba"
+        );
+        assert!(input.validation_commands[0].contains("--source-json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json"));
     }
 
     #[test]
@@ -922,7 +1065,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("source RMSNorm output row commitment"));
+            .contains("source RMSNorm output row recomputed commitment"));
     }
 
     #[test]
@@ -936,7 +1079,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("projection input row commitment"));
+            .contains("projection input row recomputed commitment"));
     }
 
     #[test]
@@ -948,9 +1091,7 @@ mod tests {
             &serde_json::to_string(&value).expect("json"),
         )
         .unwrap_err();
-        assert!(error
-            .to_string()
-            .contains("source RMSNorm statement commitment"));
+        assert!(error.to_string().contains("statement commitment"));
     }
 
     #[test]
@@ -973,7 +1114,9 @@ mod tests {
             &serde_json::to_string(&value).expect("json"),
         )
         .unwrap_err();
-        assert!(error.to_string().contains("public instance commitment"));
+        assert!(error
+            .to_string()
+            .contains("public instance recomputed commitment"));
     }
 
     #[test]
@@ -987,7 +1130,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("proof-native parameter commitment"));
+            .contains("proof-native parameter recomputed commitment"));
     }
 
     #[test]
