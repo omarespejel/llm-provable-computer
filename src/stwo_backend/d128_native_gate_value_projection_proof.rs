@@ -40,15 +40,24 @@ pub const ZKAI_D128_GATE_VALUE_PROJECTION_INPUT_DECISION: &str =
     "GO_INPUT_FOR_D128_GATE_VALUE_PROJECTION_AIR_PROOF";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_VERSION: &str =
     "stwo-d128-gate-value-projection-air-proof-v1";
+pub const ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_PROOF_VERSION: &str =
+    "stwo-d128-gate-value-projection-compact-preprocessed-air-proof-v1";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_VERSION: &str =
     "zkai-d128-gate-value-projection-statement-v1";
+pub const ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_STATEMENT_VERSION: &str =
+    "zkai-d128-gate-value-projection-compact-preprocessed-statement-v1";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_SEMANTIC_SCOPE: &str =
     "d128_gate_value_projection_rows_bound_to_projection_input_receipt";
+pub const ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_SEMANTIC_SCOPE: &str =
+    "d128_gate_value_projection_rows_bound_to_projection_input_receipt_using_compact_preprocessed_rows";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_DECISION: &str =
     "GO_D128_GATE_VALUE_PROJECTION_AIR_PROOF";
+pub const ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_DECISION: &str =
+    "GO_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_AIR_PROOF";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_NEXT_BACKEND_STEP: &str =
     "encode d128 activation/SwiGLU rows that consume gate_value_projection_output_commitment and produce hidden_activation_commitment";
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_MAX_JSON_BYTES: usize = 1_048_576;
+pub const ZKAI_D128_GATE_VALUE_PROJECTION_MAX_ENVELOPE_JSON_BYTES: usize = 4_194_304;
 pub const ZKAI_D128_GATE_VALUE_PROJECTION_MAX_PROOF_BYTES: usize = 67_108_864;
 pub const ZKAI_D128_GATE_MATRIX_ROOT: &str =
     "blake2b-256:101e9f5ad1079bc7ed0e10df96bf30091dcf82d7a3010c5bf7ced764fe15f08e";
@@ -180,6 +189,47 @@ impl FrameworkEval for D128GateValueProjectionEval {
     }
 }
 
+#[derive(Debug, Clone)]
+struct D128CompactPreprocessedGateValueProjectionEval {
+    log_size: u32,
+}
+
+impl FrameworkEval for D128CompactPreprocessedGateValueProjectionEval {
+    fn log_size(&self) -> u32 {
+        self.log_size
+    }
+
+    fn max_constraint_log_degree_bound(&self) -> u32 {
+        self.log_size.saturating_add(1)
+    }
+
+    fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
+        let anchor_row_index = eval.next_trace_mask();
+        let row_index = eval.get_preprocessed_column(preprocessed_column_id(COLUMN_IDS[0]));
+        eval.add_constraint(anchor_row_index - row_index.clone());
+
+        let matrix_selector = eval.get_preprocessed_column(preprocessed_column_id(COLUMN_IDS[1]));
+        let output_index = eval.get_preprocessed_column(preprocessed_column_id(COLUMN_IDS[2]));
+        let input_index = eval.get_preprocessed_column(preprocessed_column_id(COLUMN_IDS[3]));
+        let projection_input_q8 =
+            eval.get_preprocessed_column(preprocessed_column_id(COLUMN_IDS[4]));
+        let weight_q8 = eval.get_preprocessed_column(preprocessed_column_id(COLUMN_IDS[5]));
+        let product_q8 = eval.get_preprocessed_column(preprocessed_column_id(COLUMN_IDS[6]));
+
+        let one = E::F::from(BaseField::from(1u32));
+        eval.add_constraint(matrix_selector.clone() * (matrix_selector.clone() - one));
+        eval.add_constraint(
+            row_index
+                - matrix_selector
+                    * E::F::from(BaseField::from(ZKAI_D128_GATE_PROJECTION_MUL_ROWS as u32))
+                - output_index * E::F::from(BaseField::from(ZKAI_D128_WIDTH as u32))
+                - input_index,
+        );
+        eval.add_constraint(projection_input_q8 * weight_q8 - product_q8);
+        eval
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct D128GateValueProjectionMulRow {
@@ -238,6 +288,19 @@ pub struct ZkAiD128GateValueProjectionEnvelope {
     pub proof: Vec<u8>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ZkAiD128GateValueProjectionCompactPreprocessedEnvelope {
+    pub proof_backend: StarkProofBackend,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub semantic_scope: String,
+    pub decision: String,
+    pub source_bridge_proof_version: String,
+    pub input: ZkAiD128GateValueProjectionProofInput,
+    pub proof: Vec<u8>,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct D128GateValueProjectionProofPayload {
@@ -260,6 +323,39 @@ pub fn zkai_d128_gate_value_projection_input_from_json_str(
     Ok(input)
 }
 
+pub fn zkai_d128_gate_value_projection_envelope_from_json_slice(
+    raw_json: &[u8],
+) -> Result<ZkAiD128GateValueProjectionEnvelope> {
+    if raw_json.len() > ZKAI_D128_GATE_VALUE_PROJECTION_MAX_ENVELOPE_JSON_BYTES {
+        return Err(gate_value_error(format!(
+            "envelope JSON exceeds max size: got {} bytes, limit {} bytes",
+            raw_json.len(),
+            ZKAI_D128_GATE_VALUE_PROJECTION_MAX_ENVELOPE_JSON_BYTES
+        )));
+    }
+    let envelope: ZkAiD128GateValueProjectionEnvelope = serde_json::from_slice(raw_json)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    validate_gate_value_envelope(&envelope)?;
+    Ok(envelope)
+}
+
+pub fn zkai_d128_gate_value_projection_compact_preprocessed_envelope_from_json_slice(
+    raw_json: &[u8],
+) -> Result<ZkAiD128GateValueProjectionCompactPreprocessedEnvelope> {
+    if raw_json.len() > ZKAI_D128_GATE_VALUE_PROJECTION_MAX_ENVELOPE_JSON_BYTES {
+        return Err(gate_value_error(format!(
+            "compact preprocessed envelope JSON exceeds max size: got {} bytes, limit {} bytes",
+            raw_json.len(),
+            ZKAI_D128_GATE_VALUE_PROJECTION_MAX_ENVELOPE_JSON_BYTES
+        )));
+    }
+    let envelope: ZkAiD128GateValueProjectionCompactPreprocessedEnvelope =
+        serde_json::from_slice(raw_json)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    validate_compact_preprocessed_gate_value_envelope(&envelope)?;
+    Ok(envelope)
+}
+
 pub fn prove_zkai_d128_gate_value_projection_envelope(
     input: &ZkAiD128GateValueProjectionProofInput,
 ) -> Result<ZkAiD128GateValueProjectionEnvelope> {
@@ -277,11 +373,38 @@ pub fn prove_zkai_d128_gate_value_projection_envelope(
     })
 }
 
+pub fn prove_zkai_d128_gate_value_projection_compact_preprocessed_envelope(
+    input: &ZkAiD128GateValueProjectionProofInput,
+) -> Result<ZkAiD128GateValueProjectionCompactPreprocessedEnvelope> {
+    let rows = validate_gate_value_input(input)?;
+    Ok(ZkAiD128GateValueProjectionCompactPreprocessedEnvelope {
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_PROOF_VERSION
+            .to_string(),
+        statement_version: ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_STATEMENT_VERSION
+            .to_string(),
+        semantic_scope: ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_SEMANTIC_SCOPE
+            .to_string(),
+        decision: ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_DECISION.to_string(),
+        source_bridge_proof_version: ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION
+            .to_string(),
+        input: input.clone(),
+        proof: prove_compact_preprocessed_gate_value_rows(&rows)?,
+    })
+}
+
 pub fn verify_zkai_d128_gate_value_projection_envelope(
     envelope: &ZkAiD128GateValueProjectionEnvelope,
 ) -> Result<bool> {
     let rows = validate_gate_value_envelope(envelope)?;
     verify_gate_value_rows(&envelope.proof, &rows)
+}
+
+pub fn verify_zkai_d128_gate_value_projection_compact_preprocessed_envelope(
+    envelope: &ZkAiD128GateValueProjectionCompactPreprocessedEnvelope,
+) -> Result<bool> {
+    let rows = validate_compact_preprocessed_gate_value_envelope(envelope)?;
+    verify_compact_preprocessed_gate_value_rows(&envelope.proof, &rows)
 }
 
 fn validate_gate_value_envelope(
@@ -321,6 +444,54 @@ fn validate_gate_value_envelope(
     if envelope.proof.len() > ZKAI_D128_GATE_VALUE_PROJECTION_MAX_PROOF_BYTES {
         return Err(gate_value_error(format!(
             "proof bytes exceed bounded verifier limit: got {}, max {}",
+            envelope.proof.len(),
+            ZKAI_D128_GATE_VALUE_PROJECTION_MAX_PROOF_BYTES
+        )));
+    }
+    validate_gate_value_input(&envelope.input)
+}
+
+fn validate_compact_preprocessed_gate_value_envelope(
+    envelope: &ZkAiD128GateValueProjectionCompactPreprocessedEnvelope,
+) -> Result<Vec<D128GateValueProjectionMulRow>> {
+    if envelope.proof_backend != StarkProofBackend::Stwo {
+        return Err(gate_value_error(
+            "compact preprocessed proof backend is not Stwo",
+        ));
+    }
+    expect_eq(
+        &envelope.proof_backend_version,
+        ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_PROOF_VERSION,
+        "compact preprocessed proof backend version",
+    )?;
+    expect_eq(
+        &envelope.statement_version,
+        ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_STATEMENT_VERSION,
+        "compact preprocessed statement version",
+    )?;
+    expect_eq(
+        &envelope.semantic_scope,
+        ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_SEMANTIC_SCOPE,
+        "compact preprocessed semantic scope",
+    )?;
+    expect_eq(
+        &envelope.decision,
+        ZKAI_D128_GATE_VALUE_PROJECTION_COMPACT_PREPROCESSED_DECISION,
+        "compact preprocessed decision",
+    )?;
+    expect_eq(
+        &envelope.source_bridge_proof_version,
+        ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION,
+        "compact preprocessed source bridge proof version",
+    )?;
+    if envelope.proof.is_empty() {
+        return Err(gate_value_error(
+            "compact preprocessed proof bytes must not be empty",
+        ));
+    }
+    if envelope.proof.len() > ZKAI_D128_GATE_VALUE_PROJECTION_MAX_PROOF_BYTES {
+        return Err(gate_value_error(format!(
+            "compact preprocessed proof bytes exceed bounded verifier limit: got {}, max {}",
             envelope.proof.len(),
             ZKAI_D128_GATE_VALUE_PROJECTION_MAX_PROOF_BYTES
         )));
@@ -733,6 +904,42 @@ fn prove_gate_value_rows(rows: &[D128GateValueProjectionMulRow]) -> Result<Vec<u
         .map_err(|error| VmError::Serialization(error.to_string()))
 }
 
+fn prove_compact_preprocessed_gate_value_rows(
+    rows: &[D128GateValueProjectionMulRow],
+) -> Result<Vec<u8>> {
+    let component = compact_preprocessed_gate_value_component();
+    let config = gate_value_pcs_config();
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(
+            component.max_constraint_log_degree_bound() + config.fri_config.log_blowup_factor + 1,
+        )
+        .circle_domain()
+        .half_coset,
+    );
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(gate_value_trace(rows)?);
+    tree_builder.commit(channel);
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(compact_preprocessed_gate_value_anchor_trace(rows)?);
+    tree_builder.commit(channel);
+
+    let stark_proof =
+        prove::<SimdBackend, Blake2sM31MerkleChannel>(&[&component], channel, commitment_scheme)
+            .map_err(|error| {
+                VmError::UnsupportedProof(format!(
+                    "d128 compact preprocessed gate/value projection AIR proving failed: {error}"
+                ))
+            })?;
+    serde_json::to_vec(&D128GateValueProjectionProofPayload { stark_proof })
+        .map_err(|error| VmError::Serialization(error.to_string()))
+}
+
 fn verify_gate_value_rows(proof: &[u8], rows: &[D128GateValueProjectionMulRow]) -> Result<bool> {
     let payload: D128GateValueProjectionProofPayload =
         serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
@@ -772,6 +979,54 @@ fn verify_gate_value_rows(proof: &[u8], rows: &[D128GateValueProjectionMulRow]) 
     verify(&[&component], channel, commitment_scheme, stark_proof)
         .map(|_| true)
         .map_err(|error| gate_value_error(format!("STARK verification failed: {error}")))
+}
+
+fn verify_compact_preprocessed_gate_value_rows(
+    proof: &[u8],
+    rows: &[D128GateValueProjectionMulRow],
+) -> Result<bool> {
+    let payload: D128GateValueProjectionProofPayload =
+        serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    let stark_proof = payload.stark_proof;
+    let config = validate_gate_value_pcs_config(stark_proof.config)?;
+    let component = compact_preprocessed_gate_value_component();
+    let sizes = component.trace_log_degree_bounds();
+    if sizes.len() != ZKAI_D128_GATE_VALUE_EXPECTED_TRACE_COMMITMENTS {
+        return Err(gate_value_error(format!(
+            "internal compact preprocessed gate/value component commitment count drift: got {}, expected {}",
+            sizes.len(),
+            ZKAI_D128_GATE_VALUE_EXPECTED_TRACE_COMMITMENTS
+        )));
+    }
+    if stark_proof.commitments.len() != ZKAI_D128_GATE_VALUE_EXPECTED_PROOF_COMMITMENTS {
+        return Err(gate_value_error(format!(
+            "compact preprocessed proof commitment count mismatch: got {}, expected exactly {}",
+            stark_proof.commitments.len(),
+            ZKAI_D128_GATE_VALUE_EXPECTED_PROOF_COMMITMENTS
+        )));
+    }
+    let expected_roots = compact_preprocessed_gate_value_commitment_roots(rows, config)?;
+    if stark_proof.commitments[0] != expected_roots[0] {
+        return Err(gate_value_error(
+            "compact preprocessed row commitment does not match checked gate/value rows",
+        ));
+    }
+    if stark_proof.commitments[1] != expected_roots[1] {
+        return Err(gate_value_error(
+            "compact anchor commitment does not match checked gate/value rows",
+        ));
+    }
+    let channel = &mut Blake2sM31Channel::default();
+    let commitment_scheme = &mut CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
+    commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], channel);
+    commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
+    verify(&[&component], channel, commitment_scheme, stark_proof)
+        .map(|_| true)
+        .map_err(|error| {
+            gate_value_error(format!(
+                "compact preprocessed STARK verification failed: {error}"
+            ))
+        })
 }
 
 fn validate_gate_value_pcs_config(actual: PcsConfig) -> Result<PcsConfig> {
@@ -819,10 +1074,53 @@ fn gate_value_commitment_roots(
     Ok(commitment_scheme.roots())
 }
 
+fn compact_preprocessed_gate_value_commitment_roots(
+    rows: &[D128GateValueProjectionMulRow],
+    config: PcsConfig,
+) -> Result<
+    stwo::core::pcs::TreeVec<
+        <Blake2sM31MerkleHasher as stwo::core::vcs_lifted::merkle_hasher::MerkleHasherLifted>::Hash,
+    >,
+> {
+    let component = compact_preprocessed_gate_value_component();
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(
+            component.max_constraint_log_degree_bound() + config.fri_config.log_blowup_factor + 1,
+        )
+        .circle_domain()
+        .half_coset,
+    );
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(gate_value_trace(rows)?);
+    tree_builder.commit(channel);
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(compact_preprocessed_gate_value_anchor_trace(rows)?);
+    tree_builder.commit(channel);
+
+    Ok(commitment_scheme.roots())
+}
+
 fn gate_value_component() -> FrameworkComponent<D128GateValueProjectionEval> {
     FrameworkComponent::new(
         &mut TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_column_ids()),
         D128GateValueProjectionEval {
+            log_size: D128_GATE_VALUE_LOG_SIZE,
+        },
+        SecureField::zero(),
+    )
+}
+
+fn compact_preprocessed_gate_value_component(
+) -> FrameworkComponent<D128CompactPreprocessedGateValueProjectionEval> {
+    FrameworkComponent::new(
+        &mut TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_column_ids()),
+        D128CompactPreprocessedGateValueProjectionEval {
             log_size: D128_GATE_VALUE_LOG_SIZE,
         },
         SecureField::zero(),
@@ -852,6 +1150,26 @@ fn gate_value_trace(
         rows.iter().map(|row| field_i64(row.weight_q8)).collect(),
         rows.iter().map(|row| field_i64(row.product_q8)).collect(),
     ];
+    Ok(columns
+        .into_iter()
+        .map(|column| {
+            CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(
+                domain,
+                BaseColumn::from_iter(column),
+            )
+            .bit_reverse()
+        })
+        .collect())
+}
+
+fn compact_preprocessed_gate_value_anchor_trace(
+    rows: &[D128GateValueProjectionMulRow],
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    let domain = CanonicCoset::new(D128_GATE_VALUE_LOG_SIZE).circle_domain();
+    let columns: Vec<Vec<BaseField>> = vec![rows
+        .iter()
+        .map(|row| field_usize(row.row_index))
+        .collect::<Result<Vec<_>>>()?];
     Ok(columns
         .into_iter()
         .map(|column| {
@@ -1259,6 +1577,18 @@ mod tests {
     }
 
     #[test]
+    fn compact_preprocessed_gate_value_air_proof_round_trips() {
+        let input = input();
+        let envelope = prove_zkai_d128_gate_value_projection_compact_preprocessed_envelope(&input)
+            .expect("compact gate/value proof");
+        assert!(!envelope.proof.is_empty());
+        assert!(
+            verify_zkai_d128_gate_value_projection_compact_preprocessed_envelope(&envelope)
+                .expect("compact verify")
+        );
+    }
+
+    #[test]
     fn gate_value_rejects_output_relabeling_as_full_output() {
         let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
         value["gate_value_projection_output_commitment"] =
@@ -1442,5 +1772,27 @@ mod tests {
         envelope.proof = serde_json::to_vec(&payload).expect("proof json");
         let error = verify_zkai_d128_gate_value_projection_envelope(&envelope).unwrap_err();
         assert!(error.to_string().contains("PCS config"));
+    }
+
+    #[test]
+    fn compact_preprocessed_gate_value_rejects_tampered_anchor_commitment() {
+        let input = input();
+        let mut envelope =
+            prove_zkai_d128_gate_value_projection_compact_preprocessed_envelope(&input)
+                .expect("compact gate/value proof");
+        assert!(
+            verify_zkai_d128_gate_value_projection_compact_preprocessed_envelope(&envelope)
+                .expect("compact verify")
+        );
+
+        let mut payload: Value = serde_json::from_slice(&envelope.proof).expect("proof payload");
+        let first_commitment = payload["stark_proof"]["commitments"][0].clone();
+        payload["stark_proof"]["commitments"][1] = first_commitment;
+        envelope.proof = serde_json::to_vec(&payload).expect("proof json");
+        let error = verify_zkai_d128_gate_value_projection_compact_preprocessed_envelope(&envelope)
+            .unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("compact anchor commitment does not match checked gate/value rows"));
     }
 }
