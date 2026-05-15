@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `b06a449d598f78913da9e9bed9dd3304cd6e8957` (matches
+**Mainline tip at last refresh:** `e9a6d8f5842403c88d7da361c87e9095783debd1` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -68,8 +68,11 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 57. `docs/engineering/zkai-native-d128-verifier-execution-compression-budget-2026-05-15.md`
 58. `docs/engineering/zkai-d128-component-compact-preprocessed-reprove-2026-05-15.md`
 59. `docs/engineering/zkai-d128-gate-value-compact-preprocessed-probe-2026-05-15.md`
-60. `docs/engineering/reproducibility.md`
-61. `git status --short --branch`
+60. `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`
+61. `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`
+62. `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`
+63. `docs/engineering/reproducibility.md`
+64. `git status --short --branch`
 
 ## Current lane split
 
@@ -1172,12 +1175,36 @@ and
 Validate with
 `python3 scripts/zkai_d128_attention_rmsnorm_boundary_gate.py --write-json docs/engineering/evidence/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05.tsv`.
 
+Current value-adapter policy frontier result: the current d128 fixture is a
+checked NO-GO for value-derived attention-to-RMSNorm handoff. The only exact
+`0 / 128` mismatch route is the synthetic index-only target pattern, which is
+forbidden because it ignores attention values. The best admissible checked
+policy is `channelwise_affine_over_tiled_attention`, and it still mismatches
+`106 / 128` cells with mean absolute error `49.796875`. A generous
+per-source-cell repeated lower-bound still mismatches `64 / 128` cells. The
+gate rejects `9 / 9` claim/source/commitment mutations. The next honest
+experiment is to regenerate a d128 RMSNorm input from attention-derived values,
+then rerun the RMSNorm-MLP fused proof and boundary gate. Evidence:
+`docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`.
+Repro metadata: policy frontier schema
+`zkai-d128-value-adapter-policy-frontier-gate-v1`, upstream value-adapter schema
+`zkai-attention-d128-value-adapter-gate-v1`, upstream boundary schema
+`zkai-d128-attention-rmsnorm-mlp-boundary-gate-v1`, timing mode
+`none; policy/value-boundary/mutation gate only`.
+Machine-readable evidence:
+`docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.json`
+and
+`docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.tsv`.
+Validate with
+`python3 scripts/zkai_d128_value_adapter_policy_frontier_gate.py --write-json docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.tsv`.
+
 1. Treat `rmsnorm_mlp_fused` as the current positive MLP-side fusion result:
    the native fused proof saves `32,144` local typed bytes (`56.4167%`) versus
    separate RMSNorm, bridge, gate/value, activation, down-projection, and
    residual-add proof objects. The current attention-to-RMSNorm boundary gate
-   proves the immediate single-proof route is blocked by value handoff, not row
-   count: solve the adapter or typed handoff before claiming attention plus MLP.
+   and value-adapter policy frontier prove the immediate single-proof route is
+   blocked by value handoff, not row count: regenerate a value-derived d128
+   fixture before claiming attention plus MLP.
 2. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte
