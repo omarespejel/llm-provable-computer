@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
 import csv
 import hashlib
@@ -585,10 +586,9 @@ def atomic_write(path: pathlib.Path, data: bytes) -> None:
     try:
         os.replace(tmp, path)
     except OSError:
-        try:
+        with contextlib.suppress(OSError):
             tmp.unlink()
-        finally:
-            raise
+        raise
 
 
 def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
@@ -597,7 +597,6 @@ def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
 
 def write_tsv(path: pathlib.Path, payload: dict[str, Any]) -> None:
     row = {column: payload["aggregate"].get(column, payload.get(column)) for column in TSV_COLUMNS}
-    row["route_id"] = payload["route_id"]
     out = io.StringIO()
     writer = csv.DictWriter(out, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
