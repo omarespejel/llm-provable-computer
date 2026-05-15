@@ -76,6 +76,13 @@ class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
         payload["validation_commands"] = list(reversed(payload["validation_commands"]))
         BRIDGE.validate_payload(payload)
 
+    def test_payload_rejects_source_command_set_mismatch(self) -> None:
+        source = BRIDGE.load_source(DERIVED_RMSNORM_SOURCE)
+        payload = BRIDGE.build_payload(source=source)
+        payload["validation_commands"] = list(BRIDGE.VALIDATION_COMMANDS)
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "validation commands drift"):
+            BRIDGE.validate_payload(payload)
+
     def test_payload_rejects_validation_command_duplicate(self) -> None:
         payload = self.fresh_payload()
         payload["validation_commands"] = [*payload["validation_commands"], payload["validation_commands"][0]]
@@ -133,6 +140,23 @@ class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
 
         with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source commitment anchor drift"):
             BRIDGE.validate_source(source)
+
+    def test_validation_commands_for_source_uses_source_content(self) -> None:
+        self.assertEqual(
+            BRIDGE.validation_commands_for_source(DERIVED_RMSNORM_SOURCE),
+            BRIDGE.DERIVED_VALIDATION_COMMANDS,
+        )
+
+    def test_build_payload_selects_derived_source_commands_by_default(self) -> None:
+        source = BRIDGE.load_source(DERIVED_RMSNORM_SOURCE)
+        payload = BRIDGE.build_payload(source=source)
+        self.assertEqual(payload["validation_commands"], BRIDGE.DERIVED_VALIDATION_COMMANDS)
+        BRIDGE.validate_payload(payload)
+
+    def test_build_payload_rejects_derived_source_with_base_commands(self) -> None:
+        source = BRIDGE.load_source(DERIVED_RMSNORM_SOURCE)
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "validation commands drift"):
+            BRIDGE.build_payload(source=source, validation_commands=BRIDGE.VALIDATION_COMMANDS)
 
     def test_load_source_accepts_attention_derived_payload_when_self_consistent(self) -> None:
         source = BRIDGE.load_source(DERIVED_RMSNORM_SOURCE)

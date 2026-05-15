@@ -124,6 +124,18 @@ APPROVED_SOURCE_ANCHORS = {
         DERIVED_SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT,
     ),
 }
+SOURCE_PAYLOAD_COMMANDS = {
+    (
+        SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+        SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
+        SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT,
+    ): VALIDATION_COMMANDS,
+    (
+        DERIVED_SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+        DERIVED_SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
+        DERIVED_SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT,
+    ): DERIVED_VALIDATION_COMMANDS,
+}
 
 TSV_COLUMNS = (
     "target_id",
@@ -391,12 +403,34 @@ def validate_source(source: Any) -> None:
         raise D128BridgeInputError("source commitment anchor drift")
 
 
+def source_payload_anchor(source: dict[str, Any]) -> tuple[str, str, str]:
+    return (
+        source["statement_commitment"],
+        source["public_instance_commitment"],
+        source["rmsnorm_output_row_commitment"],
+    )
+
+
+def payload_source_anchor(payload: dict[str, Any]) -> tuple[str, str, str]:
+    return (
+        payload["source_rmsnorm_statement_commitment"],
+        payload["source_rmsnorm_public_instance_commitment"],
+        payload["source_rmsnorm_output_row_commitment"],
+    )
+
+
+def validation_commands_for_source_payload(source: dict[str, Any]) -> list[str]:
+    anchor = source_payload_anchor(source)
+    if anchor not in SOURCE_PAYLOAD_COMMANDS:
+        raise D128BridgeInputError("source validation command anchor drift")
+    return list(SOURCE_PAYLOAD_COMMANDS[anchor])
+
+
 def validation_commands_for_source(path: pathlib.Path) -> list[str]:
     try:
-        if path.resolve() == DERIVED_SOURCE_JSON.resolve():
-            return list(DERIVED_VALIDATION_COMMANDS)
-    except OSError:
-        pass
+        return validation_commands_for_source_payload(load_source(path))
+    except D128BridgeInputError:
+        return list(VALIDATION_COMMANDS)
     return list(VALIDATION_COMMANDS)
 
 
@@ -416,6 +450,8 @@ def build_payload(
     validate_source(source)
     target = load_target() if target is None else target
     target_commitment = validate_target(target)
+    if validation_commands is None:
+        validation_commands = validation_commands_for_source_payload(source)
     rows = [
         {
             "index": row["index"],
@@ -449,7 +485,7 @@ def build_payload(
         "non_claims": list(NON_CLAIMS),
         "proof_verifier_hardening": list(PROOF_VERIFIER_HARDENING),
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": list(VALIDATION_COMMANDS if validation_commands is None else validation_commands),
+        "validation_commands": list(validation_commands),
     }
     statement = statement_commitment(payload, target_commitment)
     payload["statement_commitment"] = statement
@@ -554,6 +590,11 @@ def validate_payload(payload: Any, *, target: dict[str, Any] | None = None) -> N
         raise D128BridgeInputError("public instance commitment drift")
     if payload["proof_native_parameter_commitment"] != proof_native_parameter_commitment(statement):
         raise D128BridgeInputError("proof-native parameter commitment drift")
+    source_command_anchor = payload_source_anchor(payload)
+    if source_command_anchor not in SOURCE_PAYLOAD_COMMANDS:
+        raise D128BridgeInputError("source validation command anchor drift")
+    if Counter(payload["validation_commands"]) != Counter(SOURCE_PAYLOAD_COMMANDS[source_command_anchor]):
+        raise D128BridgeInputError("validation commands drift")
 
 
 def rows_for_tsv(payload: dict[str, Any], *, validated: bool = False) -> list[dict[str, Any]]:
