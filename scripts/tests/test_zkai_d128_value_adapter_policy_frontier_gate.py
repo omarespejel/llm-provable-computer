@@ -1,5 +1,7 @@
 import copy
+import tempfile
 import unittest
+from pathlib import Path
 
 from scripts import zkai_d128_value_adapter_policy_frontier_gate as gate
 
@@ -20,6 +22,10 @@ class D128ValueAdapterPolicyFrontierGateTests(unittest.TestCase):
         self.assertEqual(summary["decision"], gate.DECISION)
         self.assertEqual(summary["attention_cells"], 64)
         self.assertEqual(summary["target_width"], 128)
+        self.assertEqual(summary["affine_scale_min"], -64)
+        self.assertEqual(summary["affine_scale_max"], 64)
+        self.assertEqual(summary["affine_bias_min"], -256)
+        self.assertEqual(summary["affine_bias_max"], 256)
         self.assertEqual(summary["best_admissible_policy_id"], "channelwise_affine_over_tiled_attention")
         self.assertEqual(summary["best_admissible_mismatches"], 106)
         self.assertEqual(summary["best_admissible_mean_abs_error"], 49.796875)
@@ -46,7 +52,14 @@ class D128ValueAdapterPolicyFrontierGateTests(unittest.TestCase):
         self.assertEqual(best["id"], "channelwise_affine_over_tiled_attention")
         self.assertEqual(best["mismatch_count"], 106)
         self.assertEqual(best["mean_abs_error"], 49.796875)
+        self.assertEqual(frontier["affine_search_bounds"], gate.affine_search_bounds())
         self.assertEqual(frontier["decision"]["current_fixture_adapter"], "NO_GO")
+
+    def test_attention_output_shape_guard_rejects_malformed_fixture(self) -> None:
+        with self.assertRaisesRegex(gate.ValueAdapterPolicyFrontierError, "attention_outputs"):
+            gate.validate_attention_outputs_shape([])
+        with self.assertRaisesRegex(gate.ValueAdapterPolicyFrontierError, "observed_row_lengths"):
+            gate.validate_attention_outputs_shape([[1], [1, 2]])
 
     def test_all_mutations_reject(self) -> None:
         payload = self.fresh_payload()
@@ -96,11 +109,11 @@ class D128ValueAdapterPolicyFrontierGateTests(unittest.TestCase):
         self.assertIn("\t106\t49.796875\t", tsv)
 
     def test_written_payload_validates(self) -> None:
-        path = gate.JSON_OUT
-        if not path.exists():
-            self.skipTest("written policy frontier evidence has not been generated")
-        payload, _ = gate.load_json(path)
-        gate.validate_payload(payload, context=self.context)
+        with tempfile.TemporaryDirectory(dir=gate.ROOT) as tmp:
+            path = Path(tmp) / "policy-frontier.json"
+            path.write_text(gate.pretty_json(self.payload), encoding="utf-8")
+            payload, _ = gate.load_json(path)
+            gate.validate_payload(payload, context=self.context)
 
 
 if __name__ == "__main__":

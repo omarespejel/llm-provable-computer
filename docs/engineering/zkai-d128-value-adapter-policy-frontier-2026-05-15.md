@@ -29,6 +29,7 @@ The checked policy frontier is:
   `channelwise_affine_over_tiled_attention`
 - best admissible mismatches: `106 / 128`
 - best admissible mean absolute error: `49.796875`
+- checked bounded affine search: scale `[-64, 64]`, bias `[-256, 256]`
 - existing global-affine adapter mismatches: `124 / 128`
 - generous per-source-cell repeated lower-bound mismatches: `64 / 128`
 - mutation rejections: `9 / 9`

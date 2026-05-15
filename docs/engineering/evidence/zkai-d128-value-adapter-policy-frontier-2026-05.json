@@ -78,8 +78,14 @@
     "not timing evidence",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:00eae2c6ca338fd2550dd9ee2f0c99cfcb26e1f4497756aba32c937520867ae2",
+  "payload_commitment": "sha256:d5ed6a086b9ae46788435d1d6da3f3388b1f2a8de0dc14c498e283b953501683",
   "policy_frontier": {
+    "affine_search_bounds": {
+      "bias_max": 256,
+      "bias_min": -256,
+      "scale_max": 64,
+      "scale_min": -64
+    },
     "analysis_kind": "d128-value-adapter-policy-frontier",
     "attention": {
       "flattened_cells": 64,
@@ -229,7 +235,13 @@
       },
       {
         "admissible_as_value_adapter": true,
-        "description": "best single integer y = scale*x + bias over tiled attention",
+        "affine_search_bounds": {
+          "bias_max": 256,
+          "bias_min": -256,
+          "scale_max": 64,
+          "scale_min": -64
+        },
+        "description": "best bounded single integer y = scale*x + bias over tiled attention",
         "first_mismatches": [
           {
             "candidate": -8,
@@ -281,7 +293,13 @@
       },
       {
         "admissible_as_value_adapter": true,
-        "description": "best per-channel integer affine map over tiled attention; still low-parameter but not exact",
+        "affine_search_bounds": {
+          "bias_max": 256,
+          "bias_min": -256,
+          "scale_max": 64,
+          "scale_min": -64
+        },
+        "description": "best bounded per-channel integer affine map over tiled attention; still low-parameter but not exact",
         "first_mismatches": [
           {
             "candidate": -29,
@@ -404,7 +422,7 @@
       "width": 128
     }
   },
-  "policy_frontier_commitment": "blake2b-256:523f60da8d22ee3b4c1bd73bb12cc59234643701b3c784ac08483862861372ae",
+  "policy_frontier_commitment": "blake2b-256:7d0eb4767c1b89dd965ae290e64155ea8b1289e2649654ea79e40828fab5bb2e",
   "result": "NO_GO_CURRENT_D128_TARGET_IS_INDEX_SYNTHETIC_NOT_ATTENTION_DERIVED",
   "schema": "zkai-d128-value-adapter-policy-frontier-gate-v1",
   "source_artifacts": [
@@ -434,6 +452,10 @@
     }
   ],
   "summary": {
+    "affine_bias_max": 256,
+    "affine_bias_min": -256,
+    "affine_scale_max": 64,
+    "affine_scale_min": -64,
     "attention_cells": 64,
     "best_admissible_mean_abs_error": 49.796875,
     "best_admissible_mismatches": 106,
@@ -444,7 +466,7 @@
     "existing_adapter_best_policy_id": "best_global_affine_over_tiled_attention",
     "index_only_exact_mismatches": 0,
     "per_source_cell_lower_bound_mismatches": 64,
-    "policy_frontier_commitment": "blake2b-256:523f60da8d22ee3b4c1bd73bb12cc59234643701b3c784ac08483862861372ae",
+    "policy_frontier_commitment": "blake2b-256:7d0eb4767c1b89dd965ae290e64155ea8b1289e2649654ea79e40828fab5bb2e",
     "target_width": 128
   },
   "validation_commands": [
