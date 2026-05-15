@@ -220,21 +220,10 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
     };
     #[cfg(not(unix))]
     let file = {
-        let metadata = fs::symlink_metadata(path)
-            .map_err(|error| format!("failed to stat {label} {}: {error}", path.display()))?;
-        if metadata.file_type().is_symlink() {
-            return Err(format!("refusing symlink for {label}: {}", path.display()));
-        }
-        if !metadata.is_file() {
-            return Err(format!(
-                "expected regular file for {label}: {}",
-                path.display()
-            ));
-        }
-        fs::OpenOptions::new()
-            .read(true)
-            .open(path)
-            .map_err(|error| format!("failed to open {label} {}: {error}", path.display()))?
+        return Err(format!(
+            "{label} requires Unix O_NOFOLLOW file opening for path safety: {}",
+            path.display()
+        ));
     };
     let metadata = file
         .metadata()
