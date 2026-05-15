@@ -109,6 +109,26 @@ class ZkAiD128GateValueProjectionProofInputTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "source anchor"):
             GATE_VALUE.validate_payload(payload)
 
+    def test_legacy_synthetic_payload_without_source_bridge_fields_still_validates(self) -> None:
+        payload = self.fresh_payload()
+        payload.pop("source_bridge_statement_commitment")
+        payload.pop("source_bridge_public_instance_commitment")
+        GATE_VALUE.validate_payload(payload)
+
+    def test_legacy_payload_shape_rejects_non_synthetic_projection_anchor(self) -> None:
+        bridge = GATE_VALUE.load_bridge(
+            ROOT
+            / "docs"
+            / "engineering"
+            / "evidence"
+            / "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json"
+        )
+        payload = GATE_VALUE.build_payload(bridge)
+        payload.pop("source_bridge_statement_commitment")
+        payload.pop("source_bridge_public_instance_commitment")
+        with self.assertRaisesRegex(GATE_VALUE.GateValueProjectionInputError, "source anchor"):
+            GATE_VALUE.validate_payload(payload)
+
     def test_payload_rejects_projection_input_vector_drift(self) -> None:
         payload = self.fresh_payload()
         payload["projection_input_q8"][0] += 1

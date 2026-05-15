@@ -535,6 +535,14 @@ def _set_payload_commitment_drift(payload: dict[str, Any]) -> None:
     payload["payload_commitment"] = "sha256:" + "11" * 32
 
 
+def _promote_component_schema(payload: dict[str, Any], component_id: str) -> None:
+    for component in payload["component_input_frontier"]:
+        if component.get("component_id") == component_id:
+            component["schema"] = component["required_native_schema"]
+            return
+    raise NativeMlpProofRouteError(f"component not found: {component_id}")
+
+
 MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ("decision_promoted_to_go", lambda p: p.__setitem__("decision", "GO_ATTENTION_DERIVED_NATIVE_MLP_PROOF"), True),
     ("result_promoted_to_proof", lambda p: p.__setitem__("result", "GO_NATIVE_PROOF_REGENERATED"), True),
@@ -559,9 +567,7 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ),
     (
         "component_schema_relabels_native",
-        lambda p: p["component_input_frontier"][3].__setitem__(
-            "schema", p["component_input_frontier"][3]["required_native_schema"]
-        ),
+        lambda p: _promote_component_schema(p, "activation_swiglu"),
         True,
     ),
     (
