@@ -1,5 +1,6 @@
 import copy
 import unittest
+from unittest import mock
 
 from scripts import zkai_d128_gate_value_activation_fused_gate as gate
 
@@ -34,6 +35,16 @@ class GateValueActivationFusedGateTests(unittest.TestCase):
         mutated["payload_commitment"] = gate.payload_commitment(mutated)
         with self.assertRaises(gate.FusedGateError):
             gate.validate_payload(mutated)
+
+    def test_read_json_open_error_is_structured(self) -> None:
+        with mock.patch.object(gate.os, "open", side_effect=OSError("boom")):
+            with self.assertRaises(gate.FusedGateError):
+                gate.read_json(gate.ACCOUNTING_PATH, 4 * 1024 * 1024, "accounting JSON")
+
+    def test_validate_envelope_stat_error_is_structured(self) -> None:
+        expected = gate.EXPECTED_ROLES[gate.FUSED_ENVELOPE_PATH.name]
+        with self.assertRaises(gate.FusedGateError):
+            gate.validate_envelope(gate.EVIDENCE_DIR / "__missing_d128_fused_envelope.json", expected)
 
 
 if __name__ == "__main__":
