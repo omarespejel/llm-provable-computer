@@ -313,7 +313,6 @@ def validate_source(source: Any) -> None:
 
 def source_gate_value_vectors(source: dict[str, Any]) -> tuple[list[int], list[int]]:
     validate_source(source)
-    source_gate_value_anchor(source)
     gate = source["gate_projection_q8"]
     value = source["value_projection_q8"]
     if not isinstance(gate, list) or len(gate) != FF_DIM:

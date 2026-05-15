@@ -1321,6 +1321,18 @@ mod tests {
     }
 
     #[test]
+    fn activation_swiglu_rejects_mixed_anchor_commitments() {
+        let mut value: Value = serde_json::from_str(DERIVED_INPUT_JSON).expect("json");
+        value["source_gate_value_projection_statement_commitment"] =
+            Value::String(ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT.to_string());
+        let error = zkai_d128_activation_swiglu_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("anchor is not approved"));
+    }
+
+    #[test]
     fn activation_swiglu_rejects_hidden_relabeling_as_full_output() {
         let mut value: Value = serde_json::from_str(INPUT_JSON).expect("json");
         value["hidden_activation_commitment"] =
