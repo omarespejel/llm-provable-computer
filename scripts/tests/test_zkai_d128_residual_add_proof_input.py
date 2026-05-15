@@ -21,12 +21,19 @@ class ZkAiD128ResidualAddProofInputTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.payload = D128_RESIDUAL.build_payload()
+        cls.derived_payload = D128_RESIDUAL.build_payload(
+            D128_RESIDUAL.load_rmsnorm_source(D128_RESIDUAL.DERIVED_INPUT_JSON),
+            D128_RESIDUAL.load_down_source(D128_RESIDUAL.DERIVED_DOWN_SOURCE_JSON),
+        )
         target_dir = ROOT / "target" / "local-hardening"
         target_dir.mkdir(parents=True, exist_ok=True)
         cls.target_dir = target_dir
 
     def fresh_payload(self) -> dict:
         return copy.deepcopy(self.payload)
+
+    def fresh_derived_payload(self) -> dict:
+        return copy.deepcopy(self.derived_payload)
 
     def test_payload_builds_and_validates_real_down_projection_source(self) -> None:
         payload = self.fresh_payload()
@@ -41,6 +48,47 @@ class ZkAiD128ResidualAddProofInputTests(unittest.TestCase):
         self.assertLess(min(payload["residual_delta_q8"]), -D128_RESIDUAL.Q8_SEMANTIC_ABS_BOUND)
         self.assertGreater(max(payload["residual_delta_q8"]), D128_RESIDUAL.Q8_SEMANTIC_ABS_BOUND)
         self.assertIn("signed_m31", payload["range_policy"])
+
+    def test_payload_builds_and_validates_attention_derived_source_anchor(self) -> None:
+        payload = self.fresh_derived_payload()
+        D128_RESIDUAL.validate_payload(payload)
+        self.assertEqual(
+            payload["source_rmsnorm_proof_version"],
+            D128_RESIDUAL.ATTENTION_DERIVED_INPUT_PROOF_VERSION,
+        )
+        self.assertEqual(
+            payload["source_down_projection_statement_commitment"],
+            D128_RESIDUAL.ATTENTION_DERIVED_DOWN_STATEMENT_COMMITMENT,
+        )
+        self.assertEqual(
+            payload["input_activation_commitment"],
+            D128_RESIDUAL.ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT,
+        )
+        self.assertEqual(
+            payload["residual_delta_commitment"],
+            D128_RESIDUAL.ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT,
+        )
+        self.assertEqual(
+            payload["output_activation_commitment"],
+            D128_RESIDUAL.ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT,
+        )
+        self.assertEqual(payload["input_q8"][:5], [1, 1, 2, -2, 1])
+        self.assertEqual(payload["residual_delta_q8"][:5], [-10094, -4004, 4637, 7313, 5364])
+        self.assertEqual(payload["output_q8"][:5], [-10093, -4003, 4639, 7311, 5365])
+        self.assertEqual(payload["validation_commands"], D128_RESIDUAL.DERIVED_VALIDATION_COMMANDS)
+
+    def test_payload_rejects_mixed_attention_derived_input_and_synthetic_down_source(self) -> None:
+        with self.assertRaisesRegex(D128_RESIDUAL.D128ResidualAddInputError, "anchors are mixed"):
+            D128_RESIDUAL.build_payload(
+                D128_RESIDUAL.load_rmsnorm_source(D128_RESIDUAL.DERIVED_INPUT_JSON),
+                D128_RESIDUAL.load_down_source(),
+            )
+
+    def test_payload_rejects_attention_derived_validation_commands_from_wrong_anchor(self) -> None:
+        payload = self.fresh_derived_payload()
+        payload["validation_commands"] = D128_RESIDUAL.VALIDATION_COMMANDS
+        with self.assertRaisesRegex(D128_RESIDUAL.D128ResidualAddInputError, "validation_commands"):
+            D128_RESIDUAL.validate_payload(payload)
 
     def test_payload_rejects_rmsnorm_source_commitment_drift(self) -> None:
         source = copy.deepcopy(D128_RESIDUAL.load_rmsnorm_source())

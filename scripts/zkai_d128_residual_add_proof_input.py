@@ -24,10 +24,15 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 RMSNORM_SCRIPT_PATH = ROOT / "scripts" / "zkai_d128_rmsnorm_public_row_proof_input.py"
 DOWN_PROJECTION_SCRIPT_PATH = ROOT / "scripts" / "zkai_d128_down_projection_proof_input.py"
+DERIVED_INPUT_SCRIPT_PATH = ROOT / "scripts" / "zkai_attention_derived_d128_input_gate.py"
 RMSNORM_SOURCE_JSON = EVIDENCE_DIR / "zkai-d128-native-rmsnorm-public-row-proof-2026-05.json"
 DOWN_SOURCE_JSON = EVIDENCE_DIR / "zkai-d128-down-projection-proof-2026-05.json"
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-residual-add-proof-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-residual-add-proof-2026-05.tsv"
+DERIVED_INPUT_JSON = EVIDENCE_DIR / "zkai-attention-derived-d128-input-2026-05.json"
+DERIVED_DOWN_SOURCE_JSON = EVIDENCE_DIR / "zkai-attention-derived-d128-native-down-projection-proof-2026-05.json"
+DERIVED_JSON_OUT = EVIDENCE_DIR / "zkai-attention-derived-d128-native-residual-add-proof-2026-05.json"
+DERIVED_TSV_OUT = EVIDENCE_DIR / "zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv"
 
 SCHEMA = "zkai-d128-residual-add-air-proof-input-v1"
 DECISION = "GO_INPUT_FOR_D128_RESIDUAL_ADD_AIR_PROOF"
@@ -48,9 +53,25 @@ SOURCE_DOWN_PROJECTION_DECISION = "GO_INPUT_FOR_D128_DOWN_PROJECTION_AIR_PROOF"
 SOURCE_DOWN_PROJECTION_PROOF_VERSION = "stwo-d128-down-projection-air-proof-v1"
 SOURCE_DOWN_PROJECTION_STATEMENT_COMMITMENT = "blake2b-256:70f900b6d26fb33273c0123b4c4d6b7723e45612b2ca6fd9d536e613e8412599"
 SOURCE_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:8a5fd95ef4fb5284374788c03861099a32ed7c2082cbdccd6bedd3d9b211f9e1"
+ATTENTION_DERIVED_INPUT_SCHEMA = "zkai-attention-derived-d128-input-gate-v1"
+ATTENTION_DERIVED_INPUT_DECISION = "GO_ATTENTION_DERIVED_D128_INPUT_FIXTURE"
+ATTENTION_DERIVED_INPUT_RESULT = "GO_VALUE_CONNECTED_INPUT_ARTIFACT_NO_GO_CURRENT_D128_BLOCK"
+ATTENTION_DERIVED_INPUT_PROOF_VERSION = ATTENTION_DERIVED_INPUT_SCHEMA
+ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT = "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b"
+ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT = "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35"
+ATTENTION_DERIVED_DOWN_STATEMENT_COMMITMENT = "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e"
+ATTENTION_DERIVED_DOWN_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735"
+ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT = "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec"
+ATTENTION_DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256 = "745d0cc14f1f5c595db32b81dd4b58b49df2e9b98b4ca6e7ec5fc3065811f895"
+ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT = "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9"
+ATTENTION_DERIVED_RESIDUAL_ADD_ROW_COMMITMENT = "blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf"
+ATTENTION_DERIVED_PROOF_NATIVE_PARAMETER_COMMITMENT = "blake2b-256:2d54c2e4ac69af9a4a149f791bb62ed05b903f495783a9c607314d5fc04e5b42"
+ATTENTION_DERIVED_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:0f5f90a32b53ea1274eac93e60665d2595cafde5ec53e57e3598fedbe6d2f195"
+ATTENTION_DERIVED_STATEMENT_COMMITMENT = "blake2b-256:0916313384f68227850286254909473f9efa232bdca3c1c5ee0e3c4f666644ab"
 TARGET_COMMITMENT = "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18"
 INPUT_ACTIVATION_COMMITMENT = "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78"
 RESIDUAL_DELTA_COMMITMENT = "blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2"
+ZKAI_D128_RESIDUAL_DELTA_REMAINDER_SHA256 = "a99010fcd4f0898287b58960f979b086208ea7eff6ca51f0e8af827ec916ef3d"
 OUTPUT_ACTIVATION_COMMITMENT = "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1"
 RESIDUAL_ADD_ROW_COMMITMENT = "blake2b-256:be931ba0fe63ea16d3dc2abb2fc2bafaa13ccf0db1f43fee9e734d5f2bf1100d"
 PROOF_NATIVE_PARAMETER_COMMITMENT = "blake2b-256:f958da6fa72df8bc32873b3602a128ed35b65f9427e8627af0b39ff7e21b31bc"
@@ -96,6 +117,13 @@ VALIDATION_COMMANDS = [
     "python3 scripts/zkai_d128_proof_artifact_backend_spike_gate.py --write-json docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-proof-artifact-backend-spike-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_d128_proof_artifact_backend_spike_gate",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "just gate-fast",
+    "just gate",
+]
+DERIVED_VALIDATION_COMMANDS = [
+    "python3 scripts/zkai_d128_residual_add_proof_input.py --rmsnorm-source-json docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json --down-source-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_residual_add_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_residual_add_proof --lib --features stwo-backend",
     "just gate-fast",
     "just gate",
 ]
@@ -172,6 +200,7 @@ def _load_module(path: pathlib.Path, module_name: str) -> Any:
 
 RMSNORM = _load_module(RMSNORM_SCRIPT_PATH, "zkai_d128_rmsnorm_public_row_proof_input")
 DOWN_PROJECTION = _load_module(DOWN_PROJECTION_SCRIPT_PATH, "zkai_d128_down_projection_proof_input")
+DERIVED_INPUT = _load_module(DERIVED_INPUT_SCRIPT_PATH, "zkai_attention_derived_d128_input_gate")
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -330,28 +359,64 @@ def load_down_source(path: pathlib.Path = DOWN_SOURCE_JSON) -> dict[str, Any]:
     return payload
 
 
-def validate_rmsnorm_source(source: Any) -> None:
+def source_input_anchor(source: Any) -> dict[str, Any]:
     if not isinstance(source, dict):
-        raise D128ResidualAddInputError("source RMSNorm evidence must be an object")
-    constants = {
-        "schema": SOURCE_RMSNORM_SCHEMA,
-        "decision": SOURCE_RMSNORM_DECISION,
-        "target_id": TARGET_ID,
-        "required_backend_version": REQUIRED_BACKEND_VERSION,
-        "verifier_domain": VERIFIER_DOMAIN,
-        "width": WIDTH,
-        "input_activation_commitment": INPUT_ACTIVATION_COMMITMENT,
-    }
-    for field, expected in constants.items():
-        if source.get(field) != expected:
-            raise D128ResidualAddInputError(f"source RMSNorm field mismatch: {field}")
-    try:
-        RMSNORM.validate_payload(source)
-    except Exception as err:  # noqa: BLE001
-        raise D128ResidualAddInputError(f"source RMSNorm validation failed: {err}") from err
+        raise D128ResidualAddInputError("source input evidence must be an object")
+    if source.get("schema") == SOURCE_RMSNORM_SCHEMA:
+        constants = {
+            "schema": SOURCE_RMSNORM_SCHEMA,
+            "decision": SOURCE_RMSNORM_DECISION,
+            "target_id": TARGET_ID,
+            "required_backend_version": REQUIRED_BACKEND_VERSION,
+            "verifier_domain": VERIFIER_DOMAIN,
+            "width": WIDTH,
+            "input_activation_commitment": INPUT_ACTIVATION_COMMITMENT,
+        }
+        for field, expected in constants.items():
+            if source.get(field) != expected:
+                raise D128ResidualAddInputError(f"source RMSNorm field mismatch: {field}")
+        try:
+            RMSNORM.validate_payload(source)
+        except Exception as err:  # noqa: BLE001
+            raise D128ResidualAddInputError(f"source RMSNorm validation failed: {err}") from err
+        return {
+            "kind": "synthetic_rmsnorm",
+            "proof_version": SOURCE_RMSNORM_PROOF_VERSION,
+            "statement_commitment": SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+            "input_activation_commitment": INPUT_ACTIVATION_COMMITMENT,
+        }
+    if source.get("schema") == ATTENTION_DERIVED_INPUT_SCHEMA:
+        constants = {
+            "schema": ATTENTION_DERIVED_INPUT_SCHEMA,
+            "decision": ATTENTION_DERIVED_INPUT_DECISION,
+            "result": ATTENTION_DERIVED_INPUT_RESULT,
+        }
+        for field, expected in constants.items():
+            if source.get(field) != expected:
+                raise D128ResidualAddInputError(f"source attention-derived input field mismatch: {field}")
+        try:
+            DERIVED_INPUT.validate_payload(source)
+        except Exception as err:  # noqa: BLE001
+            raise D128ResidualAddInputError(f"source attention-derived input validation failed: {err}") from err
+        derived = source.get("derived_input")
+        if not isinstance(derived, dict):
+            raise D128ResidualAddInputError("source attention-derived input payload missing")
+        if source.get("payload_commitment") != DERIVED_INPUT.payload_commitment(source):
+            raise D128ResidualAddInputError("source attention-derived input payload commitment drift")
+        if derived.get("source_attention_statement_commitment") != ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT:
+            raise D128ResidualAddInputError("source attention statement commitment drift")
+        if derived.get("input_activation_commitment") != ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT:
+            raise D128ResidualAddInputError("source attention-derived input activation commitment drift")
+        return {
+            "kind": "attention_derived",
+            "proof_version": ATTENTION_DERIVED_INPUT_PROOF_VERSION,
+            "statement_commitment": ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT,
+            "input_activation_commitment": ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT,
+        }
+    raise D128ResidualAddInputError(f"source input schema is not approved: {source.get('schema')}")
 
 
-def validate_down_source(source: Any) -> None:
+def source_down_anchor(source: Any) -> dict[str, Any]:
     if not isinstance(source, dict):
         raise D128ResidualAddInputError("source down-projection evidence must be an object")
     constants = {
@@ -362,9 +427,6 @@ def validate_down_source(source: Any) -> None:
         "verifier_domain": VERIFIER_DOMAIN,
         "width": WIDTH,
         "residual_delta_rows": WIDTH,
-        "residual_delta_commitment": RESIDUAL_DELTA_COMMITMENT,
-        "statement_commitment": SOURCE_DOWN_PROJECTION_STATEMENT_COMMITMENT,
-        "public_instance_commitment": SOURCE_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
     }
     for field, expected in constants.items():
         if source.get(field) != expected:
@@ -373,21 +435,212 @@ def validate_down_source(source: Any) -> None:
         DOWN_PROJECTION.validate_payload(source)
     except Exception as err:  # noqa: BLE001
         raise D128ResidualAddInputError(f"source down-projection validation failed: {err}") from err
+    residual_delta_remainder = source.get("residual_delta_remainder_q8")
+    if not isinstance(residual_delta_remainder, list) or len(residual_delta_remainder) != WIDTH:
+        raise D128ResidualAddInputError("source residual delta remainder vector mismatch")
+    remainder_hash = sha256_hex(residual_delta_remainder)
+    if (
+        source.get("statement_commitment") == SOURCE_DOWN_PROJECTION_STATEMENT_COMMITMENT
+        and source.get("public_instance_commitment") == SOURCE_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT
+        and source.get("residual_delta_commitment") == RESIDUAL_DELTA_COMMITMENT
+        and remainder_hash == ZKAI_D128_RESIDUAL_DELTA_REMAINDER_SHA256
+    ):
+        return {
+            "kind": "synthetic_down_projection",
+            "statement_commitment": SOURCE_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+            "public_instance_commitment": SOURCE_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            "residual_delta_commitment": RESIDUAL_DELTA_COMMITMENT,
+            "residual_delta_remainder_sha256": ZKAI_D128_RESIDUAL_DELTA_REMAINDER_SHA256,
+        }
+    if (
+        source.get("statement_commitment") == ATTENTION_DERIVED_DOWN_STATEMENT_COMMITMENT
+        and source.get("public_instance_commitment") == ATTENTION_DERIVED_DOWN_PUBLIC_INSTANCE_COMMITMENT
+        and source.get("residual_delta_commitment") == ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT
+        and remainder_hash == ATTENTION_DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256
+    ):
+        return {
+            "kind": "attention_derived_down_projection",
+            "statement_commitment": ATTENTION_DERIVED_DOWN_STATEMENT_COMMITMENT,
+            "public_instance_commitment": ATTENTION_DERIVED_DOWN_PUBLIC_INSTANCE_COMMITMENT,
+            "residual_delta_commitment": ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT,
+            "residual_delta_remainder_sha256": ATTENTION_DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256,
+        }
+    raise D128ResidualAddInputError(
+        "source down-projection anchor is not approved: "
+        f"statement={source.get('statement_commitment')} public={source.get('public_instance_commitment')}"
+    )
+
+
+def residual_add_anchor(source_input: dict[str, Any], down_source: dict[str, Any]) -> dict[str, Any]:
+    input_anchor = source_input_anchor(source_input)
+    down_anchor = source_down_anchor(down_source)
+    pair = (input_anchor["kind"], down_anchor["kind"])
+    if pair == ("synthetic_rmsnorm", "synthetic_down_projection"):
+        return {
+            "kind": "synthetic",
+            "source_input": input_anchor,
+            "source_down": down_anchor,
+            "input_activation_commitment": INPUT_ACTIVATION_COMMITMENT,
+            "residual_delta_commitment": RESIDUAL_DELTA_COMMITMENT,
+            "residual_delta_remainder_sha256": ZKAI_D128_RESIDUAL_DELTA_REMAINDER_SHA256,
+            "output_activation_commitment": OUTPUT_ACTIVATION_COMMITMENT,
+            "residual_add_row_commitment": RESIDUAL_ADD_ROW_COMMITMENT,
+            "proof_native_parameter_commitment": PROOF_NATIVE_PARAMETER_COMMITMENT,
+            "public_instance_commitment": PUBLIC_INSTANCE_COMMITMENT,
+            "statement_commitment": STATEMENT_COMMITMENT,
+            "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
+            "validation_commands": VALIDATION_COMMANDS,
+        }
+    if pair == ("attention_derived", "attention_derived_down_projection"):
+        return {
+            "kind": "attention_derived",
+            "source_input": input_anchor,
+            "source_down": down_anchor,
+            "input_activation_commitment": ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT,
+            "residual_delta_commitment": ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT,
+            "residual_delta_remainder_sha256": ATTENTION_DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256,
+            "output_activation_commitment": ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT,
+            "residual_add_row_commitment": ATTENTION_DERIVED_RESIDUAL_ADD_ROW_COMMITMENT,
+            "proof_native_parameter_commitment": ATTENTION_DERIVED_PROOF_NATIVE_PARAMETER_COMMITMENT,
+            "public_instance_commitment": ATTENTION_DERIVED_PUBLIC_INSTANCE_COMMITMENT,
+            "statement_commitment": ATTENTION_DERIVED_STATEMENT_COMMITMENT,
+            "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
+            "validation_commands": DERIVED_VALIDATION_COMMANDS,
+        }
+    raise D128ResidualAddInputError(
+        "source input and down-projection anchors are mixed: "
+        f"input={input_anchor['kind']} down={down_anchor['kind']}"
+    )
+
+
+def residual_add_anchor_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    pair = (
+        payload.get("source_rmsnorm_proof_version"),
+        payload.get("source_rmsnorm_statement_commitment"),
+        payload.get("source_down_projection_statement_commitment"),
+        payload.get("source_down_projection_public_instance_commitment"),
+        payload.get("input_activation_commitment"),
+        payload.get("residual_delta_commitment"),
+        payload.get("residual_delta_remainder_sha256"),
+    )
+    synthetic = (
+        SOURCE_RMSNORM_PROOF_VERSION,
+        SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+        SOURCE_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+        SOURCE_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+        INPUT_ACTIVATION_COMMITMENT,
+        RESIDUAL_DELTA_COMMITMENT,
+        ZKAI_D128_RESIDUAL_DELTA_REMAINDER_SHA256,
+    )
+    derived = (
+        ATTENTION_DERIVED_INPUT_PROOF_VERSION,
+        ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT,
+        ATTENTION_DERIVED_DOWN_STATEMENT_COMMITMENT,
+        ATTENTION_DERIVED_DOWN_PUBLIC_INSTANCE_COMMITMENT,
+        ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT,
+        ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT,
+        ATTENTION_DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256,
+    )
+    if pair == synthetic:
+        return {
+            "kind": "synthetic",
+            "source_input": {
+                "kind": "synthetic_rmsnorm",
+                "proof_version": SOURCE_RMSNORM_PROOF_VERSION,
+                "statement_commitment": SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+            },
+            "source_down": {
+                "kind": "synthetic_down_projection",
+                "statement_commitment": SOURCE_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+                "public_instance_commitment": SOURCE_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            },
+            "input_activation_commitment": INPUT_ACTIVATION_COMMITMENT,
+            "residual_delta_commitment": RESIDUAL_DELTA_COMMITMENT,
+            "residual_delta_remainder_sha256": ZKAI_D128_RESIDUAL_DELTA_REMAINDER_SHA256,
+            "output_activation_commitment": OUTPUT_ACTIVATION_COMMITMENT,
+            "residual_add_row_commitment": RESIDUAL_ADD_ROW_COMMITMENT,
+            "proof_native_parameter_commitment": PROOF_NATIVE_PARAMETER_COMMITMENT,
+            "public_instance_commitment": PUBLIC_INSTANCE_COMMITMENT,
+            "statement_commitment": STATEMENT_COMMITMENT,
+            "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
+            "validation_commands": VALIDATION_COMMANDS,
+        }
+    if pair == derived:
+        return {
+            "kind": "attention_derived",
+            "source_input": {
+                "kind": "attention_derived",
+                "proof_version": ATTENTION_DERIVED_INPUT_PROOF_VERSION,
+                "statement_commitment": ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT,
+            },
+            "source_down": {
+                "kind": "attention_derived_down_projection",
+                "statement_commitment": ATTENTION_DERIVED_DOWN_STATEMENT_COMMITMENT,
+                "public_instance_commitment": ATTENTION_DERIVED_DOWN_PUBLIC_INSTANCE_COMMITMENT,
+            },
+            "input_activation_commitment": ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT,
+            "residual_delta_commitment": ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT,
+            "residual_delta_remainder_sha256": ATTENTION_DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256,
+            "output_activation_commitment": ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT,
+            "residual_add_row_commitment": ATTENTION_DERIVED_RESIDUAL_ADD_ROW_COMMITMENT,
+            "proof_native_parameter_commitment": ATTENTION_DERIVED_PROOF_NATIVE_PARAMETER_COMMITMENT,
+            "public_instance_commitment": ATTENTION_DERIVED_PUBLIC_INSTANCE_COMMITMENT,
+            "statement_commitment": ATTENTION_DERIVED_STATEMENT_COMMITMENT,
+            "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
+            "validation_commands": DERIVED_VALIDATION_COMMANDS,
+        }
+    closest = synthetic if payload.get("input_activation_commitment") == INPUT_ACTIVATION_COMMITMENT else None
+    closest_name = "synthetic"
+    if payload.get("input_activation_commitment") == ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT:
+        closest = derived
+        closest_name = "attention_derived"
+    if closest is not None:
+        labels = (
+            "source_rmsnorm_proof_version",
+            "source_rmsnorm_statement_commitment",
+            "source_down_projection_statement_commitment",
+            "source_down_projection_public_instance_commitment",
+            "input_activation_commitment",
+            "residual_delta_commitment",
+            "residual_delta_remainder_sha256",
+        )
+        mismatches = [label for label, actual, expected in zip(labels, pair, closest, strict=True) if actual != expected]
+        raise D128ResidualAddInputError(
+            f"residual-add source anchor is not approved for {closest_name} anchor: {', '.join(mismatches)}"
+        )
+    raise D128ResidualAddInputError("residual-add source anchor is not approved or is mixed")
+
+
+def validate_rmsnorm_source(source: Any) -> None:
+    source_input_anchor(source)
+
+
+def validate_down_source(source: Any) -> None:
+    source_down_anchor(source)
 
 
 def source_input_activation(source: dict[str, Any]) -> list[int]:
-    validate_rmsnorm_source(source)
-    rows = source.get("rows")
-    if not isinstance(rows, list) or len(rows) != WIDTH:
-        raise D128ResidualAddInputError("source RMSNorm row vector mismatch")
-    values: list[int] = []
-    for index, row in enumerate(rows):
-        if not isinstance(row, dict) or "input_q8" not in row:
-            raise D128ResidualAddInputError("source RMSNorm row field mismatch")
-        value = row["input_q8"]
-        require_signed_q8(value, f"source input activation {index}")
-        values.append(value)
-    if sequence_commitment(values, INPUT_ACTIVATION_DOMAIN, [WIDTH]) != source["input_activation_commitment"]:
+    anchor = source_input_anchor(source)
+    if anchor["kind"] == "synthetic_rmsnorm":
+        rows = source.get("rows")
+        if not isinstance(rows, list) or len(rows) != WIDTH:
+            raise D128ResidualAddInputError("source RMSNorm row vector mismatch")
+        values: list[int] = []
+        for index, row in enumerate(rows):
+            if not isinstance(row, dict) or "input_q8" not in row:
+                raise D128ResidualAddInputError("source RMSNorm row field mismatch")
+            value = row["input_q8"]
+            require_signed_q8(value, f"source input activation {index}")
+            values.append(value)
+    else:
+        derived = source.get("derived_input")
+        if not isinstance(derived, dict) or not isinstance(derived.get("values_q8"), list):
+            raise D128ResidualAddInputError("source attention-derived input vector missing")
+        values = []
+        for index, value in enumerate(derived["values_q8"]):
+            require_signed_q8(value, f"source attention-derived input activation {index}")
+            values.append(value)
+    if sequence_commitment(values, INPUT_ACTIVATION_DOMAIN, [WIDTH]) != anchor["input_activation_commitment"]:
         raise D128ResidualAddInputError("source input activation commitment drift")
     return values
 
@@ -424,6 +677,9 @@ def build_rows(input_q8: list[int], residual_delta_q8: list[int]) -> list[dict[s
 def build_payload(rmsnorm_source: dict[str, Any] | None = None, down_source: dict[str, Any] | None = None) -> dict[str, Any]:
     rmsnorm_source = load_rmsnorm_source() if rmsnorm_source is None else rmsnorm_source
     down_source = load_down_source() if down_source is None else down_source
+    anchor = residual_add_anchor(rmsnorm_source, down_source)
+    input_anchor = anchor["source_input"]
+    down_anchor = anchor["source_down"]
     input_q8 = source_input_activation(rmsnorm_source)
     residual_delta_q8, residual_delta_remainder_q8, residual_delta_scale_divisor = source_residual_delta(down_source)
     rows = build_rows(input_q8, residual_delta_q8)
@@ -439,14 +695,14 @@ def build_payload(rmsnorm_source: dict[str, Any] | None = None, down_source: dic
         "verifier_domain": VERIFIER_DOMAIN,
         "width": WIDTH,
         "row_count": WIDTH,
-        "source_rmsnorm_proof_version": SOURCE_RMSNORM_PROOF_VERSION,
-        "source_rmsnorm_statement_commitment": rmsnorm_source["statement_commitment"],
+        "source_rmsnorm_proof_version": input_anchor["proof_version"],
+        "source_rmsnorm_statement_commitment": input_anchor["statement_commitment"],
         "source_down_projection_proof_version": SOURCE_DOWN_PROJECTION_PROOF_VERSION,
-        "source_down_projection_statement_commitment": down_source["statement_commitment"],
-        "source_down_projection_public_instance_commitment": down_source["public_instance_commitment"],
+        "source_down_projection_statement_commitment": down_anchor["statement_commitment"],
+        "source_down_projection_public_instance_commitment": down_anchor["public_instance_commitment"],
         "range_policy": RANGE_POLICY,
-        "input_activation_commitment": rmsnorm_source["input_activation_commitment"],
-        "residual_delta_commitment": down_source["residual_delta_commitment"],
+        "input_activation_commitment": input_anchor["input_activation_commitment"],
+        "residual_delta_commitment": down_anchor["residual_delta_commitment"],
         "residual_delta_scale_divisor": residual_delta_scale_divisor,
         "residual_delta_remainder_sha256": sha256_hex(residual_delta_remainder_q8),
         "output_activation_commitment": output_activation,
@@ -460,9 +716,9 @@ def build_payload(rmsnorm_source: dict[str, Any] | None = None, down_source: dic
         "output_q8": output_q8,
         "rows": rows,
         "non_claims": list(NON_CLAIMS),
-        "proof_verifier_hardening": list(PROOF_VERIFIER_HARDENING),
+        "proof_verifier_hardening": list(anchor["proof_verifier_hardening"]),
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": list(VALIDATION_COMMANDS),
+        "validation_commands": list(anchor["validation_commands"]),
     }
     statement = statement_commitment(payload)
     payload["statement_commitment"] = statement
@@ -489,6 +745,9 @@ def validate_payload(payload: Any) -> None:
         raise D128ResidualAddInputError("residual delta commitment relabeled as full output commitment")
     if payload["input_activation_commitment"] == payload["output_activation_commitment"]:
         raise D128ResidualAddInputError("input activation commitment relabeled as output activation commitment")
+    anchor = residual_add_anchor_from_payload(payload)
+    input_anchor = anchor["source_input"]
+    down_anchor = anchor["source_down"]
     constants = {
         "schema": SCHEMA,
         "decision": DECISION,
@@ -497,23 +756,36 @@ def validate_payload(payload: Any) -> None:
         "verifier_domain": VERIFIER_DOMAIN,
         "width": WIDTH,
         "row_count": WIDTH,
-        "source_rmsnorm_proof_version": SOURCE_RMSNORM_PROOF_VERSION,
-        "source_rmsnorm_statement_commitment": SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+        "source_rmsnorm_proof_version": input_anchor["proof_version"],
+        "source_rmsnorm_statement_commitment": input_anchor["statement_commitment"],
         "source_down_projection_proof_version": SOURCE_DOWN_PROJECTION_PROOF_VERSION,
-        "source_down_projection_statement_commitment": SOURCE_DOWN_PROJECTION_STATEMENT_COMMITMENT,
-        "source_down_projection_public_instance_commitment": SOURCE_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+        "source_down_projection_statement_commitment": down_anchor["statement_commitment"],
+        "source_down_projection_public_instance_commitment": down_anchor["public_instance_commitment"],
         "range_policy": RANGE_POLICY,
-        "input_activation_commitment": INPUT_ACTIVATION_COMMITMENT,
-        "residual_delta_commitment": RESIDUAL_DELTA_COMMITMENT,
+        "input_activation_commitment": anchor["input_activation_commitment"],
+        "residual_delta_commitment": anchor["residual_delta_commitment"],
         "residual_delta_scale_divisor": 512,
+        "residual_delta_remainder_sha256": anchor["residual_delta_remainder_sha256"],
+        "output_activation_commitment": anchor["output_activation_commitment"],
+        "residual_add_row_commitment": anchor["residual_add_row_commitment"],
+        "proof_native_parameter_commitment": anchor["proof_native_parameter_commitment"],
+        "public_instance_commitment": anchor["public_instance_commitment"],
+        "statement_commitment": anchor["statement_commitment"],
         "non_claims": NON_CLAIMS,
-        "proof_verifier_hardening": PROOF_VERIFIER_HARDENING,
+        "proof_verifier_hardening": anchor["proof_verifier_hardening"],
         "next_backend_step": NEXT_BACKEND_STEP,
-        "validation_commands": VALIDATION_COMMANDS,
+        "validation_commands": anchor["validation_commands"],
     }
     for field, expected in constants.items():
         if payload.get(field) != expected:
-            raise D128ResidualAddInputError(f"payload field mismatch: {field}")
+            labels = {
+                "proof_native_parameter_commitment": "proof-native parameter commitment",
+                "public_instance_commitment": "public instance commitment",
+                "residual_add_row_commitment": "residual-add row commitment",
+                "statement_commitment": "statement commitment",
+            }
+            label = labels.get(field, field)
+            raise D128ResidualAddInputError(f"payload field mismatch: {field} ({label})")
     for field in (
         "source_rmsnorm_statement_commitment", "source_down_projection_statement_commitment",
         "source_down_projection_public_instance_commitment", "input_activation_commitment", "residual_delta_commitment",

@@ -20,16 +20,16 @@ before opening or executing frontier issues. The north star is STARK-native
 proof architecture as the backbone for production zkML later; issues are
 hypotheses with explicit GO/NO-GO gates, required artifacts, and non-claims.
 
-Recent attention-derived d128 native down-projection result: the derived
-activation/SwiGLU proof now feeds a native down-projection proof input and proof
-object. The checked derived down-projection proof has `65,536` rows, `58,151`
-proof bytes, a `480,346` byte envelope, and verifies true. The route frontier
-moves to `5 / 6` native-compatible components: RMSNorm public rows,
-RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, and
-down-projection. This is not a regenerated attention-derived RMSNorm-MLP fused
-proof and not a NANOZK benchmark win; residual-add is now the first blocker
-because it is still a statement-chain payload rather than a native component
-proof input.
+Recent attention-derived d128 native residual-add result: the derived d128
+input plus the derived native down-projection proof now feeds a native
+residual-add proof input and proof object. The checked derived residual-add
+proof has `128` rows, `16,042` proof bytes, a `155,655` byte envelope, and
+verifies true. The route frontier moves to `6 / 6` native-compatible
+components: RMSNorm public rows, RMSNorm-to-projection bridge, gate/value
+projection, activation/SwiGLU, down-projection, and residual-add. This is not a
+regenerated attention-derived RMSNorm-MLP fused proof and not a NANOZK benchmark
+win; the first blocker is now producing the missing fused proof input,
+envelope, and binary accounting artifacts over the derived input commitment.
 
 Reproducibility metadata:
 
@@ -48,15 +48,18 @@ Reproducibility metadata:
   `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json`,
   `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv`,
   `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json`,
   `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`,
   and
   `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv`.
 - Reproduce command:
-  `python3 scripts/zkai_d128_down_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv`.
+  `python3 scripts/zkai_d128_residual_add_proof_input.py --rmsnorm-source-json docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json --down-source-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv`.
 - Prove/verify commands:
-  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_residual_add_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json`
   and
-  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`.
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_residual_add_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json`.
 
 Recent d128 compact-preprocessed result: the selected public RMSNorm row and
 projection-bridge relations now have a smaller native Stwo reprove object. The

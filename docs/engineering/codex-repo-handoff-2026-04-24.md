@@ -89,17 +89,17 @@ before opening or executing frontier issues. The north star is STARK-native
 proof architecture as the backbone for production zkML later; issues are
 hypotheses with explicit GO/NO-GO gates, required artifacts, and non-claims.
 
-Latest attention-derived d128 native down-projection result: the derived
-activation/SwiGLU proof now feeds a native down-projection proof input and proof
-object. The checked derived down-projection proof has `65,536` rows, `58,151`
-proof bytes, a `480,346` byte envelope, and verifies true. The route frontier
-moves to `5 / 6` native-compatible components: RMSNorm public rows,
-RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU, and
-down-projection. This is not a regenerated attention-derived RMSNorm-MLP fused
-proof and not a NANOZK benchmark win; residual-add is now the first blocker
-because it is still a statement-chain payload rather than a native component
-proof input. See
-`docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`.
+Latest attention-derived d128 native residual-add result: the derived input and
+derived native down-projection proof now feed a native residual-add proof input
+and proof object. The checked derived residual-add proof has `128` rows,
+`16,042` proof bytes, a `155,655` byte envelope, and verifies true. The route
+frontier moves to `6 / 6` native-compatible components: RMSNorm public rows,
+RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
+down-projection, and residual-add. This is not a regenerated attention-derived
+RMSNorm-MLP fused proof and not a NANOZK benchmark win; the first blocker is now
+the missing fused proof input, proof envelope, and binary accounting artifacts
+over the derived input commitment. See
+`docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`.
 
 ### 1. Publication/default lane
 
@@ -1217,14 +1217,16 @@ Validate with
 
 Current attention-derived native MLP proof-route result: the value-connected
 attention-derived d128 statement chain remains a GO at `199,553` rows, but the
-regenerated native RMSNorm-MLP fused proof is still a checked NO-GO. Only
-`5 / 6` derived slice payloads currently have the native component input shape:
-RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection, and
-activation/SwiGLU, and down-projection. Residual-add is still a statement-chain
-payload that must be parameterized or regenerated as a native component proof
-input. The derived native down-projection proof is `58,151` proof bytes with a
-`480,346` byte envelope and residual-delta commitment
+regenerated native RMSNorm-MLP fused proof is still a checked NO-GO. Now
+`6 / 6` derived slice payloads have the native component input shape: RMSNorm
+public rows, RMSNorm-to-projection bridge, gate/value projection,
+activation/SwiGLU, down-projection, and residual-add. The derived native
+down-projection proof is `58,151` proof bytes with a `480,346` byte envelope and
+residual-delta commitment
 `blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec`.
+The derived native residual-add proof is `16,042` proof bytes with a `155,655`
+byte envelope and output commitment
+`blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9`.
 The existing MLP fused proof consumes the older synthetic input commitment
 `blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78`,
 not the value-derived commitment
@@ -1232,7 +1234,7 @@ not the value-derived commitment
 Evidence:
 `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
 and
-`docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`.
+`docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`.
 Machine-readable evidence:
 `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`
 and
