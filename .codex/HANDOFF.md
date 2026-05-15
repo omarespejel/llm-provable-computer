@@ -1105,6 +1105,30 @@ Machine-readable evidence:
 Validate with
 `python3 scripts/zkai_d128_rmsnorm_mlp_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-gate-2026-05.tsv`.
 
+Current attention-to-RMSNorm/MLP boundary result: the next single-proof route is
+a checked NO-GO until the value handoff is solved. The existing MLP fused proof
+remains positive at `24,832` typed bytes versus `56,976` typed bytes for six
+separate native proof objects, saving `32,144` typed bytes (`56.4167%`). The
+attention-derived d128 statement chain has `199,553` accounted rows, only
+`1.010374x` the MLP fused row surface, but the current value adapter still
+mismatches `124 / 128` target cells with mean absolute error `47.734375`.
+Evidence:
+`docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`.
+Repro metadata: boundary gate schema
+`zkai-d128-attention-rmsnorm-mlp-boundary-gate-v1`, MLP proof backend
+`stwo-d128-rmsnorm-mlp-fused-air-proof-v1`, MLP statement version
+`zkai-d128-rmsnorm-mlp-fused-statement-v1`, value-adapter schema
+`zkai-attention-d128-value-adapter-gate-v1`, attention-derived chain schema
+`zkai-attention-derived-d128-block-statement-chain-gate-v1`, timing mode
+`none; proof-size/row-count/commitment/value-boundary gate only`, source
+evidence set `May 2026 checked artifacts`.
+Machine-readable evidence:
+`docs/engineering/evidence/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05.json`
+and
+`docs/engineering/evidence/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05.tsv`.
+Validate with
+`python3 scripts/zkai_d128_attention_rmsnorm_boundary_gate.py --write-json docs/engineering/evidence/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05.tsv`.
+
 1. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte

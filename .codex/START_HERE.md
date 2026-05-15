@@ -100,8 +100,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 94. `docs/engineering/zkai-d128-gate-value-activation-down-fused-proof-2026-05-15.md`
 95. `docs/engineering/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05-15.md`
 96. `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`
-97. `docs/engineering/reproducibility.md`
-98. `git status --short --branch`
+97. `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`
+98. `docs/engineering/reproducibility.md`
+99. `git status --short --branch`
 
 ## What this repository is now
 
@@ -126,6 +127,12 @@ This repository currently has three live lanes.
      saving `32,144` typed bytes (`56.4167%`). It is not attention plus MLP,
      not a full transformer block, and not a NANOZK benchmark win; see
      `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`.
+   - The current attention-to-RMSNorm/MLP boundary is a checked NO-GO for one
+     value-connected native proof object: the attention-derived d128 statement
+     chain has `199,553` accounted rows (`1.010374x` the MLP fused surface),
+     but the best current value adapter still mismatches `124 / 128` d128 input
+     cells. Treat this as a blocker to solve, not as a failed fusion thesis; see
+     `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`.
    - The d64 gate/value and down-projection slices intentionally use
      fixed-point floor-quotient semantics, not raw projection sums. The
      quotient scale divisors and remainder hashes are now checked in the
