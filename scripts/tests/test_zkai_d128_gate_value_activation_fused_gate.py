@@ -73,6 +73,27 @@ class GateValueActivationFusedGateTests(unittest.TestCase):
             with self.assertRaises(gate.FusedGateError):
                 gate.write_json(link, payload)
 
+    def test_atomic_output_rejects_escape_without_mkdir(self) -> None:
+        payload = gate.build_payload()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            outside_dir = gate.pathlib.Path(temp_dir) / "outside"
+            with self.assertRaises(gate.FusedGateError):
+                gate.write_json(outside_dir / "out.json", payload)
+            self.assertFalse(outside_dir.exists())
+
+    def test_atomic_output_handles_partial_writes(self) -> None:
+        data = b"0123456789abcdef"
+        original_write = gate.os.write
+
+        def partial_write(fd: int, chunk: bytes) -> int:
+            return original_write(fd, chunk[: max(1, len(chunk) // 2)])
+
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
+            path = gate.pathlib.Path(temp_dir) / "partial.bin"
+            with mock.patch.object(gate.os, "write", side_effect=partial_write):
+                gate.write_bytes_atomic(path, data, "partial")
+            self.assertEqual(path.read_bytes(), data)
+
 
 if __name__ == "__main__":
     unittest.main()
