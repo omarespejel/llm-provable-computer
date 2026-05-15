@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-05-15
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `831e4254`
+Mainline reference at refresh: `e9a6d8f5`
 
 ## Immediate orientation
 
@@ -1053,9 +1053,12 @@ Use these in order of authority for current state:
 49. `docs/engineering/zkai-attention-derived-d128-residual-add-2026-05-13.md`
 50. `docs/engineering/zkai-attention-derived-d128-block-statement-chain-2026-05-13.md`
 51. `docs/engineering/zkai-attention-derived-d128-statement-chain-compression-2026-05-13.md`
-51. `docs/engineering/zkai-native-d128-verifier-execution-compression-budget-2026-05-15.md`
-52. `docs/engineering/reproducibility.md`
-53. `git status --short --branch`
+52. `docs/engineering/zkai-native-d128-verifier-execution-compression-budget-2026-05-15.md`
+53. `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`
+54. `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`
+55. `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`
+56. `docs/engineering/reproducibility.md`
+57. `git status --short --branch`
 ## Merge culture
 
 - Start non-trivial work from a clean worktree off `origin/main`.
@@ -1129,19 +1132,49 @@ and
 Validate with
 `python3 scripts/zkai_d128_attention_rmsnorm_boundary_gate.py --write-json docs/engineering/evidence/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05.tsv`.
 
-1. Treat `compact_preprocessed_component_native_reprove` for the selected
+Current value-adapter policy frontier result: the current d128 fixture is a
+checked NO-GO for value-derived attention-to-RMSNorm handoff. The only exact
+`0 / 128` mismatch route is the synthetic index-only target pattern, which is
+forbidden because it ignores attention values. The best admissible checked
+policy is `channelwise_affine_over_tiled_attention`, and it still mismatches
+`106 / 128` cells with mean absolute error `49.796875`. A generous
+per-source-cell repeated lower-bound still mismatches `64 / 128` cells. The
+gate rejects `9 / 9` claim/source/commitment mutations. The next honest
+experiment is to regenerate a d128 RMSNorm input from attention-derived values,
+then rerun the RMSNorm-MLP fused proof and boundary gate. Evidence:
+`docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`.
+Repro metadata: policy frontier schema
+`zkai-d128-value-adapter-policy-frontier-gate-v1`, upstream value-adapter schema
+`zkai-attention-d128-value-adapter-gate-v1`, upstream boundary schema
+`zkai-d128-attention-rmsnorm-mlp-boundary-gate-v1`, timing mode
+`none; policy/value-boundary/mutation gate only`.
+Machine-readable evidence:
+`docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.json`
+and
+`docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.tsv`.
+Validate with
+`python3 scripts/zkai_d128_value_adapter_policy_frontier_gate.py --write-json docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.tsv`.
+
+1. Treat `rmsnorm_mlp_fused` as the current positive MLP-side fusion result:
+   the native fused proof saves `32,144` local typed bytes (`56.4167%`) versus
+   separate RMSNorm, bridge, gate/value, activation, down-projection, and
+   residual-add proof objects. The current attention-to-RMSNorm boundary gate
+   and value-adapter policy frontier prove the immediate single-proof route is
+   blocked by value handoff, not row count: regenerate a value-derived d128
+   fixture before claiming attention plus MLP.
+2. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte
    component-native baseline and the earlier `12,688` typed-byte target. It is
    below NANOZK's paper-reported `6,900` byte row under local typed accounting,
    but the next attack is extending the mechanism to later d128 block relations
    without relabeling this selected public surface as a matched benchmark.
-2. Treat the family-matrix result as landed: default, `2x2`, and `3x3` all now
+3. Treat the family-matrix result as landed: default, `2x2`, and `3x3` all now
    reproduce the same replay-avoidance mechanism on the experimental lane, and
    lead with the growing-in-`N` curve shape rather than any one frontier ratio.
-3. Use issue `#255` only for the explanatory `2x2` constant-surface follow-up;
+4. Use issue `#255` only for the explanatory `2x2` constant-surface follow-up;
    it is not the highest-leverage next paper move ahead of the comparator.
-4. Run the internal hardening packet before making stronger claims:
+5. Run the internal hardening packet before making stronger claims:
    - `scripts/run_tablero_formal_contract_suite.sh`
    - `scripts/run_tablero_hardening_preflight.sh --mode core`
    - `scripts/run_tablero_hardening_preflight.sh --mode deep`
@@ -1149,25 +1182,25 @@ Validate with
     witness/divisibility checks, and the fuzz suite now includes a
     serialized-artifact differential mutator across Phase44D→48 plus
     raw serialized-bundle fuzzing of the full Phase44D→48 against-sources bundle.
-5. Keep SNIP-36 parked until there is a real adapter path from local proof
+6. Keep SNIP-36 parked until there is a real adapter path from local proof
    objects to protocol-native proof facts. It is a deferred design lane, not a
    current paper or hardening blocker.
-6. Broaden review of the experimental backend beyond the current decoding-step
+7. Broaden review of the experimental backend beyond the current decoding-step
    family, now that the disk-backed proof-file tamper matrix, serialized
    Phase12-chain tamper coverage, serialized Phase44D boundary/handoff/bridge/receipt
    coverage, serialized Phase47/48 wrapper coverage, and the honest `8`-step
    multiply/store carry patterns are all checked.
-7. Re-run the experimental Phase44D frontier only after any material AIR or
+8. Re-run the experimental Phase44D frontier only after any material AIR or
    verifier change.
-8. Treat the Phase43 second-boundary result as landed on the emitted source
+9. Treat the Phase43 second-boundary result as landed on the emitted source
    surface, but keep the claim scoped honestly: it is a real second boundary
    with modest verifier-side gains (`1.22x` on the publication row and `6.66x`
    at the checked `1024`-step experimental frontier under median-of-5 timing),
    not a replay-elimination headline on the scale of Phase44D.
-9. Keep the Phase44D second-backend question in the explicit no-go bucket until
+10. Keep the Phase44D second-backend question in the explicit no-go bucket until
    the shipped carry-free path can drive the same benchmark beyond `2` steps or
    another bounded backend lands first.
-10. Treat the first d128 aggregation attempt (`#405`), the two-slice target
+11. Treat the first d128 aggregation attempt (`#405`), the two-slice target
     spike (`#408`), issue `#411` recursive/PCD backend audit, issue `#420`
     route selector, and issue `#581` native two-slice outer-backend audit as
     checked bounded no-gos for local recursive/native outer proof-object
@@ -1186,9 +1219,9 @@ Validate with
     proof-generation-time metrics until a real recursive, PCD, or native outer
     proof object exists; report #430 SNARK and #433 RISC Zero timings only as
     statement-receipt adapter timings under their stated local policies.
-11. Only after those steps decide whether any part of the experimental lane
+12. Only after those steps decide whether any part of the experimental lane
    should be promoted toward the paper/publication surface.
-12. Do not spend more time pushing the current publication/default Phase71
+13. Do not spend more time pushing the current publication/default Phase71
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.

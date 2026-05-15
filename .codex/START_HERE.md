@@ -101,8 +101,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 95. `docs/engineering/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05-15.md`
 96. `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`
 97. `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`
-98. `docs/engineering/reproducibility.md`
-99. `git status --short --branch`
+98. `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`
+99. `docs/engineering/reproducibility.md`
+100. `git status --short --branch`
 
 ## What this repository is now
 
@@ -133,6 +134,13 @@ This repository currently has three live lanes.
      but the best current value adapter still mismatches `124 / 128` d128 input
      cells. Treat this as a blocker to solve, not as a failed fusion thesis; see
      `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`.
+   - The current value-adapter policy frontier strengthens that NO-GO: the
+     exact `0 / 128` mismatch route is the synthetic index-only target pattern,
+     which is forbidden because it ignores attention values. The best
+     admissible checked policy still mismatches `106 / 128` cells, with mean
+     absolute error `49.796875`. The next honest experiment is to regenerate a
+     d128 RMSNorm input from attention-derived values; see
+     `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`.
    - The d64 gate/value and down-projection slices intentionally use
      fixed-point floor-quotient semantics, not raw projection sums. The
      quotient scale divisors and remainder hashes are now checked in the
