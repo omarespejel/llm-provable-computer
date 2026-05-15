@@ -98,8 +98,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 92. `docs/engineering/zkai-d128-gate-value-compact-preprocessed-probe-2026-05-15.md`
 93. `docs/engineering/zkai-d128-gate-value-activation-fused-proof-2026-05-15.md`
 94. `docs/engineering/zkai-d128-gate-value-activation-down-fused-proof-2026-05-15.md`
-95. `docs/engineering/reproducibility.md`
-96. `git status --short --branch`
+95. `docs/engineering/zkai-d128-gate-value-activation-down-residual-fused-proof-2026-05-15.md`
+96. `docs/engineering/reproducibility.md`
+97. `git status --short --branch`
 
 ## What this repository is now
 

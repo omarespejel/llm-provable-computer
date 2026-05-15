@@ -119,7 +119,7 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
 ];
 
 #[derive(Debug, Clone)]
-struct D128ResidualAddEval {
+pub(super) struct D128ResidualAddEval {
     log_size: u32,
 }
 
@@ -566,11 +566,11 @@ fn prove_residual_add_rows(input: &ZkAiD128ResidualAddProofInput) -> Result<Vec<
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(residual_add_trace(input));
+    tree_builder.extend_evals(zkai_d128_residual_add_trace(input));
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(residual_add_trace(input));
+    tree_builder.extend_evals(zkai_d128_residual_add_trace(input));
     tree_builder.commit(channel);
 
     let stark_proof =
@@ -656,19 +656,21 @@ fn residual_add_commitment_roots(
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(residual_add_trace(input));
+    tree_builder.extend_evals(zkai_d128_residual_add_trace(input));
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(residual_add_trace(input));
+    tree_builder.extend_evals(zkai_d128_residual_add_trace(input));
     tree_builder.commit(channel);
 
     commitment_scheme.roots()
 }
 
-fn residual_add_component() -> FrameworkComponent<D128ResidualAddEval> {
+pub(super) fn zkai_d128_residual_add_component_with_allocator(
+    allocator: &mut TraceLocationAllocator,
+) -> FrameworkComponent<D128ResidualAddEval> {
     FrameworkComponent::new(
-        &mut TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_column_ids()),
+        allocator,
         D128ResidualAddEval {
             log_size: D128_RESIDUAL_ADD_LOG_SIZE,
         },
@@ -676,7 +678,15 @@ fn residual_add_component() -> FrameworkComponent<D128ResidualAddEval> {
     )
 }
 
-fn residual_add_trace(
+fn residual_add_component() -> FrameworkComponent<D128ResidualAddEval> {
+    zkai_d128_residual_add_component_with_allocator(
+        &mut TraceLocationAllocator::new_with_preprocessed_columns(
+            &zkai_d128_residual_add_preprocessed_column_ids(),
+        ),
+    )
+}
+
+pub(super) fn zkai_d128_residual_add_trace(
     input: &ZkAiD128ResidualAddProofInput,
 ) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
     let domain = CanonicCoset::new(D128_RESIDUAL_ADD_LOG_SIZE).circle_domain();
@@ -701,7 +711,7 @@ fn residual_add_trace(
         .collect()
 }
 
-fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
+pub(super) fn zkai_d128_residual_add_preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
     COLUMN_IDS.into_iter().map(preprocessed_column_id).collect()
 }
 
