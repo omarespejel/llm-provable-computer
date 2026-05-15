@@ -654,7 +654,7 @@ fn approved_source_gate_value_anchor(
         })
         .ok_or_else(|| {
             activation_swiglu_error(
-                "source gate/value statement commitment, source gate/value public instance commitment, or source gate/value projection output commitment anchor is not approved",
+                "source gate/value projection anchor is not approved: all five source commitment fields must match an approved anchor",
             )
         })
 }
@@ -1413,7 +1413,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("source gate/value statement commitment"));
+            .contains("source gate/value projection anchor is not approved"));
     }
 
     #[test]
@@ -1427,7 +1427,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("source gate/value public instance commitment"));
+            .contains("source gate/value projection anchor is not approved"));
     }
 
     #[test]
@@ -1441,7 +1441,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("source gate/value projection output commitment"));
+            .contains("source gate/value projection anchor is not approved"));
     }
 
     #[test]
