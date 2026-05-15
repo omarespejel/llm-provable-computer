@@ -118,6 +118,22 @@ class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
         with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source public instance commitment drift"):
             BRIDGE.validate_source(source)
 
+    def test_source_validation_rejects_self_consistent_unapproved_source(self) -> None:
+        source = copy.deepcopy(BRIDGE.load_source())
+        source["rows"][0]["normed_q8"] += 1
+        values = [row["normed_q8"] for row in source["rows"]]
+        source["rmsnorm_output_row_commitment"] = BRIDGE.sequence_commitment(
+            values,
+            BRIDGE.SOURCE_RMSNORM_OUTPUT_ROW_DOMAIN,
+        )
+        statement = BRIDGE.source_statement_commitment(source)
+        source["statement_commitment"] = statement
+        source["public_instance_commitment"] = BRIDGE.source_public_instance_commitment(statement)
+        source["proof_native_parameter_commitment"] = BRIDGE.source_proof_native_parameter_commitment(statement)
+
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "source commitment anchor drift"):
+            BRIDGE.validate_source(source)
+
     def test_load_source_accepts_attention_derived_payload_when_self_consistent(self) -> None:
         source = BRIDGE.load_source(DERIVED_RMSNORM_SOURCE)
         self.assertNotEqual(source["statement_commitment"], BRIDGE.SOURCE_RMSNORM_STATEMENT_COMMITMENT)

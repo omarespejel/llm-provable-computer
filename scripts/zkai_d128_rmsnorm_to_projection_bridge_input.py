@@ -44,7 +44,12 @@ SOURCE_RMSNORM_SOURCE_PROOF_BACKEND_VERSION = "synthetic-d128-rmsnorm-source-v1"
 SOURCE_Q8_SCALE = 256
 SOURCE_RMSNORM_STATEMENT_COMMITMENT = "blake2b-256:de944915f2664ac7a893f4ba9a029323f7408eac58bf39170a0935d7832ccbd8"
 SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72"
+SOURCE_RMSNORM_PROOF_NATIVE_PARAMETER_COMMITMENT = "blake2b-256:8d8bded756f3290980eaab322ba986b02c5584bc8348c2ffcfa4e4860a80944c"
 SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT = "blake2b-256:d8b6f5e54e874e46624cb9c9987dbcc42db2aa9fc83d4d7230294fbbccb88b87"
+DERIVED_SOURCE_RMSNORM_STATEMENT_COMMITMENT = "blake2b-256:5abd10e4a7bb9ed3eea14b6ea2beb22caac45c8cb6f6b10928585001d57ad57d"
+DERIVED_SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:21316dfa0e32f91879bf13b85f99e16db0aa4c6e5f91c0dfc106f300c0c50fff"
+DERIVED_SOURCE_RMSNORM_PROOF_NATIVE_PARAMETER_COMMITMENT = "blake2b-256:69c73ae913d221ef9d740ad85de11278c1311c6178e6fea8663d5d60f8a9ebb5"
+DERIVED_SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT = "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9"
 SOURCE_INPUT_ACTIVATION_DOMAIN = "ptvm:zkai:d128-input-activation:v1"
 SOURCE_RMS_SCALE_DOMAIN = "ptvm:zkai:d128-rms-scale:v1"
 SOURCE_RMSNORM_OUTPUT_ROW_DOMAIN = "ptvm:zkai:d128-rmsnorm-output-row:v1"
@@ -104,6 +109,21 @@ DERIVED_VALIDATION_COMMANDS = [
     "just gate",
 ]
 ALLOWED_VALIDATION_COMMANDS = (VALIDATION_COMMANDS, DERIVED_VALIDATION_COMMANDS)
+
+APPROVED_SOURCE_ANCHORS = {
+    (
+        SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+        SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
+        SOURCE_RMSNORM_PROOF_NATIVE_PARAMETER_COMMITMENT,
+        SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT,
+    ),
+    (
+        DERIVED_SOURCE_RMSNORM_STATEMENT_COMMITMENT,
+        DERIVED_SOURCE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
+        DERIVED_SOURCE_RMSNORM_PROOF_NATIVE_PARAMETER_COMMITMENT,
+        DERIVED_SOURCE_RMSNORM_OUTPUT_ROW_COMMITMENT,
+    ),
+}
 
 TSV_COLUMNS = (
     "target_id",
@@ -361,6 +381,14 @@ def validate_source(source: Any) -> None:
         raise D128BridgeInputError("source public instance commitment drift")
     if source["proof_native_parameter_commitment"] != source_proof_native_parameter_commitment(recomputed_statement):
         raise D128BridgeInputError("source proof-native parameter commitment drift")
+    source_anchor = (
+        source["statement_commitment"],
+        source["public_instance_commitment"],
+        source["proof_native_parameter_commitment"],
+        source["rmsnorm_output_row_commitment"],
+    )
+    if source_anchor not in APPROVED_SOURCE_ANCHORS:
+        raise D128BridgeInputError("source commitment anchor drift")
 
 
 def validation_commands_for_source(path: pathlib.Path) -> list[str]:
