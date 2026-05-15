@@ -1,6 +1,8 @@
 import copy
+import hashlib
 import importlib.util
 import json
+import os
 import pathlib
 import tempfile
 import unittest
@@ -128,6 +130,24 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
             loaded = json.loads(json_path.read_text())
             GATE.validate_payload(loaded, context=self.context)
             self.assertTrue(tsv_path.read_text().startswith("decision\tresult"))
+
+    def test_atomic_write_does_not_follow_old_deterministic_temp_symlink(self) -> None:
+        if not hasattr(os, "symlink"):
+            self.skipTest("symlink unavailable")
+        tmp_root = ROOT / "docs" / "engineering" / "evidence"
+        with tempfile.TemporaryDirectory(dir=tmp_root) as tmp:
+            tmp_path = pathlib.Path(tmp)
+            target = tmp_path / "native-mlp-route.json"
+            text = GATE.pretty_json(self.payload) + "\n"
+            old_tmp = target.with_name(
+                f".{target.name}.{hashlib.sha256(text.encode('utf-8')).hexdigest()[:16]}.tmp"
+            )
+            redirected = tmp_path / "redirected.txt"
+            redirected.write_text("do-not-touch", encoding="utf-8")
+            old_tmp.symlink_to(redirected)
+            GATE.atomic_write(target, text)
+            self.assertEqual(redirected.read_text(encoding="utf-8"), "do-not-touch")
+            self.assertEqual(target.read_text(encoding="utf-8"), text)
 
 
 if __name__ == "__main__":
