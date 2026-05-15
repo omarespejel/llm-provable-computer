@@ -1669,6 +1669,55 @@ mod tests {
     }
 
     #[test]
+    fn source_bridge_null_and_omitted_fields_fall_back_to_synthetic_anchor() {
+        let mut omitted: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        omitted
+            .as_object_mut()
+            .expect("object")
+            .remove("source_bridge_statement_commitment");
+        omitted
+            .as_object_mut()
+            .expect("object")
+            .remove("source_bridge_public_instance_commitment");
+        let omitted_input = zkai_d128_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&omitted).expect("json"),
+        )
+        .expect("omitted source bridge fields");
+        assert_eq!(omitted_input.source_bridge_statement_commitment, None);
+        assert_eq!(omitted_input.source_bridge_public_instance_commitment, None);
+        let omitted_anchor =
+            approved_source_bridge_anchor(&omitted_input).expect("omitted source bridge anchor");
+        assert_eq!(
+            omitted_anchor.statement_commitment,
+            ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT
+        );
+        assert_eq!(
+            omitted_anchor.public_instance_commitment,
+            ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT
+        );
+
+        let mut explicit_null: Value = serde_json::from_str(INPUT_JSON).expect("json");
+        explicit_null["source_bridge_statement_commitment"] = Value::Null;
+        explicit_null["source_bridge_public_instance_commitment"] = Value::Null;
+        let null_input = zkai_d128_gate_value_projection_input_from_json_str(
+            &serde_json::to_string(&explicit_null).expect("json"),
+        )
+        .expect("null source bridge fields");
+        assert_eq!(null_input.source_bridge_statement_commitment, None);
+        assert_eq!(null_input.source_bridge_public_instance_commitment, None);
+        let null_anchor =
+            approved_source_bridge_anchor(&null_input).expect("null source bridge anchor");
+        assert_eq!(
+            null_anchor.statement_commitment,
+            ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT
+        );
+        assert_eq!(
+            null_anchor.public_instance_commitment,
+            ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT
+        );
+    }
+
+    #[test]
     fn gate_value_matrix_roots_match_deterministic_generator() {
         assert_eq!(
             matrix_root("gate").expect("gate root"),
@@ -1716,6 +1765,50 @@ mod tests {
         assert!(
             verify_zkai_d128_gate_value_projection_compact_preprocessed_envelope(&envelope)
                 .expect("compact verify")
+        );
+    }
+
+    #[test]
+    fn attention_derived_gate_value_air_proofs_round_trip_and_preserve_source_bridge_fields() {
+        let input = derived_input();
+        let envelope = prove_zkai_d128_gate_value_projection_envelope(&input)
+            .expect("derived gate/value proof");
+        let encoded = serde_json::to_vec(&envelope).expect("derived envelope json");
+        let decoded = zkai_d128_gate_value_projection_envelope_from_json_slice(&encoded)
+            .expect("decoded derived envelope");
+        assert!(verify_zkai_d128_gate_value_projection_envelope(&decoded).expect("verify"));
+        assert_eq!(
+            decoded.input.source_bridge_statement_commitment,
+            input.source_bridge_statement_commitment
+        );
+        assert_eq!(
+            decoded.input.source_bridge_public_instance_commitment,
+            input.source_bridge_public_instance_commitment
+        );
+
+        let compact_envelope =
+            prove_zkai_d128_gate_value_projection_compact_preprocessed_envelope(&input)
+                .expect("derived compact gate/value proof");
+        let compact_encoded =
+            serde_json::to_vec(&compact_envelope).expect("derived compact envelope json");
+        let compact_decoded =
+            zkai_d128_gate_value_projection_compact_preprocessed_envelope_from_json_slice(
+                &compact_encoded,
+            )
+            .expect("decoded derived compact envelope");
+        assert!(
+            verify_zkai_d128_gate_value_projection_compact_preprocessed_envelope(&compact_decoded)
+                .expect("compact verify")
+        );
+        assert_eq!(
+            compact_decoded.input.source_bridge_statement_commitment,
+            input.source_bridge_statement_commitment
+        );
+        assert_eq!(
+            compact_decoded
+                .input
+                .source_bridge_public_instance_commitment,
+            input.source_bridge_public_instance_commitment
         );
     }
 

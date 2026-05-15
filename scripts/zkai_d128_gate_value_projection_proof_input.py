@@ -224,10 +224,6 @@ def source_bridge_anchor(bridge: dict[str, Any]) -> dict[str, Any]:
     )
 
 
-def validation_commands_for_bridge(bridge: dict[str, Any]) -> list[str]:
-    return list(source_bridge_anchor(bridge)["validation_commands"])
-
-
 def parse_blake2b_hex(value: str, label: str) -> bytes:
     if not isinstance(value, str):
         raise GateValueProjectionInputError(f"{label} must be a hex digest")
@@ -526,8 +522,28 @@ def validate_payload(payload: Any) -> None:
         "statement_commitment", "projection_input_q8", "gate_projection_q8", "value_projection_q8", "non_claims",
         "proof_verifier_hardening", "next_backend_step", "validation_commands",
     }
-    if set(payload) != expected_fields:
+    legacy_synthetic_fields = expected_fields - {
+        "source_bridge_statement_commitment",
+        "source_bridge_public_instance_commitment",
+    }
+    if set(payload) == expected_fields:
+        source_bridge = {
+            "statement_commitment": payload.get("source_bridge_statement_commitment"),
+            "public_instance_commitment": payload.get("source_bridge_public_instance_commitment"),
+            "projection_input_row_commitment": payload.get("source_projection_input_row_commitment"),
+        }
+    elif set(payload) == legacy_synthetic_fields:
+        source_bridge = {
+            "statement_commitment": SOURCE_BRIDGE_STATEMENT_COMMITMENT,
+            "public_instance_commitment": SOURCE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+            "projection_input_row_commitment": payload.get("source_projection_input_row_commitment"),
+        }
+    else:
         raise GateValueProjectionInputError("payload field set mismatch")
+    source_anchor = source_bridge_anchor(source_bridge)
+    normalized_payload = dict(payload)
+    normalized_payload["source_bridge_statement_commitment"] = source_anchor["statement_commitment"]
+    normalized_payload["source_bridge_public_instance_commitment"] = source_anchor["public_instance_commitment"]
     constants = {
         "schema": SCHEMA,
         "decision": DECISION,
@@ -552,20 +568,7 @@ def validate_payload(payload: Any) -> None:
             continue
         if payload.get(field) != expected:
             raise GateValueProjectionInputError(f"payload field mismatch: {field}")
-    source_bridge_anchor(
-        {
-            "statement_commitment": payload.get("source_bridge_statement_commitment"),
-            "public_instance_commitment": payload.get("source_bridge_public_instance_commitment"),
-            "projection_input_row_commitment": payload.get("source_projection_input_row_commitment"),
-        }
-    )
-    if payload.get("validation_commands") != validation_commands_for_bridge(
-        {
-            "statement_commitment": payload.get("source_bridge_statement_commitment"),
-            "public_instance_commitment": payload.get("source_bridge_public_instance_commitment"),
-            "projection_input_row_commitment": payload.get("source_projection_input_row_commitment"),
-        }
-    ):
+    if payload.get("validation_commands") != list(source_anchor["validation_commands"]):
         raise GateValueProjectionInputError("validation commands drift")
     if payload["gate_value_projection_output_commitment"] == OUTPUT_ACTIVATION_COMMITMENT:
         raise GateValueProjectionInputError("gate/value projection output relabeled as full output commitment")
@@ -620,7 +623,7 @@ def validate_payload(payload: Any) -> None:
         raise GateValueProjectionInputError("gate/value projection row commitment drift")
     if proof_native_parameter_commitment(payload["gate_matrix_root"], payload["value_matrix_root"]) != payload["proof_native_parameter_commitment"]:
         raise GateValueProjectionInputError("proof-native parameter commitment drift")
-    if statement_commitment(payload) != payload["statement_commitment"]:
+    if statement_commitment(normalized_payload) != payload["statement_commitment"]:
         raise GateValueProjectionInputError("statement commitment drift")
     if public_instance_commitment(payload["statement_commitment"]) != payload["public_instance_commitment"]:
         raise GateValueProjectionInputError("public instance commitment drift")
