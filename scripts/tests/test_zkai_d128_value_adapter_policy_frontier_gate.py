@@ -76,8 +76,7 @@ class D128ValueAdapterPolicyFrontierGateTests(unittest.TestCase):
 
     def test_index_only_admission_rejects_even_if_recommitted(self) -> None:
         payload = self.fresh_payload()
-        policies = payload["policy_frontier"]["policies"]
-        policies[-1]["admissible_as_value_adapter"] = True
+        gate.set_policy_admissible(payload, "index_only_synthetic_target_pattern", True)
         gate.refresh_frontier_commitment(payload)
         with self.assertRaisesRegex(gate.ValueAdapterPolicyFrontierError, "policy frontier drift"):
             gate.validate_payload(payload, context=self.context)
