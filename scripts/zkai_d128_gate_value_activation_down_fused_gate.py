@@ -1,0 +1,661 @@
+#!/usr/bin/env python3
+"""Gate the d128 gate/value + activation + down-projection fused proof result."""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import csv
+import hashlib
+import io
+import json
+import os
+import pathlib
+import stat
+from typing import Any
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
+ACCOUNTING_PATH = EVIDENCE_DIR / "zkai-d128-gate-value-activation-down-fused-binary-accounting-2026-05.json"
+FUSED_ENVELOPE_PATH = EVIDENCE_DIR / "zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json"
+GATE_VALUE_ENVELOPE_PATH = EVIDENCE_DIR / "zkai-d128-gate-value-projection-proof-2026-05.envelope.json"
+ACTIVATION_ENVELOPE_PATH = EVIDENCE_DIR / "zkai-d128-activation-swiglu-proof-2026-05.envelope.json"
+DOWN_ENVELOPE_PATH = EVIDENCE_DIR / "zkai-d128-down-projection-proof-2026-05.envelope.json"
+JSON_OUT = EVIDENCE_DIR / "zkai-d128-gate-value-activation-down-fused-gate-2026-05.json"
+TSV_OUT = EVIDENCE_DIR / "zkai-d128-gate-value-activation-down-fused-gate-2026-05.tsv"
+
+
+def repo_relative_posix(path: pathlib.Path) -> str:
+    return path.relative_to(ROOT).as_posix()
+
+
+EXPECTED_EVIDENCE = {
+    "accounting_json": repo_relative_posix(ACCOUNTING_PATH),
+    "fused_envelope": repo_relative_posix(FUSED_ENVELOPE_PATH),
+    "gate_value_envelope": repo_relative_posix(GATE_VALUE_ENVELOPE_PATH),
+    "activation_envelope": repo_relative_posix(ACTIVATION_ENVELOPE_PATH),
+    "down_projection_envelope": repo_relative_posix(DOWN_ENVELOPE_PATH),
+}
+
+SCHEMA = "zkai-d128-gate-value-activation-down-fused-gate-v1"
+DECISION = "GO_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_TYPED_PROOF_SAVING"
+RESULT = "GO_THREE_COMPONENT_D128_FUSION_SAVES_20016_TYPED_BYTES"
+ROUTE_ID = "native_stwo_d128_gate_value_projection_plus_activation_swiglu_plus_down_projection_fused"
+QUESTION = (
+    "Does the adjacent native Stwo fusion saving survive when the d128 surface "
+    "extends from gate/value + activation into down-projection?"
+)
+CLAIM_BOUNDARY = (
+    "FUSED_D128_GATE_VALUE_PLUS_ACTIVATION_PLUS_DOWN_PROJECTION_SAVES_TYPED_PROOF_BYTES_"
+    "VS_THREE_SEPARATE_NATIVE_OBJECTS_NOT_A_FULL_BLOCK_PROOF_NOT_A_NANOZK_BENCHMARK"
+)
+FIRST_BLOCKER = (
+    "The fused proof covers gate/value, activation/SwiGLU, and down-projection, but still does not "
+    "cover residual-add or the full d128 transformer block output statement."
+)
+NEXT_RESEARCH_STEP = (
+    "add residual-add or a lookup-heavy sidecar and check whether the shared proof-plumbing saving persists"
+)
+
+FUSED_ROLE = "fused_gate_value_activation_down"
+GATE_VALUE_ROLE = "separate_gate_value"
+ACTIVATION_ROLE = "separate_activation_swiglu"
+DOWN_ROLE = "separate_down_projection"
+
+EXPECTED_ROLES = {
+    "zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json": {
+        "role": FUSED_ROLE,
+        "proof_backend_version": "stwo-d128-gate-value-activation-down-fused-air-proof-v1",
+        "statement_version": "zkai-d128-gate-value-activation-down-fused-statement-v1",
+        "proof_json_size_bytes": 69_386,
+        "local_typed_bytes": 19_680,
+        "envelope_json_size_bytes": 633_646,
+    },
+    "zkai-d128-gate-value-projection-proof-2026-05.envelope.json": {
+        "role": GATE_VALUE_ROLE,
+        "proof_backend_version": "stwo-d128-gate-value-projection-air-proof-v1",
+        "statement_version": "zkai-d128-gate-value-projection-statement-v1",
+        "proof_json_size_bytes": 57_930,
+        "local_typed_bytes": 16_360,
+        "envelope_json_size_bytes": 483_523,
+    },
+    "zkai-d128-activation-swiglu-proof-2026-05.envelope.json": {
+        "role": ACTIVATION_ROLE,
+        "proof_backend_version": "stwo-d128-activation-swiglu-air-proof-v1",
+        "statement_version": "zkai-d128-activation-swiglu-statement-v1",
+        "proof_json_size_bytes": 24_449,
+        "local_typed_bytes": 6_920,
+        "envelope_json_size_bytes": 226_819,
+    },
+    "zkai-d128-down-projection-proof-2026-05.envelope.json": {
+        "role": DOWN_ROLE,
+        "proof_backend_version": "stwo-d128-down-projection-air-proof-v1",
+        "statement_version": "zkai-d128-down-projection-statement-v1",
+        "proof_json_size_bytes": 58_136,
+        "local_typed_bytes": 16_416,
+        "envelope_json_size_bytes": 480_007,
+    },
+}
+
+EXPECTED_GROUPED = {
+    FUSED_ROLE: {
+        "fixed_overhead": 48,
+        "fri_decommitments": 12_576,
+        "fri_samples": 800,
+        "oods_samples": 832,
+        "queries_values": 624,
+        "trace_decommitments": 4_800,
+    },
+    GATE_VALUE_ROLE: {
+        "fixed_overhead": 48,
+        "fri_decommitments": 10_656,
+        "fri_samples": 720,
+        "oods_samples": 352,
+        "queries_values": 264,
+        "trace_decommitments": 4_320,
+    },
+    ACTIVATION_ROLE: {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3_232,
+        "fri_samples": 416,
+        "oods_samples": 416,
+        "queries_values": 312,
+        "trace_decommitments": 2_496,
+    },
+    DOWN_ROLE: {
+        "fixed_overhead": 48,
+        "fri_decommitments": 10_656,
+        "fri_samples": 736,
+        "oods_samples": 320,
+        "queries_values": 240,
+        "trace_decommitments": 4_416,
+    },
+}
+
+EXPECTED_GROUPED_DELTA_BYTES = {
+    "fixed_overhead": -96,
+    "fri_decommitments": -11_968,
+    "fri_samples": -1_072,
+    "oods_samples": -256,
+    "queries_values": -192,
+    "trace_decommitments": -6_432,
+}
+
+EXPECTED_AGGREGATE = {
+    "profiles_checked": 1,
+    "gate_value_row_count": 131_072,
+    "activation_row_count": 512,
+    "down_projection_row_count": 65_536,
+    "fused_total_row_count": 197_120,
+    "separate_proof_json_size_bytes": 140_515,
+    "fused_proof_json_size_bytes": 69_386,
+    "json_saving_vs_separate_bytes": 71_129,
+    "json_saving_ratio_vs_separate": 0.506202,
+    "json_ratio_vs_separate": 0.493798,
+    "separate_local_typed_bytes": 39_696,
+    "fused_local_typed_bytes": 19_680,
+    "typed_saving_vs_separate_bytes": 20_016,
+    "typed_saving_ratio_vs_separate": 0.504232,
+    "typed_ratio_vs_separate": 0.495768,
+    "comparison_status": "fused_three_component_native_proof_saves_typed_bytes_vs_separate_objects",
+}
+
+MECHANISM = (
+    "gate/value, activation/SwiGLU, and down-projection are proved as three components inside one native Stwo proof",
+    "the fused proof shares one preprocessed tree and one base tree across all three adjacent components",
+    "the source handoff is explicit from gate/value outputs to activation inputs and from activation hidden output to down-projection input",
+    "the saving is dominated by shared FRI and trace Merkle opening/decommitment plumbing",
+    "the same publication-v1 PCS profile is used; no verifier query weakening is claimed",
+)
+
+NON_CLAIMS = (
+    "not a full d128 transformer-block proof",
+    "not residual-add proof",
+    "not a NANOZK proof-size win",
+    "not a matched external zkML benchmark",
+    "not recursion or proof-carrying data",
+    "not private parameter-opening proof",
+    "not upstream Stwo proof serialization",
+    "not timing evidence",
+    "not full transformer inference",
+    "not production-ready zkML",
+)
+
+VALIDATION_COMMANDS = (
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- prove docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_fused_proof -- build-input docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_fused_proof -- prove docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_fused_proof -- verify docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-binary-accounting-2026-05.json",
+    "python3 scripts/zkai_d128_gate_value_activation_down_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_activation_down_fused_gate",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_gate_value_activation_fused_proof --lib",
+    "git diff --check",
+    "just gate-fast",
+    "just gate",
+)
+
+TSV_COLUMNS = (
+    "route_id",
+    "fused_total_row_count",
+    "fused_local_typed_bytes",
+    "separate_local_typed_bytes",
+    "typed_saving_vs_separate_bytes",
+    "typed_ratio_vs_separate",
+    "fused_proof_json_size_bytes",
+    "separate_proof_json_size_bytes",
+    "json_saving_vs_separate_bytes",
+    "comparison_status",
+)
+
+MUTATION_NAMES = (
+    "schema_relabeling",
+    "decision_overclaim",
+    "result_overclaim",
+    "claim_boundary_overclaim",
+    "fused_typed_metric_smuggling",
+    "separate_typed_metric_smuggling",
+    "typed_saving_metric_smuggling",
+    "typed_ratio_metric_smuggling",
+    "json_saving_metric_smuggling",
+    "comparison_status_overclaim",
+    "grouped_delta_smuggling",
+    "role_backend_version_relabeling",
+    "non_claim_removed",
+    "mechanism_removed",
+    "first_blocker_removed",
+    "validation_command_drift",
+    "evidence_path_drift",
+    "payload_commitment_relabeling",
+    "unknown_field_injection",
+)
+
+
+class FusedDownGateError(ValueError):
+    pass
+
+
+def rounded_ratio(numerator: int, denominator: int) -> float:
+    if denominator == 0:
+        raise FusedDownGateError("ratio denominator must be non-zero")
+    return round(numerator / denominator, 6)
+
+
+def canonical_bytes(value: Any) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+
+
+def reject_json_constant(value: str) -> None:
+    raise FusedDownGateError(f"non-finite JSON constant rejected: {value}")
+
+
+def payload_commitment(payload: dict[str, Any]) -> str:
+    canonical = copy.deepcopy(payload)
+    canonical.pop("payload_commitment", None)
+    return "sha256:" + hashlib.sha256(canonical_bytes(canonical)).hexdigest()
+
+
+def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple[Any, int]:
+    if path.is_symlink():
+        raise FusedDownGateError(f"{label} must not be a symlink: {path}")
+    resolved = path.resolve(strict=False)
+    try:
+        resolved.relative_to(EVIDENCE_DIR.resolve())
+    except ValueError as err:
+        raise FusedDownGateError(f"{label} escapes evidence directory: {path}") from err
+    try:
+        pre = resolved.lstat()
+    except OSError as err:
+        raise FusedDownGateError(f"failed to stat {label}: {err}") from err
+    if not stat.S_ISREG(pre.st_mode):
+        raise FusedDownGateError(f"{label} is not a regular file: {path}")
+    try:
+        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    except OSError as err:
+        raise FusedDownGateError(f"failed to open {label}: {err}") from err
+    try:
+        post = os.fstat(fd)
+        if (pre.st_dev, pre.st_ino) != (post.st_dev, post.st_ino):
+            raise FusedDownGateError(f"{label} changed while opening: {path}")
+        if post.st_size > max_bytes:
+            raise FusedDownGateError(f"{label} exceeds max size: got {post.st_size} bytes")
+        raw = os.read(fd, max_bytes + 1)
+    finally:
+        if fd is not None:
+            os.close(fd)
+    if len(raw) > max_bytes:
+        raise FusedDownGateError(f"{label} exceeds max size: got at least {len(raw)} bytes")
+    if len(raw) != post.st_size:
+        raise FusedDownGateError(f"{label} changed while reading: {path}")
+    try:
+        return json.loads(raw.decode("utf-8"), parse_constant=reject_json_constant), int(post.st_size)
+    except (UnicodeDecodeError, json.JSONDecodeError) as err:
+        raise FusedDownGateError(f"{label} is not JSON: {err}") from err
+
+
+def read_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
+    payload, _size = read_json_with_size(path, max_bytes, label)
+    return payload
+
+
+def require_dict(value: Any, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise FusedDownGateError(f"{label} must be object")
+    return value
+
+
+def rows_by_role(accounting: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    rows = accounting.get("rows")
+    if not isinstance(rows, list) or len(rows) != 4:
+        raise FusedDownGateError("accounting rows must contain fused plus three separate rows")
+    result: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        row = require_dict(row, "accounting row")
+        relative = row.get("evidence_relative_path")
+        expected = EXPECTED_ROLES.get(relative)
+        if expected is None:
+            raise FusedDownGateError(f"unexpected accounting row path: {relative}")
+        result[expected["role"]] = row
+    if set(result) != {FUSED_ROLE, GATE_VALUE_ROLE, ACTIVATION_ROLE, DOWN_ROLE}:
+        raise FusedDownGateError("accounting roles are incomplete")
+    return result
+
+
+def validate_accounting_row(row: dict[str, Any], expected: dict[str, Any]) -> None:
+    metadata = require_dict(row.get("envelope_metadata"), "row envelope metadata")
+    for field in ("proof_backend_version", "statement_version"):
+        if metadata.get(field) != expected[field]:
+            raise FusedDownGateError(f"{expected['role']} {field} drift")
+    if row.get("proof_json_size_bytes") != expected["proof_json_size_bytes"]:
+        raise FusedDownGateError(f"{expected['role']} proof JSON byte drift")
+    accounting = require_dict(row.get("local_binary_accounting"), "local binary accounting")
+    if accounting.get("typed_size_estimate_bytes") != expected["local_typed_bytes"]:
+        raise FusedDownGateError(f"{expected['role']} typed byte drift")
+    grouped = require_dict(accounting.get("grouped_reconstruction"), "grouped reconstruction")
+    if grouped != EXPECTED_GROUPED[expected["role"]]:
+        raise FusedDownGateError(f"{expected['role']} grouped reconstruction drift")
+
+
+def validate_envelope(path: pathlib.Path, expected: dict[str, Any]) -> dict[str, Any]:
+    envelope_raw, envelope_size = read_json_with_size(path, 16 * 1024 * 1024, expected["role"])
+    if envelope_size != expected["envelope_json_size_bytes"]:
+        raise FusedDownGateError(f"{expected['role']} envelope byte-size drift")
+    envelope = require_dict(envelope_raw, expected["role"])
+    if envelope.get("proof_backend_version") != expected["proof_backend_version"]:
+        raise FusedDownGateError(f"{expected['role']} envelope backend version drift")
+    if envelope.get("statement_version") != expected["statement_version"]:
+        raise FusedDownGateError(f"{expected['role']} envelope statement version drift")
+    proof = envelope.get("proof")
+    if not isinstance(proof, list) or len(proof) != expected["proof_json_size_bytes"]:
+        raise FusedDownGateError(f"{expected['role']} proof payload size drift")
+    return envelope
+
+
+def validate_handoff(fused: dict[str, Any], gate: dict[str, Any], activation: dict[str, Any], down: dict[str, Any]) -> None:
+    fused_input = require_dict(fused.get("input"), "fused input")
+    gate_input = require_dict(gate.get("input"), "gate/value input")
+    activation_input = require_dict(activation.get("input"), "activation input")
+    down_input = require_dict(down.get("input"), "down projection input")
+    checks = (
+        ("gate_value_statement_commitment", gate_input.get("statement_commitment")),
+        ("gate_value_public_instance_commitment", gate_input.get("public_instance_commitment")),
+        ("activation_statement_commitment", activation_input.get("statement_commitment")),
+        ("activation_public_instance_commitment", activation_input.get("public_instance_commitment")),
+        ("down_projection_statement_commitment", down_input.get("statement_commitment")),
+        ("down_projection_public_instance_commitment", down_input.get("public_instance_commitment")),
+        ("gate_value_projection_output_commitment", gate_input.get("gate_value_projection_output_commitment")),
+        ("hidden_activation_commitment", activation_input.get("hidden_activation_commitment")),
+        ("residual_delta_commitment", down_input.get("residual_delta_commitment")),
+    )
+    for field, expected in checks:
+        if fused_input.get(field) != expected:
+            raise FusedDownGateError(f"fused handoff field drift: {field}")
+    if activation_input.get("source_gate_value_projection_output_commitment") != gate_input.get("gate_value_projection_output_commitment"):
+        raise FusedDownGateError("activation source output does not match gate/value output")
+    if activation_input.get("gate_projection_q8") != gate_input.get("gate_projection_q8"):
+        raise FusedDownGateError("activation gate vector does not match gate/value output")
+    if activation_input.get("value_projection_q8") != gate_input.get("value_projection_q8"):
+        raise FusedDownGateError("activation value vector does not match gate/value output")
+    if down_input.get("source_activation_swiglu_statement_commitment") != activation_input.get("statement_commitment"):
+        raise FusedDownGateError("down source statement does not match activation statement")
+    if down_input.get("source_activation_swiglu_public_instance_commitment") != activation_input.get("public_instance_commitment"):
+        raise FusedDownGateError("down source public instance does not match activation public instance")
+    if down_input.get("source_hidden_activation_commitment") != activation_input.get("hidden_activation_commitment"):
+        raise FusedDownGateError("down source hidden commitment does not match activation hidden commitment")
+    if down_input.get("hidden_q8") != activation_input.get("hidden_q8"):
+        raise FusedDownGateError("down hidden vector does not match activation hidden output")
+
+
+def build_payload() -> dict[str, Any]:
+    accounting = require_dict(read_json(ACCOUNTING_PATH, 4 * 1024 * 1024, "accounting JSON"), "accounting JSON")
+    role_rows = rows_by_role(accounting)
+    for _relative, expected in EXPECTED_ROLES.items():
+        validate_accounting_row(role_rows[expected["role"]], expected)
+
+    fused_envelope = validate_envelope(FUSED_ENVELOPE_PATH, EXPECTED_ROLES[FUSED_ENVELOPE_PATH.name])
+    gate_envelope = validate_envelope(GATE_VALUE_ENVELOPE_PATH, EXPECTED_ROLES[GATE_VALUE_ENVELOPE_PATH.name])
+    activation_envelope = validate_envelope(ACTIVATION_ENVELOPE_PATH, EXPECTED_ROLES[ACTIVATION_ENVELOPE_PATH.name])
+    down_envelope = validate_envelope(DOWN_ENVELOPE_PATH, EXPECTED_ROLES[DOWN_ENVELOPE_PATH.name])
+    validate_handoff(fused_envelope, gate_envelope, activation_envelope, down_envelope)
+
+    fused = EXPECTED_ROLES[FUSED_ENVELOPE_PATH.name]
+    gate = EXPECTED_ROLES[GATE_VALUE_ENVELOPE_PATH.name]
+    activation = EXPECTED_ROLES[ACTIVATION_ENVELOPE_PATH.name]
+    down = EXPECTED_ROLES[DOWN_ENVELOPE_PATH.name]
+    separate_typed = gate["local_typed_bytes"] + activation["local_typed_bytes"] + down["local_typed_bytes"]
+    separate_json = gate["proof_json_size_bytes"] + activation["proof_json_size_bytes"] + down["proof_json_size_bytes"]
+    fused_input = require_dict(fused_envelope.get("input"), "fused envelope input")
+    aggregate = {
+        "profiles_checked": 1,
+        "gate_value_row_count": fused_input.get("gate_value_row_count"),
+        "activation_row_count": fused_input.get("activation_row_count"),
+        "down_projection_row_count": fused_input.get("down_projection_row_count"),
+        "fused_total_row_count": (
+            fused_input.get("gate_value_row_count", 0)
+            + fused_input.get("activation_row_count", 0)
+            + fused_input.get("down_projection_row_count", 0)
+        ),
+        "separate_proof_json_size_bytes": separate_json,
+        "fused_proof_json_size_bytes": fused["proof_json_size_bytes"],
+        "json_saving_vs_separate_bytes": separate_json - fused["proof_json_size_bytes"],
+        "json_saving_ratio_vs_separate": rounded_ratio(separate_json - fused["proof_json_size_bytes"], separate_json),
+        "json_ratio_vs_separate": rounded_ratio(fused["proof_json_size_bytes"], separate_json),
+        "separate_local_typed_bytes": separate_typed,
+        "fused_local_typed_bytes": fused["local_typed_bytes"],
+        "typed_saving_vs_separate_bytes": separate_typed - fused["local_typed_bytes"],
+        "typed_saving_ratio_vs_separate": rounded_ratio(separate_typed - fused["local_typed_bytes"], separate_typed),
+        "typed_ratio_vs_separate": rounded_ratio(fused["local_typed_bytes"], separate_typed),
+        "comparison_status": EXPECTED_AGGREGATE["comparison_status"],
+    }
+    if aggregate != EXPECTED_AGGREGATE:
+        raise FusedDownGateError(f"aggregate drift: {aggregate}")
+
+    grouped_delta = {}
+    for key, fused_value in EXPECTED_GROUPED[FUSED_ROLE].items():
+        grouped_delta[key] = (
+            fused_value
+            - EXPECTED_GROUPED[GATE_VALUE_ROLE][key]
+            - EXPECTED_GROUPED[ACTIVATION_ROLE][key]
+            - EXPECTED_GROUPED[DOWN_ROLE][key]
+        )
+    if grouped_delta != EXPECTED_GROUPED_DELTA_BYTES:
+        raise FusedDownGateError("grouped delta drift")
+
+    payload = {
+        "schema": SCHEMA,
+        "decision": DECISION,
+        "result": RESULT,
+        "route_id": ROUTE_ID,
+        "question": QUESTION,
+        "claim_boundary": CLAIM_BOUNDARY,
+        "first_blocker": FIRST_BLOCKER,
+        "next_research_step": NEXT_RESEARCH_STEP,
+        "aggregate": aggregate,
+        "roles": copy.deepcopy(EXPECTED_ROLES),
+        "grouped_breakdown": copy.deepcopy(EXPECTED_GROUPED),
+        "grouped_delta_vs_separate_bytes": grouped_delta,
+        "mechanism": list(MECHANISM),
+        "non_claims": list(NON_CLAIMS),
+        "validation_commands": list(VALIDATION_COMMANDS),
+        "evidence": copy.deepcopy(EXPECTED_EVIDENCE),
+        "mutation_inventory": {
+            "case_count": len(MUTATION_NAMES),
+            "cases": list(MUTATION_NAMES),
+        },
+    }
+    payload["payload_commitment"] = payload_commitment(payload)
+    validate_payload(payload)
+    return payload
+
+
+def validate_payload(payload: dict[str, Any]) -> None:
+    expected_top = {
+        "schema", "decision", "result", "route_id", "question", "claim_boundary",
+        "first_blocker", "next_research_step", "aggregate", "roles", "grouped_breakdown",
+        "grouped_delta_vs_separate_bytes", "mechanism", "non_claims", "validation_commands",
+        "evidence", "mutation_inventory", "payload_commitment",
+    }
+    allowed_top = expected_top | {"mutation_result"}
+    if not expected_top.issubset(payload) or not set(payload).issubset(allowed_top):
+        raise FusedDownGateError(f"payload keys drift: {sorted(set(payload) ^ allowed_top)}")
+    constants = {
+        "schema": SCHEMA,
+        "decision": DECISION,
+        "result": RESULT,
+        "route_id": ROUTE_ID,
+        "question": QUESTION,
+        "claim_boundary": CLAIM_BOUNDARY,
+        "first_blocker": FIRST_BLOCKER,
+        "next_research_step": NEXT_RESEARCH_STEP,
+    }
+    for key, expected in constants.items():
+        if payload.get(key) != expected:
+            raise FusedDownGateError(f"{key} drift")
+    if payload.get("aggregate") != EXPECTED_AGGREGATE:
+        raise FusedDownGateError("aggregate mismatch")
+    if payload.get("roles") != EXPECTED_ROLES:
+        raise FusedDownGateError("roles mismatch")
+    if payload.get("grouped_breakdown") != EXPECTED_GROUPED:
+        raise FusedDownGateError("grouped breakdown mismatch")
+    if payload.get("grouped_delta_vs_separate_bytes") != EXPECTED_GROUPED_DELTA_BYTES:
+        raise FusedDownGateError("grouped delta mismatch")
+    if payload.get("mechanism") != list(MECHANISM):
+        raise FusedDownGateError("mechanism mismatch")
+    if payload.get("non_claims") != list(NON_CLAIMS):
+        raise FusedDownGateError("non-claims mismatch")
+    if payload.get("validation_commands") != list(VALIDATION_COMMANDS):
+        raise FusedDownGateError("validation commands mismatch")
+    if payload.get("evidence") != EXPECTED_EVIDENCE:
+        raise FusedDownGateError("evidence path mismatch")
+    inventory = require_dict(payload.get("mutation_inventory"), "mutation inventory")
+    if inventory.get("case_count") != len(MUTATION_NAMES) or inventory.get("cases") != list(MUTATION_NAMES):
+        raise FusedDownGateError("mutation inventory mismatch")
+    if "all_mutations_rejected" in inventory and inventory["all_mutations_rejected"] is not True:
+        raise FusedDownGateError("mutation inventory rejection status mismatch")
+    if "mutation_result" in payload:
+        result = require_dict(payload["mutation_result"], "mutation result")
+        if result.get("case_count") != len(MUTATION_NAMES) or result.get("all_mutations_rejected") is not True:
+            raise FusedDownGateError("mutation result mismatch")
+    if payload.get("payload_commitment") != payload_commitment(payload):
+        raise FusedDownGateError("payload commitment mismatch")
+
+
+def mutation_cases() -> list[tuple[str, Any]]:
+    return [
+        ("schema_relabeling", lambda p: p.__setitem__("schema", "v2")),
+        ("decision_overclaim", lambda p: p.__setitem__("decision", "BREAKTHROUGH_FULL_BLOCK")),
+        ("result_overclaim", lambda p: p.__setitem__("result", "NANOZK_WIN")),
+        ("claim_boundary_overclaim", lambda p: p.__setitem__("claim_boundary", "FULL_D128_BLOCK_PROOF")),
+        ("fused_typed_metric_smuggling", lambda p: p["aggregate"].__setitem__("fused_local_typed_bytes", 19_679)),
+        ("separate_typed_metric_smuggling", lambda p: p["aggregate"].__setitem__("separate_local_typed_bytes", 39_697)),
+        ("typed_saving_metric_smuggling", lambda p: p["aggregate"].__setitem__("typed_saving_vs_separate_bytes", 20_017)),
+        ("typed_ratio_metric_smuggling", lambda p: p["aggregate"].__setitem__("typed_ratio_vs_separate", 0.4)),
+        ("json_saving_metric_smuggling", lambda p: p["aggregate"].__setitem__("json_saving_vs_separate_bytes", 80_000)),
+        ("comparison_status_overclaim", lambda p: p["aggregate"].__setitem__("comparison_status", "matched_nanozk_win")),
+        ("grouped_delta_smuggling", lambda p: p["grouped_delta_vs_separate_bytes"].__setitem__("fri_decommitments", -11_967)),
+        ("role_backend_version_relabeling", lambda p: p["roles"][FUSED_ENVELOPE_PATH.name].__setitem__("proof_backend_version", "stwo-d128-full-block-v1")),
+        ("non_claim_removed", lambda p: p.__setitem__("non_claims", p["non_claims"][:-1])),
+        ("mechanism_removed", lambda p: p.__setitem__("mechanism", p["mechanism"][:-1])),
+        ("first_blocker_removed", lambda p: p.__setitem__("first_blocker", "")),
+        ("validation_command_drift", lambda p: p["validation_commands"].__setitem__(0, "cargo test")),
+        ("evidence_path_drift", lambda p: p["evidence"].__setitem__("fused_envelope", "docs/engineering/evidence/other.json")),
+        ("payload_commitment_relabeling", lambda p: p.__setitem__("payload_commitment", "sha256:" + "00" * 32)),
+        ("unknown_field_injection", lambda p: p.__setitem__("unexpected", True)),
+    ]
+
+
+def run_mutations(payload: dict[str, Any]) -> dict[str, Any]:
+    cases = []
+    for name, mutate in mutation_cases():
+        candidate = copy.deepcopy(payload)
+        mutate(candidate)
+        try:
+            validate_payload(candidate)
+        except FusedDownGateError as err:
+            cases.append({"name": name, "rejected": True, "error": str(err)})
+        else:
+            cases.append({"name": name, "rejected": False, "error": None})
+    return {
+        "case_count": len(cases),
+        "all_mutations_rejected": all(case["rejected"] for case in cases),
+        "cases": cases,
+    }
+
+
+def resolve_repo_output_path(path: pathlib.Path, label: str) -> pathlib.Path:
+    candidate = path if path.is_absolute() else ROOT / path
+    if candidate.is_symlink():
+        raise FusedDownGateError(f"{label} output must not be a symlink: {path}")
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise FusedDownGateError(f"{label} output escapes repository: {path}") from err
+    parent = resolved.parent
+    parent.mkdir(parents=True, exist_ok=True)
+    resolved_parent = parent.resolve(strict=True)
+    try:
+        resolved_parent.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise FusedDownGateError(f"{label} output parent escapes repository: {path}") from err
+    resolved = resolved_parent / resolved.name
+    try:
+        existing = resolved.lstat()
+    except FileNotFoundError:
+        return resolved
+    except OSError as err:
+        raise FusedDownGateError(f"failed to stat {label} output: {err}") from err
+    if not stat.S_ISREG(existing.st_mode):
+        raise FusedDownGateError(f"{label} output is not a regular file: {path}")
+    return resolved
+
+
+def write_bytes_atomic(path: pathlib.Path, data: bytes, label: str) -> None:
+    resolved = resolve_repo_output_path(path, label)
+    tmp = resolved.parent / f".{resolved.name}.{os.getpid()}.tmp"
+    fd: int | None = None
+    try:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(tmp, flags, 0o600)
+        total_written = 0
+        while total_written < len(data):
+            total_written += os.write(fd, data[total_written:])
+        os.fsync(fd)
+        os.close(fd)
+        fd = None
+        os.replace(tmp, resolved)
+    except OSError as err:
+        raise FusedDownGateError(f"failed to atomically write {label}: {err}") from err
+    finally:
+        if fd is not None:
+            os.close(fd)
+        try:
+            tmp.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
+    data = (json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
+    write_bytes_atomic(path, data, "gate JSON")
+
+
+def write_tsv(path: pathlib.Path, payload: dict[str, Any]) -> None:
+    row = {column: payload["aggregate"].get(column, payload.get(column)) for column in TSV_COLUMNS}
+    row["route_id"] = payload["route_id"]
+    handle = io.StringIO(newline="")
+    writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t")
+    writer.writeheader()
+    writer.writerow(row)
+    write_bytes_atomic(path, handle.getvalue().encode("utf-8"), "gate TSV")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--write-json", type=pathlib.Path, default=None)
+    parser.add_argument("--write-tsv", type=pathlib.Path, default=None)
+    args = parser.parse_args()
+
+    payload = build_payload()
+    mutation_result = run_mutations(payload)
+    payload["mutation_result"] = mutation_result
+    payload["mutation_inventory"] = {
+        "case_count": len(MUTATION_NAMES),
+        "all_mutations_rejected": mutation_result["all_mutations_rejected"],
+        "cases": list(MUTATION_NAMES),
+    }
+    payload["payload_commitment"] = payload_commitment(payload)
+    if not mutation_result["all_mutations_rejected"]:
+        raise FusedDownGateError("not all mutations rejected")
+    validate_payload(payload)
+
+    if args.write_json:
+        write_json(args.write_json, payload)
+    if args.write_tsv:
+        write_tsv(args.write_tsv, payload)
+    if not args.write_json and not args.write_tsv:
+        print(json.dumps(payload, indent=2, sort_keys=True, allow_nan=False))
+
+
+if __name__ == "__main__":
+    main()

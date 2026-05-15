@@ -28,6 +28,14 @@ use super::d128_native_activation_swiglu_proof::{
     ZKAI_D128_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
     ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT, ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
 };
+use super::d128_native_down_projection_proof::{
+    zkai_d128_down_projection_component_with_allocator,
+    zkai_d128_down_projection_input_from_json_str,
+    zkai_d128_down_projection_preprocessed_column_ids, zkai_d128_down_projection_trace,
+    ZkAiD128DownProjectionProofInput, ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION,
+    ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT, ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
+};
 use super::d128_native_gate_value_projection_proof::{
     prove_zkai_d128_gate_value_projection_envelope,
     zkai_d128_gate_value_projection_component_with_allocator,
@@ -56,6 +64,20 @@ pub const ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_DECISION: &str =
     "GO_D128_GATE_VALUE_ACTIVATION_FUSED_AIR_PROOF";
 pub const ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_ROUTE_ID: &str =
     "native_stwo_d128_gate_value_projection_plus_activation_swiglu_fused";
+pub const ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_INPUT_SCHEMA: &str =
+    "zkai-d128-gate-value-activation-down-fused-air-proof-input-v1";
+pub const ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_INPUT_DECISION: &str =
+    "GO_INPUT_FOR_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_AIR_PROOF";
+pub const ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_PROOF_VERSION: &str =
+    "stwo-d128-gate-value-activation-down-fused-air-proof-v1";
+pub const ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_STATEMENT_VERSION: &str =
+    "zkai-d128-gate-value-activation-down-fused-statement-v1";
+pub const ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_SEMANTIC_SCOPE: &str =
+    "d128_gate_value_activation_and_down_projection_rows_fused_in_one_native_stwo_proof";
+pub const ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_DECISION: &str =
+    "GO_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_AIR_PROOF";
+pub const ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_ROUTE_ID: &str =
+    "native_stwo_d128_gate_value_projection_plus_activation_swiglu_plus_down_projection_fused";
 pub const ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_JSON_BYTES: usize = 2_097_152;
 pub const ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_ENVELOPE_JSON_BYTES: usize = 8_388_608;
 pub const ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_PROOF_BYTES: usize = 67_108_864;
@@ -64,15 +86,23 @@ const WIDTH: usize = 128;
 const FF_DIM: usize = 512;
 const GATE_VALUE_ROWS: usize = 131_072;
 const ACTIVATION_ROWS: usize = 512;
+const DOWN_PROJECTION_ROWS: usize = 65_536;
 const EXPECTED_TRACE_COMMITMENT_TREES: usize = 2;
 const EXPECTED_PROOF_COMMITMENTS: usize = 3;
 const STATEMENT_DOMAIN: &str = "ptvm:zkai:d128-gate-value-activation-fused-statement:v1";
+const STATEMENT_DOWN_DOMAIN: &str = "ptvm:zkai:d128-gate-value-activation-down-fused-statement:v1";
 const PUBLIC_INSTANCE_DOMAIN: &str =
     "ptvm:zkai:d128-gate-value-activation-fused-public-instance:v1";
+const PUBLIC_INSTANCE_DOWN_DOMAIN: &str =
+    "ptvm:zkai:d128-gate-value-activation-down-fused-public-instance:v1";
 const PROOF_NATIVE_PARAMETER_DOMAIN: &str =
     "ptvm:zkai:d128-gate-value-activation-fused-proof-native-parameter:v1";
+const PROOF_NATIVE_PARAMETER_DOWN_DOMAIN: &str =
+    "ptvm:zkai:d128-gate-value-activation-down-fused-proof-native-parameter:v1";
 const PROOF_NATIVE_PARAMETER_KIND: &str =
     "d128-gate-value-activation-fused-proof-native-parameter-v1";
+const PROOF_NATIVE_PARAMETER_DOWN_KIND: &str =
+    "d128-gate-value-activation-down-fused-proof-native-parameter-v1";
 const EXPECTED_TARGET_ID: &str = "rmsnorm-swiglu-residual-d128-v1";
 const EXPECTED_REQUIRED_BACKEND_VERSION: &str = "stwo-rmsnorm-swiglu-residual-d128-v1";
 const EXPECTED_VERIFIER_DOMAIN: &str = "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1";
@@ -91,6 +121,19 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "just gate",
 ];
 
+const EXPECTED_DOWN_VALIDATION_COMMANDS: &[&str] = &[
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_fused_proof -- build-input docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_fused_proof -- prove docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_fused_proof -- verify docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_d128_gate_value_activation_down_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-gate-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_gate_value_activation_down_fused_gate",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_gate_value_activation_fused_proof --lib",
+    "git diff --check",
+    "just gate-fast",
+    "just gate",
+];
+
 const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not a full d128 transformer-block proof",
     "not a NANOZK proof-size win",
@@ -103,6 +146,20 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
     "not production-ready zkML",
 ];
 
+const EXPECTED_DOWN_NON_CLAIMS: &[&str] = &[
+    "not a full d128 transformer-block proof",
+    "not a NANOZK proof-size win",
+    "not a matched external zkML benchmark",
+    "not recursion or proof-carrying data",
+    "not private parameter-opening proof",
+    "not upstream Stwo proof serialization",
+    "not timing evidence",
+    "not full transformer inference",
+    "not residual-add proof",
+    "not binding the full d128 output_activation_commitment",
+    "not production-ready zkML",
+];
+
 const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "nested gate/value input validated before fused proof construction",
     "nested activation/SwiGLU input validated before fused proof construction",
@@ -111,6 +168,23 @@ const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "component preprocessed columns allocated once across dense and activation components",
     "base trace columns allocated once across dense and activation components",
     "single native Stwo proof shares commitment/opening plumbing across both adjacent components",
+    "statement/public-instance/native-parameter commitments recomputed before proof verification",
+    "fixed PCS verifier profile before commitment-root recomputation",
+    "bounded proof bytes before JSON deserialization",
+    "commitment-vector length check before commitment indexing",
+];
+
+const EXPECTED_DOWN_PROOF_VERIFIER_HARDENING: &[&str] = &[
+    "nested gate/value input validated before fused proof construction",
+    "nested activation/SwiGLU input validated before fused proof construction",
+    "nested down-projection input validated before fused proof construction",
+    "activation source commitments must match the gate/value statement and public instance",
+    "activation source gate/value vectors must match the gate/value projection output vectors",
+    "down-projection source commitments must match the activation statement and public instance",
+    "down-projection hidden vector must match the activation hidden output vector",
+    "component preprocessed columns allocated once across dense, activation, and down-projection components",
+    "base trace columns allocated once across dense, activation, and down-projection components",
+    "single native Stwo proof shares commitment/opening plumbing across three adjacent components",
     "statement/public-instance/native-parameter commitments recomputed before proof verification",
     "fixed PCS verifier profile before commitment-root recomputation",
     "bounded proof bytes before JSON deserialization",
@@ -162,6 +236,57 @@ pub struct ZkAiD128GateValueActivationFusedEnvelope {
     pub proof: Vec<u8>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ZkAiD128GateValueActivationDownFusedInput {
+    pub schema: String,
+    pub decision: String,
+    pub route_id: String,
+    pub target_id: String,
+    pub required_backend_version: String,
+    pub verifier_domain: String,
+    pub width: usize,
+    pub ff_dim: usize,
+    pub gate_value_row_count: usize,
+    pub activation_row_count: usize,
+    pub down_projection_row_count: usize,
+    pub gate_value_proof_version: String,
+    pub activation_swiglu_proof_version: String,
+    pub down_projection_proof_version: String,
+    pub gate_value_statement_commitment: String,
+    pub gate_value_public_instance_commitment: String,
+    pub activation_statement_commitment: String,
+    pub activation_public_instance_commitment: String,
+    pub down_projection_statement_commitment: String,
+    pub down_projection_public_instance_commitment: String,
+    pub gate_projection_output_commitment: String,
+    pub value_projection_output_commitment: String,
+    pub gate_value_projection_output_commitment: String,
+    pub hidden_activation_commitment: String,
+    pub residual_delta_commitment: String,
+    pub statement_commitment: String,
+    pub public_instance_commitment: String,
+    pub proof_native_parameter_commitment: String,
+    pub gate_value_input: ZkAiD128GateValueProjectionProofInput,
+    pub activation_input: ZkAiD128ActivationSwiGluProofInput,
+    pub down_projection_input: ZkAiD128DownProjectionProofInput,
+    pub non_claims: Vec<String>,
+    pub proof_verifier_hardening: Vec<String>,
+    pub validation_commands: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ZkAiD128GateValueActivationDownFusedEnvelope {
+    pub proof_backend: StarkProofBackend,
+    pub proof_backend_version: String,
+    pub statement_version: String,
+    pub semantic_scope: String,
+    pub decision: String,
+    pub input: ZkAiD128GateValueActivationDownFusedInput,
+    pub proof: Vec<u8>,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct D128GateValueActivationFusedProofPayload {
@@ -197,6 +322,39 @@ pub fn zkai_d128_gate_value_activation_fused_envelope_from_json_slice(
     let envelope: ZkAiD128GateValueActivationFusedEnvelope = serde_json::from_slice(raw_json)
         .map_err(|error| VmError::Serialization(error.to_string()))?;
     validate_fused_envelope(&envelope)?;
+    Ok(envelope)
+}
+
+pub fn zkai_d128_gate_value_activation_down_fused_input_from_json_str(
+    raw_json: &str,
+) -> Result<ZkAiD128GateValueActivationDownFusedInput> {
+    if raw_json.len() > ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_JSON_BYTES {
+        return Err(fused_error(format!(
+            "down-fused input JSON exceeds max size: got {} bytes, limit {} bytes",
+            raw_json.len(),
+            ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_JSON_BYTES
+        )));
+    }
+    let input: ZkAiD128GateValueActivationDownFusedInput = serde_json::from_str(raw_json)
+        .map_err(|error| VmError::Serialization(error.to_string()))?;
+    validate_down_fused_input(&input)?;
+    Ok(input)
+}
+
+pub fn zkai_d128_gate_value_activation_down_fused_envelope_from_json_slice(
+    raw_json: &[u8],
+) -> Result<ZkAiD128GateValueActivationDownFusedEnvelope> {
+    if raw_json.len() > ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_ENVELOPE_JSON_BYTES {
+        return Err(fused_error(format!(
+            "down-fused envelope JSON exceeds max size: got {} bytes, limit {} bytes",
+            raw_json.len(),
+            ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_ENVELOPE_JSON_BYTES
+        )));
+    }
+    let envelope: ZkAiD128GateValueActivationDownFusedEnvelope =
+        serde_json::from_slice(raw_json)
+            .map_err(|error| VmError::Serialization(error.to_string()))?;
+    validate_down_fused_envelope(&envelope)?;
     Ok(envelope)
 }
 
@@ -260,6 +418,78 @@ pub fn build_zkai_d128_gate_value_activation_fused_input(
     Ok(input)
 }
 
+pub fn build_zkai_d128_gate_value_activation_down_fused_input(
+    gate_value_input: ZkAiD128GateValueProjectionProofInput,
+    activation_input: ZkAiD128ActivationSwiGluProofInput,
+    down_projection_input: ZkAiD128DownProjectionProofInput,
+) -> Result<ZkAiD128GateValueActivationDownFusedInput> {
+    validate_nested_gate_value_input(&gate_value_input)?;
+    validate_nested_activation_input(&activation_input)?;
+    validate_nested_down_projection_input(&down_projection_input)?;
+    validate_handoff(&gate_value_input, &activation_input)?;
+    validate_down_handoff(&activation_input, &down_projection_input)?;
+    let mut input = ZkAiD128GateValueActivationDownFusedInput {
+        schema: ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_INPUT_SCHEMA.to_string(),
+        decision: ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_INPUT_DECISION.to_string(),
+        route_id: ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_ROUTE_ID.to_string(),
+        target_id: gate_value_input.target_id.clone(),
+        required_backend_version: gate_value_input.required_backend_version.clone(),
+        verifier_domain: gate_value_input.verifier_domain.clone(),
+        width: WIDTH,
+        ff_dim: FF_DIM,
+        gate_value_row_count: GATE_VALUE_ROWS,
+        activation_row_count: ACTIVATION_ROWS,
+        down_projection_row_count: DOWN_PROJECTION_ROWS,
+        gate_value_proof_version: ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_VERSION.to_string(),
+        activation_swiglu_proof_version: ZKAI_D128_ACTIVATION_SWIGLU_PROOF_VERSION.to_string(),
+        down_projection_proof_version: ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION.to_string(),
+        gate_value_statement_commitment: gate_value_input.statement_commitment.clone(),
+        gate_value_public_instance_commitment: gate_value_input.public_instance_commitment.clone(),
+        activation_statement_commitment: activation_input.statement_commitment.clone(),
+        activation_public_instance_commitment: activation_input.public_instance_commitment.clone(),
+        down_projection_statement_commitment: down_projection_input.statement_commitment.clone(),
+        down_projection_public_instance_commitment: down_projection_input
+            .public_instance_commitment
+            .clone(),
+        gate_projection_output_commitment: gate_value_input
+            .gate_projection_output_commitment
+            .clone(),
+        value_projection_output_commitment: gate_value_input
+            .value_projection_output_commitment
+            .clone(),
+        gate_value_projection_output_commitment: gate_value_input
+            .gate_value_projection_output_commitment
+            .clone(),
+        hidden_activation_commitment: activation_input.hidden_activation_commitment.clone(),
+        residual_delta_commitment: down_projection_input.residual_delta_commitment.clone(),
+        statement_commitment: String::new(),
+        public_instance_commitment: String::new(),
+        proof_native_parameter_commitment: String::new(),
+        gate_value_input,
+        activation_input,
+        down_projection_input,
+        non_claims: EXPECTED_DOWN_NON_CLAIMS
+            .iter()
+            .map(|value| value.to_string())
+            .collect(),
+        proof_verifier_hardening: EXPECTED_DOWN_PROOF_VERIFIER_HARDENING
+            .iter()
+            .map(|value| value.to_string())
+            .collect(),
+        validation_commands: EXPECTED_DOWN_VALIDATION_COMMANDS
+            .iter()
+            .map(|value| value.to_string())
+            .collect(),
+    };
+    input.statement_commitment = down_statement_commitment(&input)?;
+    input.public_instance_commitment =
+        down_public_instance_commitment(&input.statement_commitment)?;
+    input.proof_native_parameter_commitment =
+        down_proof_native_parameter_commitment(&input.statement_commitment)?;
+    validate_down_fused_input(&input)?;
+    Ok(input)
+}
+
 pub fn prove_zkai_d128_gate_value_activation_fused_envelope(
     input: &ZkAiD128GateValueActivationFusedInput,
 ) -> Result<ZkAiD128GateValueActivationFusedEnvelope> {
@@ -275,11 +505,33 @@ pub fn prove_zkai_d128_gate_value_activation_fused_envelope(
     })
 }
 
+pub fn prove_zkai_d128_gate_value_activation_down_fused_envelope(
+    input: &ZkAiD128GateValueActivationDownFusedInput,
+) -> Result<ZkAiD128GateValueActivationDownFusedEnvelope> {
+    validate_down_fused_input(input)?;
+    Ok(ZkAiD128GateValueActivationDownFusedEnvelope {
+        proof_backend: StarkProofBackend::Stwo,
+        proof_backend_version: ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_PROOF_VERSION.to_string(),
+        statement_version: ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_STATEMENT_VERSION.to_string(),
+        semantic_scope: ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_SEMANTIC_SCOPE.to_string(),
+        decision: ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_DECISION.to_string(),
+        input: input.clone(),
+        proof: prove_down_fused_components(input)?,
+    })
+}
+
 pub fn verify_zkai_d128_gate_value_activation_fused_envelope(
     envelope: &ZkAiD128GateValueActivationFusedEnvelope,
 ) -> Result<bool> {
     validate_fused_envelope(envelope)?;
     verify_fused_components(&envelope.input, &envelope.proof)
+}
+
+pub fn verify_zkai_d128_gate_value_activation_down_fused_envelope(
+    envelope: &ZkAiD128GateValueActivationDownFusedEnvelope,
+) -> Result<bool> {
+    validate_down_fused_envelope(envelope)?;
+    verify_down_fused_components(&envelope.input, &envelope.proof)
 }
 
 pub fn prove_zkai_d128_activation_swiglu_separate_envelope_for_fused_baseline(
@@ -451,6 +703,196 @@ fn validate_fused_input(input: &ZkAiD128GateValueActivationFusedInput) -> Result
     )
 }
 
+fn validate_down_fused_envelope(
+    envelope: &ZkAiD128GateValueActivationDownFusedEnvelope,
+) -> Result<()> {
+    if envelope.proof_backend != StarkProofBackend::Stwo {
+        return Err(fused_error("down-fused proof backend is not Stwo"));
+    }
+    expect_eq(
+        &envelope.proof_backend_version,
+        ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_PROOF_VERSION,
+        "down-fused proof backend version",
+    )?;
+    expect_eq(
+        &envelope.statement_version,
+        ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_STATEMENT_VERSION,
+        "down-fused statement version",
+    )?;
+    expect_eq(
+        &envelope.semantic_scope,
+        ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_SEMANTIC_SCOPE,
+        "down-fused semantic scope",
+    )?;
+    expect_eq(
+        &envelope.decision,
+        ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_DECISION,
+        "down-fused decision",
+    )?;
+    if envelope.proof.is_empty() {
+        return Err(fused_error("down-fused proof bytes must not be empty"));
+    }
+    if envelope.proof.len() > ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_PROOF_BYTES {
+        return Err(fused_error(format!(
+            "down-fused proof bytes exceed bounded verifier limit: got {}, max {}",
+            envelope.proof.len(),
+            ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_PROOF_BYTES
+        )));
+    }
+    validate_down_fused_input(&envelope.input)
+}
+
+fn validate_down_fused_input(input: &ZkAiD128GateValueActivationDownFusedInput) -> Result<()> {
+    expect_eq(
+        &input.schema,
+        ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_INPUT_SCHEMA,
+        "down-fused schema",
+    )?;
+    expect_eq(
+        &input.decision,
+        ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_INPUT_DECISION,
+        "down-fused input decision",
+    )?;
+    expect_eq(
+        &input.route_id,
+        ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_ROUTE_ID,
+        "down-fused route id",
+    )?;
+    expect_eq(&input.target_id, EXPECTED_TARGET_ID, "down-fused target id")?;
+    expect_eq(
+        &input.required_backend_version,
+        EXPECTED_REQUIRED_BACKEND_VERSION,
+        "down-fused required backend version",
+    )?;
+    expect_eq(
+        &input.verifier_domain,
+        EXPECTED_VERIFIER_DOMAIN,
+        "down-fused verifier domain",
+    )?;
+    expect_usize(input.width, WIDTH, "down-fused width")?;
+    expect_usize(input.ff_dim, FF_DIM, "down-fused ff dim")?;
+    expect_usize(
+        input.gate_value_row_count,
+        GATE_VALUE_ROWS,
+        "down-fused gate/value row count",
+    )?;
+    expect_usize(
+        input.activation_row_count,
+        ACTIVATION_ROWS,
+        "down-fused activation row count",
+    )?;
+    expect_usize(
+        input.down_projection_row_count,
+        DOWN_PROJECTION_ROWS,
+        "down-fused down-projection row count",
+    )?;
+    expect_eq(
+        &input.gate_value_proof_version,
+        ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_VERSION,
+        "down-fused gate/value proof version",
+    )?;
+    expect_eq(
+        &input.activation_swiglu_proof_version,
+        ZKAI_D128_ACTIVATION_SWIGLU_PROOF_VERSION,
+        "down-fused activation/SwiGLU proof version",
+    )?;
+    expect_eq(
+        &input.down_projection_proof_version,
+        ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION,
+        "down-fused down-projection proof version",
+    )?;
+    expect_eq(
+        &input.gate_value_statement_commitment,
+        ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
+        "down-fused gate/value statement commitment",
+    )?;
+    expect_eq(
+        &input.gate_value_public_instance_commitment,
+        ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+        "down-fused gate/value public instance commitment",
+    )?;
+    expect_eq(
+        &input.activation_statement_commitment,
+        ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+        "down-fused activation statement commitment",
+    )?;
+    expect_eq(
+        &input.activation_public_instance_commitment,
+        ZKAI_D128_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+        "down-fused activation public instance commitment",
+    )?;
+    expect_eq(
+        &input.down_projection_statement_commitment,
+        ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+        "down-fused down-projection statement commitment",
+    )?;
+    expect_eq(
+        &input.down_projection_public_instance_commitment,
+        ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+        "down-fused down-projection public instance commitment",
+    )?;
+    expect_eq(
+        &input.gate_projection_output_commitment,
+        ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT,
+        "down-fused gate projection output commitment",
+    )?;
+    expect_eq(
+        &input.value_projection_output_commitment,
+        ZKAI_D128_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "down-fused value projection output commitment",
+    )?;
+    expect_eq(
+        &input.gate_value_projection_output_commitment,
+        ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        "down-fused gate/value projection output commitment",
+    )?;
+    expect_eq(
+        &input.hidden_activation_commitment,
+        ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
+        "down-fused hidden activation commitment",
+    )?;
+    expect_eq(
+        &input.residual_delta_commitment,
+        ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
+        "down-fused residual delta commitment",
+    )?;
+    expect_vec_eq(
+        &input.non_claims,
+        EXPECTED_DOWN_NON_CLAIMS,
+        "down-fused non-claims",
+    )?;
+    expect_vec_eq(
+        &input.proof_verifier_hardening,
+        EXPECTED_DOWN_PROOF_VERIFIER_HARDENING,
+        "down-fused proof verifier hardening",
+    )?;
+    expect_vec_eq(
+        &input.validation_commands,
+        EXPECTED_DOWN_VALIDATION_COMMANDS,
+        "down-fused validation commands",
+    )?;
+    validate_nested_gate_value_input(&input.gate_value_input)?;
+    validate_nested_activation_input(&input.activation_input)?;
+    validate_nested_down_projection_input(&input.down_projection_input)?;
+    validate_handoff(&input.gate_value_input, &input.activation_input)?;
+    validate_down_handoff(&input.activation_input, &input.down_projection_input)?;
+    expect_eq(
+        &input.statement_commitment,
+        &down_statement_commitment(input)?,
+        "down-fused statement commitment",
+    )?;
+    expect_eq(
+        &input.public_instance_commitment,
+        &down_public_instance_commitment(&input.statement_commitment)?,
+        "down-fused public instance commitment",
+    )?;
+    expect_eq(
+        &input.proof_native_parameter_commitment,
+        &down_proof_native_parameter_commitment(&input.statement_commitment)?,
+        "down-fused proof-native parameter commitment",
+    )
+}
+
 fn validate_nested_gate_value_input(input: &ZkAiD128GateValueProjectionProofInput) -> Result<()> {
     let raw =
         serde_json::to_string(input).map_err(|error| VmError::Serialization(error.to_string()))?;
@@ -462,6 +904,13 @@ fn validate_nested_activation_input(input: &ZkAiD128ActivationSwiGluProofInput) 
     let raw =
         serde_json::to_string(input).map_err(|error| VmError::Serialization(error.to_string()))?;
     zkai_d128_activation_swiglu_input_from_json_str(&raw)?;
+    Ok(())
+}
+
+fn validate_nested_down_projection_input(input: &ZkAiD128DownProjectionProofInput) -> Result<()> {
+    let raw =
+        serde_json::to_string(input).map_err(|error| VmError::Serialization(error.to_string()))?;
+    zkai_d128_down_projection_input_from_json_str(&raw)?;
     Ok(())
 }
 
@@ -517,6 +966,48 @@ fn validate_handoff(
     if activation_input.value_projection_q8 != gate_value_input.value_projection_q8 {
         return Err(fused_error(
             "activation source value vector does not match gate/value output vector",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_down_handoff(
+    activation_input: &ZkAiD128ActivationSwiGluProofInput,
+    down_projection_input: &ZkAiD128DownProjectionProofInput,
+) -> Result<()> {
+    expect_eq(
+        &down_projection_input.target_id,
+        &activation_input.target_id,
+        "down-projection target id matches activation target id",
+    )?;
+    expect_eq(
+        &down_projection_input.required_backend_version,
+        &activation_input.required_backend_version,
+        "down-projection required backend version matches activation required backend version",
+    )?;
+    expect_eq(
+        &down_projection_input.verifier_domain,
+        &activation_input.verifier_domain,
+        "down-projection verifier domain matches activation verifier domain",
+    )?;
+    expect_eq(
+        &down_projection_input.source_activation_swiglu_statement_commitment,
+        &activation_input.statement_commitment,
+        "down-projection source activation statement commitment",
+    )?;
+    expect_eq(
+        &down_projection_input.source_activation_swiglu_public_instance_commitment,
+        &activation_input.public_instance_commitment,
+        "down-projection source activation public instance commitment",
+    )?;
+    expect_eq(
+        &down_projection_input.source_hidden_activation_commitment,
+        &activation_input.hidden_activation_commitment,
+        "down-projection source hidden activation commitment",
+    )?;
+    if down_projection_input.hidden_q8 != activation_input.hidden_q8 {
+        return Err(fused_error(
+            "down-projection hidden vector does not match activation hidden output vector",
         ));
     }
     Ok(())
@@ -620,6 +1111,122 @@ fn verify_fused_components(
         .map_err(|error| fused_error(format!("fused STARK verification failed: {error}")))
 }
 
+fn prove_down_fused_components(
+    input: &ZkAiD128GateValueActivationDownFusedInput,
+) -> Result<Vec<u8>> {
+    let gate_rows = zkai_d128_gate_value_projection_rows(&input.gate_value_input)?;
+    let preprocessed_ids = down_fused_preprocessed_column_ids()?;
+    let mut allocator = TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_ids);
+    let gate_value_component =
+        zkai_d128_gate_value_projection_component_with_allocator(&mut allocator);
+    let activation_component = zkai_d128_activation_swiglu_component_with_allocator(&mut allocator);
+    let down_projection_component =
+        zkai_d128_down_projection_component_with_allocator(&mut allocator);
+    let config = publication_v1_pcs_config();
+    let max_constraint_log_degree_bound = gate_value_component
+        .max_constraint_log_degree_bound()
+        .max(activation_component.max_constraint_log_degree_bound())
+        .max(down_projection_component.max_constraint_log_degree_bound());
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(
+            max_constraint_log_degree_bound + config.fri_config.log_blowup_factor + 1,
+        )
+        .circle_domain()
+        .half_coset,
+    );
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+
+    let fused_trace = down_fused_trace(
+        &gate_rows,
+        &input.activation_input,
+        &input.down_projection_input,
+    )?;
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(fused_trace.clone());
+    tree_builder.commit(channel);
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(fused_trace);
+    tree_builder.commit(channel);
+
+    let components: [&dyn ComponentProver<SimdBackend>; 3] = [
+        &gate_value_component,
+        &activation_component,
+        &down_projection_component,
+    ];
+    let stark_proof =
+        prove::<SimdBackend, Blake2sM31MerkleChannel>(&components, channel, commitment_scheme)
+            .map_err(|error| {
+                fused_error(format!(
+                    "d128 gate/value plus activation plus down fused AIR proving failed: {error}"
+                ))
+            })?;
+    serde_json::to_vec(&D128GateValueActivationFusedProofPayload { stark_proof })
+        .map_err(|error| VmError::Serialization(error.to_string()))
+}
+
+fn verify_down_fused_components(
+    input: &ZkAiD128GateValueActivationDownFusedInput,
+    proof: &[u8],
+) -> Result<bool> {
+    let payload: D128GateValueActivationFusedProofPayload =
+        serde_json::from_slice(proof).map_err(|error| VmError::Serialization(error.to_string()))?;
+    let stark_proof = payload.stark_proof;
+    let config = validate_fused_pcs_config(stark_proof.config)?;
+    let preprocessed_ids = down_fused_preprocessed_column_ids()?;
+    let mut allocator = TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_ids);
+    let gate_value_component =
+        zkai_d128_gate_value_projection_component_with_allocator(&mut allocator);
+    let activation_component = zkai_d128_activation_swiglu_component_with_allocator(&mut allocator);
+    let down_projection_component =
+        zkai_d128_down_projection_component_with_allocator(&mut allocator);
+    let components: Vec<&dyn Component> = vec![
+        &gate_value_component,
+        &activation_component,
+        &down_projection_component,
+    ];
+    let sizes = Components {
+        components: components.clone(),
+        n_preprocessed_columns: preprocessed_ids.len(),
+    }
+    .column_log_sizes();
+    if sizes.len() != EXPECTED_TRACE_COMMITMENT_TREES {
+        return Err(fused_error(format!(
+            "internal down-fused component tree count drift: got {}, expected {}",
+            sizes.len(),
+            EXPECTED_TRACE_COMMITMENT_TREES
+        )));
+    }
+    if stark_proof.commitments.len() != EXPECTED_PROOF_COMMITMENTS {
+        return Err(fused_error(format!(
+            "down-fused proof commitment count mismatch: got {}, expected exactly {}",
+            stark_proof.commitments.len(),
+            EXPECTED_PROOF_COMMITMENTS
+        )));
+    }
+    let expected_roots = down_fused_commitment_roots(input, config)?;
+    if stark_proof.commitments[0] != expected_roots[0] {
+        return Err(fused_error(
+            "preprocessed commitment does not match checked down-fused component rows",
+        ));
+    }
+    if stark_proof.commitments[1] != expected_roots[1] {
+        return Err(fused_error(
+            "base commitment does not match checked down-fused component rows",
+        ));
+    }
+    let channel = &mut Blake2sM31Channel::default();
+    let commitment_scheme = &mut CommitmentSchemeVerifier::<Blake2sM31MerkleChannel>::new(config);
+    commitment_scheme.commit(stark_proof.commitments[0], &sizes[0], channel);
+    commitment_scheme.commit(stark_proof.commitments[1], &sizes[1], channel);
+    verify(&components, channel, commitment_scheme, stark_proof)
+        .map(|_| true)
+        .map_err(|error| fused_error(format!("down-fused STARK verification failed: {error}")))
+}
+
 fn fused_commitment_roots(
     input: &ZkAiD128GateValueActivationFusedInput,
     config: PcsConfig,
@@ -661,6 +1268,54 @@ fn fused_commitment_roots(
     Ok(commitment_scheme.roots())
 }
 
+fn down_fused_commitment_roots(
+    input: &ZkAiD128GateValueActivationDownFusedInput,
+    config: PcsConfig,
+) -> Result<
+    stwo::core::pcs::TreeVec<
+        <Blake2sM31MerkleHasher as stwo::core::vcs_lifted::merkle_hasher::MerkleHasherLifted>::Hash,
+    >,
+> {
+    let gate_rows = zkai_d128_gate_value_projection_rows(&input.gate_value_input)?;
+    let preprocessed_ids = down_fused_preprocessed_column_ids()?;
+    let mut allocator = TraceLocationAllocator::new_with_preprocessed_columns(&preprocessed_ids);
+    let gate_value_component =
+        zkai_d128_gate_value_projection_component_with_allocator(&mut allocator);
+    let activation_component = zkai_d128_activation_swiglu_component_with_allocator(&mut allocator);
+    let down_projection_component =
+        zkai_d128_down_projection_component_with_allocator(&mut allocator);
+    let max_constraint_log_degree_bound = gate_value_component
+        .max_constraint_log_degree_bound()
+        .max(activation_component.max_constraint_log_degree_bound())
+        .max(down_projection_component.max_constraint_log_degree_bound());
+    let twiddles = SimdBackend::precompute_twiddles(
+        CanonicCoset::new(
+            max_constraint_log_degree_bound + config.fri_config.log_blowup_factor + 1,
+        )
+        .circle_domain()
+        .half_coset,
+    );
+    let channel = &mut Blake2sM31Channel::default();
+    let mut commitment_scheme =
+        CommitmentSchemeProver::<SimdBackend, Blake2sM31MerkleChannel>::new(config, &twiddles);
+    commitment_scheme.set_store_polynomials_coefficients();
+
+    let trace = down_fused_trace(
+        &gate_rows,
+        &input.activation_input,
+        &input.down_projection_input,
+    )?;
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace.clone());
+    tree_builder.commit(channel);
+
+    let mut tree_builder = commitment_scheme.tree_builder();
+    tree_builder.extend_evals(trace);
+    tree_builder.commit(channel);
+
+    Ok(commitment_scheme.roots())
+}
+
 fn fused_trace(
     gate_rows: &[super::d128_native_gate_value_projection_proof::D128GateValueProjectionMulRow],
     activation_input: &ZkAiD128ActivationSwiGluProofInput,
@@ -678,6 +1333,25 @@ fn fused_trace(
     Ok(trace)
 }
 
+fn down_fused_trace(
+    gate_rows: &[super::d128_native_gate_value_projection_proof::D128GateValueProjectionMulRow],
+    activation_input: &ZkAiD128ActivationSwiGluProofInput,
+    down_projection_input: &ZkAiD128DownProjectionProofInput,
+) -> Result<
+    stwo::core::ColumnVec<
+        stwo::prover::poly::circle::CircleEvaluation<
+            SimdBackend,
+            stwo::core::fields::m31::BaseField,
+            stwo::prover::poly::BitReversedOrder,
+        >,
+    >,
+> {
+    let mut trace = zkai_d128_gate_value_projection_trace(gate_rows)?;
+    trace.extend(zkai_d128_activation_swiglu_trace(activation_input)?);
+    trace.extend(zkai_d128_down_projection_trace(down_projection_input)?);
+    Ok(trace)
+}
+
 fn fused_preprocessed_column_ids() -> Result<Vec<PreProcessedColumnId>> {
     let mut ids = zkai_d128_gate_value_projection_preprocessed_column_ids();
     ids.extend(zkai_d128_activation_swiglu_preprocessed_column_ids());
@@ -686,6 +1360,22 @@ fn fused_preprocessed_column_ids() -> Result<Vec<PreProcessedColumnId>> {
         if !seen.insert(id.id.clone()) {
             return Err(fused_error(format!(
                 "duplicate fused preprocessed column id: {}",
+                id.id
+            )));
+        }
+    }
+    Ok(ids)
+}
+
+fn down_fused_preprocessed_column_ids() -> Result<Vec<PreProcessedColumnId>> {
+    let mut ids = zkai_d128_gate_value_projection_preprocessed_column_ids();
+    ids.extend(zkai_d128_activation_swiglu_preprocessed_column_ids());
+    ids.extend(zkai_d128_down_projection_preprocessed_column_ids());
+    let mut seen = BTreeSet::new();
+    for id in &ids {
+        if !seen.insert(id.id.clone()) {
+            return Err(fused_error(format!(
+                "duplicate down-fused preprocessed column id: {}",
                 id.id
             )));
         }
@@ -725,6 +1415,36 @@ fn statement_commitment(input: &ZkAiD128GateValueActivationFusedInput) -> Result
     Ok(blake2b_commitment_bytes(&bytes, STATEMENT_DOMAIN))
 }
 
+fn down_statement_commitment(input: &ZkAiD128GateValueActivationDownFusedInput) -> Result<String> {
+    let payload = serde_json::json!({
+        "activation_public_instance_commitment": input.activation_public_instance_commitment,
+        "activation_row_count": input.activation_row_count,
+        "activation_statement_commitment": input.activation_statement_commitment,
+        "activation_swiglu_proof_version": input.activation_swiglu_proof_version,
+        "down_projection_proof_version": input.down_projection_proof_version,
+        "down_projection_public_instance_commitment": input.down_projection_public_instance_commitment,
+        "down_projection_row_count": input.down_projection_row_count,
+        "down_projection_statement_commitment": input.down_projection_statement_commitment,
+        "ff_dim": input.ff_dim,
+        "gate_value_projection_output_commitment": input.gate_value_projection_output_commitment,
+        "gate_value_proof_version": input.gate_value_proof_version,
+        "gate_value_public_instance_commitment": input.gate_value_public_instance_commitment,
+        "gate_value_row_count": input.gate_value_row_count,
+        "gate_value_statement_commitment": input.gate_value_statement_commitment,
+        "hidden_activation_commitment": input.hidden_activation_commitment,
+        "operation": "gate_value_activation_down_fused",
+        "required_backend_version": input.required_backend_version,
+        "residual_delta_commitment": input.residual_delta_commitment,
+        "route_id": input.route_id,
+        "target_id": input.target_id,
+        "verifier_domain": input.verifier_domain,
+        "width": input.width,
+    });
+    let bytes =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    Ok(blake2b_commitment_bytes(&bytes, STATEMENT_DOWN_DOMAIN))
+}
+
 fn public_instance_commitment(statement: &str) -> Result<String> {
     let payload = serde_json::json!({
         "operation": "gate_value_activation_fused",
@@ -735,6 +1455,21 @@ fn public_instance_commitment(statement: &str) -> Result<String> {
     let bytes =
         serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
     Ok(blake2b_commitment_bytes(&bytes, PUBLIC_INSTANCE_DOMAIN))
+}
+
+fn down_public_instance_commitment(statement: &str) -> Result<String> {
+    let payload = serde_json::json!({
+        "operation": "gate_value_activation_down_fused",
+        "route_id": ZKAI_D128_GATE_VALUE_ACTIVATION_DOWN_FUSED_ROUTE_ID,
+        "statement_commitment": statement,
+        "width": WIDTH,
+    });
+    let bytes =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    Ok(blake2b_commitment_bytes(
+        &bytes,
+        PUBLIC_INSTANCE_DOWN_DOMAIN,
+    ))
 }
 
 fn proof_native_parameter_commitment(statement: &str) -> Result<String> {
@@ -748,6 +1483,20 @@ fn proof_native_parameter_commitment(statement: &str) -> Result<String> {
     Ok(blake2b_commitment_bytes(
         &bytes,
         PROOF_NATIVE_PARAMETER_DOMAIN,
+    ))
+}
+
+fn down_proof_native_parameter_commitment(statement: &str) -> Result<String> {
+    let payload = serde_json::json!({
+        "kind": PROOF_NATIVE_PARAMETER_DOWN_KIND,
+        "pcs_profile": "publication_v1",
+        "statement_commitment": statement,
+    });
+    let bytes =
+        serde_json::to_vec(&payload).map_err(|error| VmError::Serialization(error.to_string()))?;
+    Ok(blake2b_commitment_bytes(
+        &bytes,
+        PROOF_NATIVE_PARAMETER_DOWN_DOMAIN,
     ))
 }
 
@@ -820,6 +1569,26 @@ mod tests {
         let activation = zkai_d128_activation_swiglu_input_from_json_str(activation_raw)
             .expect("activation input");
         build_zkai_d128_gate_value_activation_fused_input(gate, activation).expect("fused input")
+    }
+
+    fn down_input_fixture() -> ZkAiD128GateValueActivationDownFusedInput {
+        let gate_raw = include_str!(
+            "../../docs/engineering/evidence/zkai-d128-gate-value-projection-proof-2026-05.json"
+        );
+        let activation_raw = include_str!(
+            "../../docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json"
+        );
+        let down_raw = include_str!(
+            "../../docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.json"
+        );
+        let gate = zkai_d128_gate_value_projection_input_from_json_str(gate_raw)
+            .expect("gate/value input");
+        let activation = zkai_d128_activation_swiglu_input_from_json_str(activation_raw)
+            .expect("activation input");
+        let down =
+            zkai_d128_down_projection_input_from_json_str(down_raw).expect("down projection input");
+        build_zkai_d128_gate_value_activation_down_fused_input(gate, activation, down)
+            .expect("down-fused input")
     }
 
     #[test]
@@ -932,5 +1701,60 @@ mod tests {
         assert!(error
             .to_string()
             .contains("base commitment does not match checked fused component rows"));
+    }
+
+    #[test]
+    fn down_fused_input_validates_three_component_handoff() {
+        let input = down_input_fixture();
+        assert_eq!(input.gate_value_row_count, GATE_VALUE_ROWS);
+        assert_eq!(input.activation_row_count, ACTIVATION_ROWS);
+        assert_eq!(input.down_projection_row_count, DOWN_PROJECTION_ROWS);
+        assert_eq!(
+            input.hidden_activation_commitment,
+            input
+                .down_projection_input
+                .source_hidden_activation_commitment
+        );
+        assert_eq!(
+            input.activation_input.hidden_q8,
+            input.down_projection_input.hidden_q8
+        );
+        validate_down_fused_input(&input).expect("valid down-fused input");
+    }
+
+    #[test]
+    fn down_fused_air_proof_round_trips() {
+        let input = down_input_fixture();
+        let envelope = prove_zkai_d128_gate_value_activation_down_fused_envelope(&input)
+            .expect("down-fused proof should prove");
+        assert!(
+            verify_zkai_d128_gate_value_activation_down_fused_envelope(&envelope)
+                .expect("down-fused proof should verify")
+        );
+    }
+
+    #[test]
+    fn down_fused_rejects_activation_to_down_commitment_drift() {
+        let input = down_input_fixture();
+        let mut value = serde_json::to_value(&input).expect("input json");
+        value["down_projection_input"]["source_activation_swiglu_statement_commitment"] =
+            Value::String(format!("blake2b-256:{}", "44".repeat(32)));
+        let raw = serde_json::to_string(&value).expect("mutated input");
+        let error = zkai_d128_gate_value_activation_down_fused_input_from_json_str(&raw)
+            .expect_err("activation-to-down commitment drift should reject");
+        assert!(error
+            .to_string()
+            .contains("source activation/SwiGLU statement commitment"));
+    }
+
+    #[test]
+    fn down_fused_rejects_hidden_vector_drift() {
+        let input = down_input_fixture();
+        let mut value = serde_json::to_value(&input).expect("input json");
+        value["down_projection_input"]["hidden_q8"][0] = Value::from(0);
+        let raw = serde_json::to_string(&value).expect("mutated input");
+        let error = zkai_d128_gate_value_activation_down_fused_input_from_json_str(&raw)
+            .expect_err("hidden vector drift should reject");
+        assert!(error.to_string().contains("hidden"));
     }
 }

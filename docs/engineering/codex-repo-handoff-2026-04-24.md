@@ -1086,6 +1086,40 @@ Reproducibility metadata:
 - Gate command:
   `python3 scripts/zkai_d128_gate_value_activation_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-fused-gate-2026-05.tsv`.
 
+Recent d128 three-component fusion result: the adjacent-fusion saving survives
+when down-projection is added. A single native Stwo proof now fuses d128
+gate/value projection, activation/SwiGLU, and down-projection. The checked
+surface has `197,120` total rows (`131,072` gate/value, `512` activation,
+`65,536` down-projection). Three separate native proof objects are `140,515`
+JSON proof bytes / `39,696` local typed bytes; the fused object is `69,386`
+JSON / `19,680` typed. The fused route saves `71,129` JSON bytes and `20,016`
+local typed proof-field bytes (`50.4232%`, ratio `0.495768x`). This is strong
+architecture evidence for shared STARK proof plumbing across adjacent
+transformer-MLP components. It is still not residual add, not a full d128 block
+proof, not timing evidence, and not a matched NANOZK benchmark.
+
+Reproducibility metadata:
+
+- Backend binary/version:
+  `zkai_d128_gate_value_activation_down_fused_proof` with
+  `stwo-d128-gate-value-activation-down-fused-air-proof-v1`.
+- Timing mode: proof-size accounting only, no timing claim.
+- Checked surface: d128 gate/value projection (`131,072` rows),
+  activation/SwiGLU (`512` rows), and down-projection (`65,536` rows),
+  publication-v1 PCS profile.
+- Evidence paths:
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.input.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-down-projection-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-binary-accounting-2026-05.json`,
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-gate-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-gate-2026-05.tsv`.
+- Reproduce command:
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_activation_down_fused_proof -- verify docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-proof-2026-05.envelope.json`.
+- Gate command:
+  `python3 scripts/zkai_d128_gate_value_activation_down_fused_gate.py --write-json docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-gate-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-gate-value-activation-down-fused-gate-2026-05.tsv`.
+
 ## Next sensible moves
 
 1. Treat `gate_value_activation_fused` as the current positive dense-adjacent
