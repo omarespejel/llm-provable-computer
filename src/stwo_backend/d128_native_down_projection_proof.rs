@@ -19,7 +19,7 @@ use stwo::prover::backend::simd::column::BaseColumn;
 use stwo::prover::backend::simd::SimdBackend;
 use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
 use stwo::prover::poly::{BitReversedOrder, NaturalOrder};
-use stwo::prover::{prove, CommitmentSchemeProver};
+use stwo::prover::{prove, CommitmentSchemeProver, ComponentProver};
 use stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId;
 use stwo_constraint_framework::{
     EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
@@ -645,11 +645,11 @@ fn prove_down_projection_rows(input: &ZkAiD128DownProjectionProofInput) -> Resul
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(down_projection_trace(input));
+    tree_builder.extend_evals(down_projection_trace(input)?);
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(down_projection_trace(input));
+    tree_builder.extend_evals(down_projection_trace(input)?);
     tree_builder.commit(channel);
 
     let stark_proof =
@@ -687,7 +687,7 @@ fn verify_down_projection_rows(
             ZKAI_D128_DOWN_PROJECTION_EXPECTED_PROOF_COMMITMENTS
         )));
     }
-    let expected_roots = down_projection_commitment_roots(input, config);
+    let expected_roots = down_projection_commitment_roots(input, config)?;
     if stark_proof.commitments[0] != expected_roots[0] {
         return Err(down_projection_error(
             "preprocessed row commitment does not match checked down projection rows",
@@ -723,8 +723,10 @@ fn down_projection_pcs_config() -> PcsConfig {
 fn down_projection_commitment_roots(
     input: &ZkAiD128DownProjectionProofInput,
     config: PcsConfig,
-) -> stwo::core::pcs::TreeVec<
-    <Blake2sM31MerkleHasher as stwo::core::vcs_lifted::merkle_hasher::MerkleHasherLifted>::Hash,
+) -> Result<
+    stwo::core::pcs::TreeVec<
+        <Blake2sM31MerkleHasher as stwo::core::vcs_lifted::merkle_hasher::MerkleHasherLifted>::Hash,
+    >,
 > {
     let component = down_projection_component();
     let twiddles = SimdBackend::precompute_twiddles(
@@ -740,14 +742,14 @@ fn down_projection_commitment_roots(
     commitment_scheme.set_store_polynomials_coefficients();
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(down_projection_trace(input));
+    tree_builder.extend_evals(down_projection_trace(input)?);
     tree_builder.commit(channel);
 
     let mut tree_builder = commitment_scheme.tree_builder();
-    tree_builder.extend_evals(down_projection_trace(input));
+    tree_builder.extend_evals(down_projection_trace(input)?);
     tree_builder.commit(channel);
 
-    commitment_scheme.roots()
+    Ok(commitment_scheme.roots())
 }
 
 fn down_projection_component() -> FrameworkComponent<D128DownProjectionEval> {
@@ -760,11 +762,23 @@ fn down_projection_component() -> FrameworkComponent<D128DownProjectionEval> {
     )
 }
 
+pub(super) fn zkai_d128_down_projection_component_with_allocator(
+    allocator: &mut TraceLocationAllocator,
+) -> impl ComponentProver<SimdBackend> {
+    FrameworkComponent::new(
+        allocator,
+        D128DownProjectionEval {
+            log_size: D128_DOWN_PROJECTION_LOG_SIZE,
+        },
+        SecureField::zero(),
+    )
+}
+
 fn down_projection_trace(
     input: &ZkAiD128DownProjectionProofInput,
-) -> ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>> {
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
     let domain = CanonicCoset::new(D128_DOWN_PROJECTION_LOG_SIZE).circle_domain();
-    let rows = build_rows(&input.hidden_q8).expect("validated down projection rows");
+    let rows = build_rows(&input.hidden_q8)?;
     let columns: Vec<Vec<BaseField>> = vec![
         rows.iter().map(|row| field_usize(row.row_index)).collect(),
         rows.iter()
@@ -777,7 +791,7 @@ fn down_projection_trace(
         rows.iter().map(|row| field_i64(row.weight_q8)).collect(),
         rows.iter().map(|row| field_i64(row.product_q8)).collect(),
     ];
-    columns
+    Ok(columns
         .into_iter()
         .map(|column| {
             CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(
@@ -786,11 +800,21 @@ fn down_projection_trace(
             )
             .bit_reverse()
         })
-        .collect()
+        .collect())
+}
+
+pub(super) fn zkai_d128_down_projection_trace(
+    input: &ZkAiD128DownProjectionProofInput,
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    down_projection_trace(input)
 }
 
 fn preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
     COLUMN_IDS.into_iter().map(preprocessed_column_id).collect()
+}
+
+pub(super) fn zkai_d128_down_projection_preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
+    preprocessed_column_ids()
 }
 
 fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {

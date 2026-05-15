@@ -1,0 +1,100 @@
+import copy
+import tempfile
+import unittest
+from unittest import mock
+
+from scripts import zkai_d128_gate_value_activation_down_fused_gate as gate
+
+
+class GateValueActivationDownFusedGateTests(unittest.TestCase):
+    def test_payload_records_expected_typed_saving(self) -> None:
+        payload = gate.build_payload()
+        aggregate = payload["aggregate"]
+        self.assertEqual(aggregate["fused_local_typed_bytes"], 19_680)
+        self.assertEqual(aggregate["separate_local_typed_bytes"], 39_696)
+        self.assertEqual(aggregate["typed_saving_vs_separate_bytes"], 20_016)
+        self.assertEqual(aggregate["typed_ratio_vs_separate"], 0.495768)
+        self.assertEqual(aggregate["fused_total_row_count"], 197_120)
+        gate.validate_payload(payload)
+
+    def test_mutations_reject(self) -> None:
+        payload = gate.build_payload()
+        result = gate.run_mutations(payload)
+        self.assertEqual(result["case_count"], len(gate.MUTATION_NAMES))
+        self.assertTrue(result["all_mutations_rejected"])
+
+    def test_claim_boundary_overclaim_rejects(self) -> None:
+        payload = gate.build_payload()
+        payload["claim_boundary"] = "FULL_D128_TRANSFORMER_BLOCK_PROOF"
+        payload["payload_commitment"] = gate.payload_commitment(payload)
+        with self.assertRaises(gate.FusedDownGateError):
+            gate.validate_payload(payload)
+
+    def test_grouped_delta_drift_rejects(self) -> None:
+        payload = gate.build_payload()
+        mutated = copy.deepcopy(payload)
+        mutated["grouped_delta_vs_separate_bytes"]["trace_decommitments"] = -1
+        mutated["payload_commitment"] = gate.payload_commitment(mutated)
+        with self.assertRaises(gate.FusedDownGateError):
+            gate.validate_payload(mutated)
+
+    def test_evidence_path_drift_rejects(self) -> None:
+        payload = gate.build_payload()
+        mutated = copy.deepcopy(payload)
+        mutated["evidence"]["fused_envelope"] = "docs/engineering/evidence/other.json"
+        mutated["payload_commitment"] = gate.payload_commitment(mutated)
+        with self.assertRaises(gate.FusedDownGateError):
+            gate.validate_payload(mutated)
+
+    def test_read_json_open_error_is_structured(self) -> None:
+        with mock.patch.object(gate.os, "open", side_effect=OSError("boom")):
+            with self.assertRaises(gate.FusedDownGateError):
+                gate.read_json(gate.ACCOUNTING_PATH, 4 * 1024 * 1024, "accounting JSON")
+
+    def test_read_json_rejects_non_finite_constants(self) -> None:
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
+            path = gate.pathlib.Path(temp_dir) / "nan.json"
+            path.write_text('{"bad": NaN}', encoding="utf-8")
+            with self.assertRaises(gate.FusedDownGateError):
+                gate.read_json(path, 1024, "nan JSON")
+
+    def test_validate_envelope_stat_error_is_structured(self) -> None:
+        expected = gate.EXPECTED_ROLES[gate.FUSED_ENVELOPE_PATH.name]
+        with self.assertRaises(gate.FusedDownGateError):
+            gate.validate_envelope(gate.EVIDENCE_DIR / "__missing_d128_down_fused_envelope.json", expected)
+
+    def test_atomic_output_rejects_symlink(self) -> None:
+        payload = gate.build_payload()
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
+            temp_path = gate.pathlib.Path(temp_dir)
+            target = temp_path / "target.json"
+            link = temp_path / "out.json"
+            target.write_text("{}", encoding="utf-8")
+            link.symlink_to(target)
+            with self.assertRaises(gate.FusedDownGateError):
+                gate.write_json(link, payload)
+
+    def test_atomic_output_rejects_escape_without_mkdir(self) -> None:
+        payload = gate.build_payload()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            outside_dir = gate.pathlib.Path(temp_dir) / "outside"
+            with self.assertRaises(gate.FusedDownGateError):
+                gate.write_json(outside_dir / "out.json", payload)
+            self.assertFalse(outside_dir.exists())
+
+    def test_atomic_output_handles_partial_writes(self) -> None:
+        data = b"0123456789abcdef"
+        original_write = gate.os.write
+
+        def partial_write(fd: int, chunk: bytes) -> int:
+            return original_write(fd, chunk[: max(1, len(chunk) // 2)])
+
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
+            path = gate.pathlib.Path(temp_dir) / "partial.bin"
+            with mock.patch.object(gate.os, "write", side_effect=partial_write):
+                gate.write_bytes_atomic(path, data, "partial")
+            self.assertEqual(path.read_bytes(), data)
+
+
+if __name__ == "__main__":
+    unittest.main()
