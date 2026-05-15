@@ -36,6 +36,14 @@ class GateValueActivationFusedGateTests(unittest.TestCase):
         with self.assertRaises(gate.FusedGateError):
             gate.validate_payload(mutated)
 
+    def test_evidence_path_drift_rejects(self) -> None:
+        payload = gate.build_payload()
+        mutated = copy.deepcopy(payload)
+        mutated["evidence"]["fused_envelope"] = "docs/engineering/evidence/other.json"
+        mutated["payload_commitment"] = gate.payload_commitment(mutated)
+        with self.assertRaises(gate.FusedGateError):
+            gate.validate_payload(mutated)
+
     def test_read_json_open_error_is_structured(self) -> None:
         with mock.patch.object(gate.os, "open", side_effect=OSError("boom")):
             with self.assertRaises(gate.FusedGateError):
