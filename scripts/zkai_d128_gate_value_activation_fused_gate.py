@@ -29,6 +29,13 @@ ACTIVATION_ENVELOPE_PATH = EVIDENCE_DIR / "zkai-d128-activation-swiglu-proof-202
 JSON_OUT = EVIDENCE_DIR / "zkai-d128-gate-value-activation-fused-gate-2026-05.json"
 TSV_OUT = EVIDENCE_DIR / "zkai-d128-gate-value-activation-fused-gate-2026-05.tsv"
 
+EXPECTED_EVIDENCE = {
+    "accounting_json": str(ACCOUNTING_PATH.relative_to(ROOT)),
+    "fused_envelope": str(FUSED_ENVELOPE_PATH.relative_to(ROOT)),
+    "gate_value_envelope": str(GATE_VALUE_ENVELOPE_PATH.relative_to(ROOT)),
+    "activation_envelope": str(ACTIVATION_ENVELOPE_PATH.relative_to(ROOT)),
+}
+
 SCHEMA = "zkai-d128-gate-value-activation-fused-gate-v1"
 DECISION = "GO_D128_GATE_VALUE_ACTIVATION_FUSED_TYPED_PROOF_SAVING"
 RESULT = "GO_FUSED_ADJACENT_DENSE_ACTIVATION_SAVES_5520_TYPED_BYTES"
@@ -198,6 +205,7 @@ MUTATION_NAMES = (
     "mechanism_removed",
     "first_blocker_removed",
     "validation_command_drift",
+    "evidence_path_drift",
     "payload_commitment_relabeling",
     "unknown_field_injection",
 )
@@ -223,7 +231,7 @@ def payload_commitment(payload: dict[str, Any]) -> str:
     return "sha256:" + hashlib.sha256(canonical_bytes(canonical)).hexdigest()
 
 
-def read_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
+def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple[Any, int]:
     if path.is_symlink():
         raise FusedGateError(f"{label} must not be a symlink: {path}")
     resolved = path.resolve(strict=False)
@@ -245,16 +253,25 @@ def read_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
         post = os.fstat(fd)
         if (pre.st_dev, pre.st_ino) != (post.st_dev, post.st_ino):
             raise FusedGateError(f"{label} changed while opening: {path}")
+        if post.st_size > max_bytes:
+            raise FusedGateError(f"{label} exceeds max size: got {post.st_size} bytes")
         raw = os.read(fd, max_bytes + 1)
     finally:
         if fd is not None:
             os.close(fd)
     if len(raw) > max_bytes:
         raise FusedGateError(f"{label} exceeds max size: got at least {len(raw)} bytes")
+    if len(raw) != post.st_size:
+        raise FusedGateError(f"{label} changed while reading: {path}")
     try:
-        return json.loads(raw.decode("utf-8"))
+        return json.loads(raw.decode("utf-8")), int(post.st_size)
     except (UnicodeDecodeError, json.JSONDecodeError) as err:
         raise FusedGateError(f"{label} is not JSON: {err}") from err
+
+
+def read_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
+    payload, _size = read_json_with_size(path, max_bytes, label)
+    return payload
 
 
 def require_dict(value: Any, label: str) -> dict[str, Any]:
@@ -299,13 +316,10 @@ def validate_accounting_row(row: dict[str, Any], expected: dict[str, Any]) -> No
 
 
 def validate_envelope(path: pathlib.Path, expected: dict[str, Any]) -> dict[str, Any]:
-    try:
-        envelope_size = path.stat().st_size
-    except OSError as err:
-        raise FusedGateError(f"failed to stat {expected['role']} envelope: {err}") from err
+    envelope_raw, envelope_size = read_json_with_size(path, 16 * 1024 * 1024, expected["role"])
     if envelope_size != expected["envelope_json_size_bytes"]:
         raise FusedGateError(f"{expected['role']} envelope byte-size drift")
-    envelope = require_dict(read_json(path, 16 * 1024 * 1024, expected["role"]), expected["role"])
+    envelope = require_dict(envelope_raw, expected["role"])
     if envelope.get("proof_backend_version") != expected["proof_backend_version"]:
         raise FusedGateError(f"{expected['role']} envelope backend version drift")
     if envelope.get("statement_version") != expected["statement_version"]:
@@ -380,12 +394,7 @@ def build_payload() -> dict[str, Any]:
         "mechanism": list(MECHANISM),
         "non_claims": list(NON_CLAIMS),
         "validation_commands": list(VALIDATION_COMMANDS),
-        "evidence": {
-            "accounting_json": str(ACCOUNTING_PATH.relative_to(ROOT)),
-            "fused_envelope": str(FUSED_ENVELOPE_PATH.relative_to(ROOT)),
-            "gate_value_envelope": str(GATE_VALUE_ENVELOPE_PATH.relative_to(ROOT)),
-            "activation_envelope": str(ACTIVATION_ENVELOPE_PATH.relative_to(ROOT)),
-        },
+        "evidence": copy.deepcopy(EXPECTED_EVIDENCE),
         "mutation_inventory": {
             "case_count": len(MUTATION_NAMES),
             "cases": list(MUTATION_NAMES),
@@ -456,6 +465,8 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise FusedGateError("non-claims mismatch")
     if payload.get("validation_commands") != list(VALIDATION_COMMANDS):
         raise FusedGateError("validation commands mismatch")
+    if payload.get("evidence") != EXPECTED_EVIDENCE:
+        raise FusedGateError("evidence path mismatch")
     inventory = require_dict(payload.get("mutation_inventory"), "mutation inventory")
     if inventory.get("case_count") != len(MUTATION_NAMES) or inventory.get("cases") != list(MUTATION_NAMES):
         raise FusedGateError("mutation inventory mismatch")
@@ -487,6 +498,7 @@ def mutation_cases(payload: dict[str, Any]) -> list[tuple[str, Any]]:
         ("mechanism_removed", lambda p: p.__setitem__("mechanism", p["mechanism"][:-1])),
         ("first_blocker_removed", lambda p: p.__setitem__("first_blocker", "")),
         ("validation_command_drift", lambda p: p["validation_commands"].__setitem__(0, "cargo test")),
+        ("evidence_path_drift", lambda p: p["evidence"].__setitem__("fused_envelope", "docs/engineering/evidence/other.json")),
         ("payload_commitment_relabeling", lambda p: p.__setitem__("payload_commitment", "sha256:" + "00" * 32)),
         ("unknown_field_injection", lambda p: p.__setitem__("unexpected", True)),
     ]

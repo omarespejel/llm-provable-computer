@@ -67,7 +67,7 @@
   ],
   "mutation_inventory": {
     "all_mutations_rejected": true,
-    "case_count": 18,
+    "case_count": 19,
     "cases": [
       "schema_relabeling",
       "decision_overclaim",
@@ -85,13 +85,14 @@
       "mechanism_removed",
       "first_blocker_removed",
       "validation_command_drift",
+      "evidence_path_drift",
       "payload_commitment_relabeling",
       "unknown_field_injection"
     ]
   },
   "mutation_result": {
     "all_mutations_rejected": true,
-    "case_count": 18,
+    "case_count": 19,
     "cases": [
       {
         "error": "schema drift",
@@ -174,6 +175,11 @@
         "rejected": true
       },
       {
+        "error": "evidence path mismatch",
+        "name": "evidence_path_drift",
+        "rejected": true
+      },
+      {
         "error": "payload commitment mismatch",
         "name": "payload_commitment_relabeling",
         "rejected": true
@@ -197,7 +203,7 @@
     "not full transformer inference",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:cb3574617cf50b3ceeb9ff0ea691d64bd61d2e58148a573a1f2ab5c1f0475459",
+  "payload_commitment": "sha256:1b5292acff9e2255fd771d730d6b6ed2811de920300a608a7407bfe4506634ca",
   "question": "Can a native Stwo proof over adjacent d128 gate/value and activation/SwiGLU components share proof plumbing and beat the two separate native proof objects?",
   "result": "GO_FUSED_ADJACENT_DENSE_ACTIVATION_SAVES_5520_TYPED_BYTES",
   "roles": {
