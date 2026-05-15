@@ -228,7 +228,11 @@ def rounded_ratio(numerator: int, denominator: int) -> float:
 
 
 def canonical_bytes(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+
+
+def reject_json_constant(value: str) -> None:
+    raise FusedGateError(f"non-finite JSON constant rejected: {value}")
 
 
 def payload_commitment(payload: dict[str, Any]) -> str:
@@ -270,7 +274,7 @@ def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple
     if len(raw) != post.st_size:
         raise FusedGateError(f"{label} changed while reading: {path}")
     try:
-        return json.loads(raw.decode("utf-8")), int(post.st_size)
+        return json.loads(raw.decode("utf-8"), parse_constant=reject_json_constant), int(post.st_size)
     except (UnicodeDecodeError, json.JSONDecodeError) as err:
         raise FusedGateError(f"{label} is not JSON: {err}") from err
 
@@ -575,7 +579,7 @@ def write_bytes_atomic(path: pathlib.Path, data: bytes, label: str) -> None:
 
 
 def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
-    data = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    data = (json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
     write_bytes_atomic(path, data, "gate JSON")
 
 
