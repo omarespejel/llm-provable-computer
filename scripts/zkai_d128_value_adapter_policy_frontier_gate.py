@@ -38,6 +38,10 @@ PAYLOAD_DOMAIN = "ptvm:zkai:d128-value-adapter-policy-frontier:v1"
 EXPECTED_SUMMARY = {
     "attention_cells": 64,
     "target_width": 128,
+    "affine_scale_min": -64,
+    "affine_scale_max": 64,
+    "affine_bias_min": -256,
+    "affine_bias_max": 256,
     "best_admissible_policy_id": "channelwise_affine_over_tiled_attention",
     "best_admissible_mismatches": 106,
     "best_admissible_mean_abs_error": 49.796875,
@@ -74,6 +78,11 @@ SOURCE_ARTIFACTS = (
     ("attention_d128_value_adapter_gate", adapter_gate.JSON_OUT),
     ("attention_rmsnorm_mlp_boundary_gate", boundary_gate.JSON_OUT),
 )
+
+AFFINE_SCALE_MIN = -64
+AFFINE_SCALE_MAX = 64
+AFFINE_BIAS_MIN = -256
+AFFINE_BIAS_MAX = 256
 
 CORE_KEYS = {
     "schema",
@@ -191,6 +200,15 @@ def source_artifact(artifact_id: str, path: pathlib.Path) -> tuple[dict[str, Any
     )
 
 
+def affine_search_bounds() -> dict[str, int]:
+    return {
+        "scale_min": AFFINE_SCALE_MIN,
+        "scale_max": AFFINE_SCALE_MAX,
+        "bias_min": AFFINE_BIAS_MIN,
+        "bias_max": AFFINE_BIAS_MAX,
+    }
+
+
 def score_policy(policy_id: str, description: str, values: list[int], target: list[int], admissible: bool) -> dict[str, Any]:
     if len(values) != len(target):
         raise ValueAdapterPolicyFrontierError(f"policy width drift: {policy_id}")
@@ -215,8 +233,8 @@ def score_policy(policy_id: str, description: str, values: list[int], target: li
 
 def best_global_affine(base: list[int], target: list[int]) -> list[int]:
     best: tuple[int, int, int, int, list[int]] | None = None
-    for scale in range(-64, 65):
-        for bias in range(-256, 257):
+    for scale in range(AFFINE_SCALE_MIN, AFFINE_SCALE_MAX + 1):
+        for bias in range(AFFINE_BIAS_MIN, AFFINE_BIAS_MAX + 1):
             values = [scale * value + bias for value in base]
             mismatches = sum(candidate != target_value for candidate, target_value in zip(values, target, strict=True))
             total_abs_error = sum(abs(candidate - target_value) for candidate, target_value in zip(values, target, strict=True))
@@ -236,8 +254,8 @@ def best_channelwise_affine(base: list[int], target: list[int], width: int) -> t
         xs = [base[index] for index in indices]
         ys = [target[index] for index in indices]
         best: tuple[int, int, int, int, list[int]] | None = None
-        for scale in range(-64, 65):
-            for bias in range(-256, 257):
+        for scale in range(AFFINE_SCALE_MIN, AFFINE_SCALE_MAX + 1):
+            for bias in range(AFFINE_BIAS_MIN, AFFINE_BIAS_MAX + 1):
                 candidate = [scale * value + bias for value in xs]
                 mismatches = sum(left != right for left, right in zip(candidate, ys, strict=True))
                 total_abs_error = sum(abs(left - right) for left, right in zip(candidate, ys, strict=True))
@@ -279,6 +297,19 @@ def index_only_target_pattern(width: int) -> list[int]:
     return [((13 * index + 7) % 193) - 96 for index in range(width)]
 
 
+def validate_attention_outputs_shape(attention_outputs: Any) -> list[int]:
+    if not isinstance(attention_outputs, list) or not attention_outputs:
+        raise ValueAdapterPolicyFrontierError("attention_outputs must be non-empty rectangular 2D list; observed=[]")
+    row_lengths: list[int | None] = []
+    for row in attention_outputs:
+        row_lengths.append(len(row) if isinstance(row, list) else None)
+    if row_lengths[0] in (None, 0) or any(length != row_lengths[0] for length in row_lengths):
+        raise ValueAdapterPolicyFrontierError(
+            f"attention_outputs must be non-empty rectangular 2D list; observed_row_lengths={row_lengths}"
+        )
+    return [len(attention_outputs), row_lengths[0]]
+
+
 def build_policy_frontier(
     attention_payload: dict[str, Any],
     d128_payload: dict[str, Any],
@@ -292,26 +323,32 @@ def build_policy_frontier(
         raise ValueAdapterPolicyFrontierError(f"dependent gate validation failed: {err}") from err
 
     attention_outputs = adapter_gate._extract_attention_outputs(attention_payload)
+    attention_shape = validate_attention_outputs_shape(attention_outputs)
     flat = [cell for row in attention_outputs for cell in row]
     target = adapter_gate._extract_d128_input(d128_payload)
     tiled = (flat * ((len(target) + len(flat) - 1) // len(flat)))[: len(target)]
     channelwise_values, channelwise_params = best_channelwise_affine(tiled, target, width=8)
+    bounds = affine_search_bounds()
+    global_policy = score_policy(
+        "global_affine_over_tiled_attention",
+        "best bounded single integer y = scale*x + bias over tiled attention",
+        best_global_affine(tiled, target),
+        target,
+        True,
+    )
+    global_policy["affine_search_bounds"] = dict(bounds)
+    channelwise_policy = score_policy(
+        "channelwise_affine_over_tiled_attention",
+        "best bounded per-channel integer affine map over tiled attention; still low-parameter but not exact",
+        channelwise_values,
+        target,
+        True,
+    )
+    channelwise_policy["affine_search_bounds"] = dict(bounds)
     policies = [
         score_policy("tile_flat_attention_twice", "flatten attention and tile to d128 width", tiled, target, True),
-        score_policy(
-            "global_affine_over_tiled_attention",
-            "best single integer y = scale*x + bias over tiled attention",
-            best_global_affine(tiled, target),
-            target,
-            True,
-        ),
-        score_policy(
-            "channelwise_affine_over_tiled_attention",
-            "best per-channel integer affine map over tiled attention; still low-parameter but not exact",
-            channelwise_values,
-            target,
-            True,
-        ),
+        global_policy,
+        channelwise_policy,
         score_policy(
             "per_source_cell_repeated_lower_bound",
             "generous lower bound if each repeated source cell may choose one output value for both repeats",
@@ -339,7 +376,7 @@ def build_policy_frontier(
         "attention": {
             "outputs_commitment": _str(attention_payload.get("outputs_commitment"), "attention outputs commitment"),
             "statement_commitment": _str(attention_payload.get("statement_commitment"), "attention statement"),
-            "shape": [len(attention_outputs), len(attention_outputs[0])],
+            "shape": attention_shape,
             "flattened_cells": len(flat),
             "min_q8": min(flat),
             "max_q8": max(flat),
@@ -356,6 +393,7 @@ def build_policy_frontier(
             "index_only_pattern_exact": index_only_target_pattern(len(target)) == target,
         },
         "policies": policies,
+        "affine_search_bounds": dict(bounds),
         "channelwise_affine_params": channelwise_params,
         "best_admissible_policy": {
             "id": best_admissible["id"],
@@ -407,6 +445,10 @@ def build_context() -> dict[str, Any]:
         "decision": DECISION,
         "attention_cells": _int(_dict(frontier.get("attention"), "attention").get("flattened_cells"), "attention cells"),
         "target_width": _int(_dict(frontier.get("target"), "target").get("width"), "target width"),
+        "affine_scale_min": AFFINE_SCALE_MIN,
+        "affine_scale_max": AFFINE_SCALE_MAX,
+        "affine_bias_min": AFFINE_BIAS_MIN,
+        "affine_bias_max": AFFINE_BIAS_MAX,
         "best_admissible_policy_id": _str(best.get("id"), "best policy id"),
         "best_admissible_mismatches": _int(best.get("mismatch_count"), "best mismatches"),
         "best_admissible_mean_abs_error": _number(best.get("mean_abs_error"), "best mean abs error"),

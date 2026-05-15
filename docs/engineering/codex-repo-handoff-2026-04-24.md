@@ -1182,7 +1182,8 @@ forbidden because it ignores attention values. The best admissible checked
 policy is `channelwise_affine_over_tiled_attention`, and it still mismatches
 `106 / 128` cells with mean absolute error `49.796875`. A generous
 per-source-cell repeated lower-bound still mismatches `64 / 128` cells. The
-gate rejects `9 / 9` claim/source/commitment mutations. The next honest
+checked bounded affine search uses scale `[-64, 64]` and bias `[-256, 256]`.
+The gate rejects `9 / 9` claim/source/commitment mutations. The next honest
 experiment is to regenerate a d128 RMSNorm input from attention-derived values,
 then rerun the RMSNorm-MLP fused proof and boundary gate. Evidence:
 `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`.
