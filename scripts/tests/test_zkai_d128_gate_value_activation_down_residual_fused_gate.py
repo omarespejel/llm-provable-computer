@@ -90,6 +90,20 @@ class D128GateValueActivationDownResidualFusedGateTests(unittest.TestCase):
                 gate.atomic_write(path, b"abcdef")
             self.assertEqual(path.read_bytes(), b"abcdef")
 
+    def test_atomic_write_preserves_replace_error_when_cleanup_fails(self) -> None:
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as tmp:
+            path = Path(tmp) / "replace-error.json"
+            replace_error = OSError("replace failed")
+            with mock.patch.object(gate.os, "replace", side_effect=replace_error):
+                with mock.patch.object(
+                    gate.pathlib.Path,
+                    "unlink",
+                    side_effect=OSError("unlink failed"),
+                ):
+                    with self.assertRaises(OSError) as ctx:
+                        gate.atomic_write(path, b"abc")
+            self.assertIs(ctx.exception, replace_error)
+
 
 if __name__ == "__main__":
     unittest.main()
