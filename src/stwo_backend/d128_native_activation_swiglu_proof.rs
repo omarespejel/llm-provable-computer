@@ -219,6 +219,7 @@ pub struct D128ActivationSwiGluRow {
 
 #[derive(Debug, Clone, Copy)]
 struct SourceGateValueAnchor {
+    name: &'static str,
     statement_commitment: &'static str,
     public_instance_commitment: &'static str,
     gate_projection_output_commitment: &'static str,
@@ -617,6 +618,7 @@ fn approved_source_gate_value_anchor(
 
     let anchors = [
         SourceGateValueAnchor {
+            name: "synthetic",
             statement_commitment: ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
             public_instance_commitment: ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
             gate_projection_output_commitment: ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT,
@@ -626,6 +628,7 @@ fn approved_source_gate_value_anchor(
             validation_commands: EXPECTED_VALIDATION_COMMANDS,
         },
         SourceGateValueAnchor {
+            name: "attention_derived",
             statement_commitment:
                 ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
             public_instance_commitment:
@@ -640,7 +643,8 @@ fn approved_source_gate_value_anchor(
         },
     ];
     anchors
-        .into_iter()
+        .iter()
+        .copied()
         .find(|anchor| {
             input.source_gate_value_projection_statement_commitment == anchor.statement_commitment
                 && input.source_gate_value_projection_public_instance_commitment
@@ -652,11 +656,56 @@ fn approved_source_gate_value_anchor(
                 && input.source_gate_value_projection_output_commitment
                     == anchor.gate_value_projection_output_commitment
         })
-        .ok_or_else(|| {
-            activation_swiglu_error(
-                "source gate/value projection anchor is not approved: all five source commitment fields must match an approved anchor",
+        .ok_or_else(|| activation_swiglu_error(&source_gate_value_anchor_error(input, &anchors)))
+}
+
+fn source_gate_value_anchor_error(
+    input: &ZkAiD128ActivationSwiGluProofInput,
+    anchors: &[SourceGateValueAnchor],
+) -> String {
+    if let Some(anchor) = anchors.iter().find(|anchor| {
+        input.source_gate_value_projection_output_commitment
+            == anchor.gate_value_projection_output_commitment
+    }) {
+        let mut mismatches = Vec::new();
+        if input.source_gate_value_projection_statement_commitment != anchor.statement_commitment {
+            mismatches.push("statement_commitment mismatch");
+        }
+        if input.source_gate_value_projection_public_instance_commitment
+            != anchor.public_instance_commitment
+        {
+            mismatches.push("public_instance_commitment mismatch");
+        }
+        if input.source_gate_projection_output_commitment
+            != anchor.gate_projection_output_commitment
+        {
+            mismatches.push("gate_projection_output_commitment mismatch");
+        }
+        if input.source_value_projection_output_commitment
+            != anchor.value_projection_output_commitment
+        {
+            mismatches.push("value_projection_output_commitment mismatch");
+        }
+        return format!(
+            "source gate/value projection anchor is not approved for {} anchor: {}",
+            anchor.name,
+            mismatches.join(", ")
+        );
+    }
+
+    let expected = anchors
+        .iter()
+        .map(|anchor| {
+            format!(
+                "{}={}",
+                anchor.name, anchor.gate_value_projection_output_commitment
             )
         })
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "source gate/value projection anchor is not approved: gate_value_projection_output_commitment unknown; expected one of {expected}"
+    )
 }
 
 fn validate_activation_swiglu_row(
@@ -1329,7 +1378,9 @@ mod tests {
             &serde_json::to_string(&value).expect("json"),
         )
         .unwrap_err();
-        assert!(error.to_string().contains("anchor is not approved"));
+        assert!(error
+            .to_string()
+            .contains("attention_derived anchor: statement_commitment mismatch"));
     }
 
     #[test]
@@ -1413,7 +1464,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("source gate/value projection anchor is not approved"));
+            .contains("synthetic anchor: statement_commitment mismatch"));
     }
 
     #[test]
@@ -1427,7 +1478,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("source gate/value projection anchor is not approved"));
+            .contains("synthetic anchor: public_instance_commitment mismatch"));
     }
 
     #[test]
@@ -1441,7 +1492,7 @@ mod tests {
         .unwrap_err();
         assert!(error
             .to_string()
-            .contains("source gate/value projection anchor is not approved"));
+            .contains("gate_value_projection_output_commitment unknown"));
     }
 
     #[test]
