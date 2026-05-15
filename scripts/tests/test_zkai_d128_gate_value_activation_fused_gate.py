@@ -50,6 +50,13 @@ class GateValueActivationFusedGateTests(unittest.TestCase):
             with self.assertRaises(gate.FusedGateError):
                 gate.read_json(gate.ACCOUNTING_PATH, 4 * 1024 * 1024, "accounting JSON")
 
+    def test_read_json_rejects_non_finite_constants(self) -> None:
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
+            path = gate.pathlib.Path(temp_dir) / "nan.json"
+            path.write_text('{"bad": NaN}', encoding="utf-8")
+            with self.assertRaises(gate.FusedGateError):
+                gate.read_json(path, 1024, "nan JSON")
+
     def test_validate_envelope_stat_error_is_structured(self) -> None:
         expected = gate.EXPECTED_ROLES[gate.FUSED_ENVELOPE_PATH.name]
         with self.assertRaises(gate.FusedGateError):
