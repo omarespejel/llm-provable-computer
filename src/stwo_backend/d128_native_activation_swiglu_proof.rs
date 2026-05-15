@@ -65,6 +65,16 @@ pub const ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT: &str =
     "blake2b-256:ba8f9379f07a133f640a6594b6a06ae7b8d374110dc0f4b3a9779743734ad312";
 pub const ZKAI_D128_ACTIVATION_SWIGLU_ROW_COMMITMENT: &str =
     "blake2b-256:a46737e3b428a61a3be499c268a74249b87b78b0950df5148bf0666a27413e9f";
+pub const ZKAI_D128_ATTENTION_DERIVED_GATE_PROJECTION_OUTPUT_COMMITMENT: &str =
+    "blake2b-256:d0d681a8db0c32b7c47e24425cda29b93512d40e46d6b9b9aafdb7cddd2880d8";
+pub const ZKAI_D128_ATTENTION_DERIVED_VALUE_PROJECTION_OUTPUT_COMMITMENT: &str =
+    "blake2b-256:b63e4d4fd6f1c3ba867f4cce7c332deafa67f003d2208bbbe1013b075b7b4781";
+pub const ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT: &str =
+    "blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2";
+pub const ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT: &str =
+    "blake2b-256:a24402af117710fca3b0100bc8480ba03e73e4cb86914ba64f45bc785791d51e";
+pub const ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT: &str =
+    "blake2b-256:e6dca036c80385d2d47c3953cb4aca15ed058b2a0ac3fc2596767a0658b30d6c";
 
 const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const ZKAI_D128_TARGET_ID: &str = "rmsnorm-swiglu-residual-d128-v1";
@@ -139,6 +149,13 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "just gate-fast",
     "just gate",
 ];
+const EXPECTED_DERIVED_VALIDATION_COMMANDS: &[&str] = &[
+    "python3 scripts/zkai_d128_activation_swiglu_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_activation_swiglu_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_activation_swiglu_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
+];
 
 #[derive(Debug, Clone)]
 struct D128ActivationSwiGluEval {
@@ -198,6 +215,16 @@ pub struct D128ActivationSwiGluRow {
     pub product_q16: i64,
     pub hidden_q8: i64,
     pub remainder_q16: i64,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct SourceGateValueAnchor {
+    statement_commitment: &'static str,
+    public_instance_commitment: &'static str,
+    gate_projection_output_commitment: &'static str,
+    value_projection_output_commitment: &'static str,
+    gate_value_projection_output_commitment: &'static str,
+    validation_commands: &'static [&'static str],
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -389,31 +416,7 @@ fn validate_activation_swiglu_input(input: &ZkAiD128ActivationSwiGluProofInput) 
         ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_VERSION,
         "source gate/value proof version",
     )?;
-    expect_eq(
-        &input.source_gate_value_projection_statement_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
-        "source gate/value statement commitment",
-    )?;
-    expect_eq(
-        &input.source_gate_value_projection_public_instance_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
-        "source gate/value public instance commitment",
-    )?;
-    expect_eq(
-        &input.source_gate_projection_output_commitment,
-        ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT,
-        "source gate projection output commitment",
-    )?;
-    expect_eq(
-        &input.source_value_projection_output_commitment,
-        ZKAI_D128_VALUE_PROJECTION_OUTPUT_COMMITMENT,
-        "source value projection output commitment",
-    )?;
-    expect_eq(
-        &input.source_gate_value_projection_output_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
-        "source gate/value projection output commitment",
-    )?;
+    let source_anchor = approved_source_gate_value_anchor(input)?;
     expect_eq(
         &input.activation_lookup_commitment,
         ZKAI_D128_ACTIVATION_LOOKUP_COMMITMENT,
@@ -429,9 +432,8 @@ fn validate_activation_swiglu_input(input: &ZkAiD128ActivationSwiGluProofInput) 
         ZKAI_D128_ACTIVATION_SWIGLU_PROOF_NATIVE_PARAMETER_COMMITMENT,
         "proof-native parameter commitment",
     )?;
-    expect_eq(
+    require_blake2b_commitment(
         &input.activation_output_commitment,
-        ZKAI_D128_ACTIVATION_OUTPUT_COMMITMENT,
         "activation output commitment",
     )?;
     if input.hidden_activation_commitment == ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT {
@@ -439,26 +441,19 @@ fn validate_activation_swiglu_input(input: &ZkAiD128ActivationSwiGluProofInput) 
             "hidden activation commitment must not relabel as full output activation commitment",
         ));
     }
-    expect_eq(
+    require_blake2b_commitment(
         &input.hidden_activation_commitment,
-        ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
         "hidden activation commitment",
     )?;
-    expect_eq(
+    require_blake2b_commitment(
         &input.activation_swiglu_row_commitment,
-        ZKAI_D128_ACTIVATION_SWIGLU_ROW_COMMITMENT,
         "activation/SwiGLU row commitment",
     )?;
-    expect_eq(
+    require_blake2b_commitment(
         &input.public_instance_commitment,
-        ZKAI_D128_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
         "public instance commitment",
     )?;
-    expect_eq(
-        &input.statement_commitment,
-        ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
-        "statement commitment",
-    )?;
+    require_blake2b_commitment(&input.statement_commitment, "statement commitment")?;
     expect_str_set_eq(
         input.non_claims.iter().map(String::as_str),
         EXPECTED_NON_CLAIMS,
@@ -476,7 +471,7 @@ fn validate_activation_swiglu_input(input: &ZkAiD128ActivationSwiGluProofInput) 
     )?;
     expect_str_set_eq(
         input.validation_commands.iter().map(String::as_str),
-        EXPECTED_VALIDATION_COMMANDS,
+        source_anchor.validation_commands,
         "validation commands",
     )?;
     if input.gate_projection_q8.len() != ZKAI_D128_FF_DIM {
@@ -519,6 +514,11 @@ fn validate_activation_swiglu_input(input: &ZkAiD128ActivationSwiGluProofInput) 
         "source gate projection recomputed commitment",
     )?;
     expect_eq(
+        &input.source_gate_projection_output_commitment,
+        source_anchor.gate_projection_output_commitment,
+        "source gate projection approved anchor",
+    )?;
+    expect_eq(
         &sequence_commitment(
             &input.value_projection_q8,
             VALUE_PROJECTION_OUTPUT_DOMAIN,
@@ -528,9 +528,19 @@ fn validate_activation_swiglu_input(input: &ZkAiD128ActivationSwiGluProofInput) 
         "source value projection recomputed commitment",
     )?;
     expect_eq(
+        &input.source_value_projection_output_commitment,
+        source_anchor.value_projection_output_commitment,
+        "source value projection approved anchor",
+    )?;
+    expect_eq(
         &gate_value_output_commitment(&input.gate_projection_q8, &input.value_projection_q8),
         &input.source_gate_value_projection_output_commitment,
         "source gate/value projection recomputed commitment",
+    )?;
+    expect_eq(
+        &input.source_gate_value_projection_output_commitment,
+        source_anchor.gate_value_projection_output_commitment,
+        "source gate/value projection approved anchor",
     )?;
     let rows = build_rows(&input.gate_projection_q8, &input.value_projection_q8)?;
     let activated: Vec<i64> = rows.iter().map(|row| row.activation_q8).collect();
@@ -561,7 +571,7 @@ fn validate_activation_swiglu_input(input: &ZkAiD128ActivationSwiGluProofInput) 
     expect_eq(
         &rows_commitment(&rows),
         &input.activation_swiglu_row_commitment,
-        "activation/SwiGLU row recomputed commitment",
+        "activation/SwiGLU row commitment recomputation",
     )?;
     expect_eq(
         &proof_native_parameter_commitment(&input.activation_lookup_commitment),
@@ -571,14 +581,82 @@ fn validate_activation_swiglu_input(input: &ZkAiD128ActivationSwiGluProofInput) 
     expect_eq(
         &statement_commitment(input),
         &input.statement_commitment,
-        "statement recomputed commitment",
+        "statement commitment recomputation",
     )?;
     expect_eq(
         &public_instance_commitment(&input.statement_commitment),
         &input.public_instance_commitment,
-        "public instance recomputed commitment",
+        "public instance commitment recomputation",
     )?;
     Ok(())
+}
+
+fn approved_source_gate_value_anchor(
+    input: &ZkAiD128ActivationSwiGluProofInput,
+) -> Result<SourceGateValueAnchor> {
+    require_blake2b_commitment(
+        &input.source_gate_value_projection_statement_commitment,
+        "source gate/value statement commitment",
+    )?;
+    require_blake2b_commitment(
+        &input.source_gate_value_projection_public_instance_commitment,
+        "source gate/value public instance commitment",
+    )?;
+    require_blake2b_commitment(
+        &input.source_gate_projection_output_commitment,
+        "source gate projection output commitment",
+    )?;
+    require_blake2b_commitment(
+        &input.source_value_projection_output_commitment,
+        "source value projection output commitment",
+    )?;
+    require_blake2b_commitment(
+        &input.source_gate_value_projection_output_commitment,
+        "source gate/value projection output commitment",
+    )?;
+
+    let anchors = [
+        SourceGateValueAnchor {
+            statement_commitment: ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
+            public_instance_commitment: ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            gate_projection_output_commitment: ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT,
+            value_projection_output_commitment: ZKAI_D128_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+            gate_value_projection_output_commitment:
+                ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+            validation_commands: EXPECTED_VALIDATION_COMMANDS,
+        },
+        SourceGateValueAnchor {
+            statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
+            public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            gate_projection_output_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_GATE_PROJECTION_OUTPUT_COMMITMENT,
+            value_projection_output_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+            gate_value_projection_output_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+            validation_commands: EXPECTED_DERIVED_VALIDATION_COMMANDS,
+        },
+    ];
+    anchors
+        .into_iter()
+        .find(|anchor| {
+            input.source_gate_value_projection_statement_commitment == anchor.statement_commitment
+                && input.source_gate_value_projection_public_instance_commitment
+                    == anchor.public_instance_commitment
+                && input.source_gate_projection_output_commitment
+                    == anchor.gate_projection_output_commitment
+                && input.source_value_projection_output_commitment
+                    == anchor.value_projection_output_commitment
+                && input.source_gate_value_projection_output_commitment
+                    == anchor.gate_value_projection_output_commitment
+        })
+        .ok_or_else(|| {
+            activation_swiglu_error(
+                "source gate/value statement commitment, source gate/value public instance commitment, or source gate/value projection output commitment anchor is not approved",
+            )
+        })
 }
 
 fn validate_activation_swiglu_row(
@@ -1063,6 +1141,22 @@ fn expect_eq(actual: &str, expected: &str, label: &str) -> Result<()> {
     Ok(())
 }
 
+fn require_blake2b_commitment(actual: &str, label: &str) -> Result<()> {
+    let digest = actual.strip_prefix("blake2b-256:").ok_or_else(|| {
+        activation_swiglu_error(format!("{label} must be a blake2b-256 commitment"))
+    })?;
+    if digest.len() != 64
+        || digest
+            .chars()
+            .any(|char| !char.is_ascii_hexdigit() || char.is_ascii_uppercase())
+    {
+        return Err(activation_swiglu_error(format!(
+            "{label} must be a lowercase 32-byte hex digest"
+        )));
+    }
+    Ok(())
+}
+
 fn expect_usize(actual: usize, expected: usize, label: &str) -> Result<()> {
     if actual != expected {
         return Err(activation_swiglu_error(format!(
@@ -1132,10 +1226,18 @@ mod tests {
     const INPUT_JSON: &str = include_str!(
         "../../docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json"
     );
+    const DERIVED_INPUT_JSON: &str = include_str!(
+        "../../docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json"
+    );
 
     fn input() -> ZkAiD128ActivationSwiGluProofInput {
         zkai_d128_activation_swiglu_input_from_json_str(INPUT_JSON)
             .expect("activation/SwiGLU input")
+    }
+
+    fn derived_input() -> ZkAiD128ActivationSwiGluProofInput {
+        zkai_d128_activation_swiglu_input_from_json_str(DERIVED_INPUT_JSON)
+            .expect("derived activation/SwiGLU input")
     }
 
     #[test]
@@ -1197,6 +1299,23 @@ mod tests {
         let input = input();
         let envelope =
             prove_zkai_d128_activation_swiglu_envelope(&input).expect("activation/SwiGLU proof");
+        assert!(!envelope.proof.is_empty());
+        assert!(verify_zkai_d128_activation_swiglu_envelope(&envelope).expect("verify"));
+    }
+
+    #[test]
+    fn derived_activation_swiglu_air_proof_round_trips() {
+        let input = derived_input();
+        assert_eq!(
+            input.source_gate_value_projection_output_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT
+        );
+        assert_eq!(
+            input.hidden_activation_commitment,
+            "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4"
+        );
+        let envelope =
+            prove_zkai_d128_activation_swiglu_envelope(&input).expect("derived activation proof");
         assert!(!envelope.proof.is_empty());
         assert!(verify_zkai_d128_activation_swiglu_envelope(&envelope).expect("verify"));
     }

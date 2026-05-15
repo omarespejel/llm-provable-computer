@@ -58,6 +58,25 @@ class ZkAiD128ActivationSwiGluProofInputTests(unittest.TestCase):
         )
         ACTIVATION_SWIGLU.validate_source(source)
 
+    def test_builds_from_attention_derived_gate_value_evidence(self) -> None:
+        source = ACTIVATION_SWIGLU.load_source(
+            ROOT
+            / "docs"
+            / "engineering"
+            / "evidence"
+            / "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json"
+        )
+        payload = ACTIVATION_SWIGLU.build_payload(source)
+        self.assertEqual(
+            payload["source_gate_value_projection_output_commitment"],
+            ACTIVATION_SWIGLU.DERIVED_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        )
+        self.assertEqual(
+            payload["hidden_activation_commitment"],
+            "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+        )
+        self.assertEqual(payload["validation_commands"], ACTIVATION_SWIGLU.DERIVED_VALIDATION_COMMANDS)
+
     def test_payload_rejects_hidden_relabeling_as_full_output(self) -> None:
         payload = self.fresh_payload()
         payload["hidden_activation_commitment"] = ACTIVATION_SWIGLU.OUTPUT_ACTIVATION_COMMITMENT

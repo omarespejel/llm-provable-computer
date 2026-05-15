@@ -92,6 +92,12 @@
     "current_mlp_typed_saving_vs_separate_bytes": 32144,
     "current_native_fused_proof_can_be_reused_for_derived_input": false,
     "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+    "derived_native_activation_envelope_bytes": 227031,
+    "derived_native_activation_hidden_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+    "derived_native_activation_proof_backend_version": "stwo-d128-activation-swiglu-air-proof-v1",
+    "derived_native_activation_proof_bytes": 24455,
+    "derived_native_activation_public_instance_commitment": "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb",
+    "derived_native_activation_statement_commitment": "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738",
     "extra_rows_vs_current_mlp_fused": 2049,
     "row_ratio": 1.010374,
     "value_connected_chain_rows": 199553
@@ -173,29 +179,25 @@
         "activation_swiglu_row_commitment": "blake2b-256:2c22164e3cfe75767b82e7326fe57e39821ea7fa3ccdcd144acbc927a5cd85c1",
         "hidden_activation_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
         "proof_native_parameter_commitment": "blake2b-256:e7ea04baa22db9af4c7b7107a779cca9e0708090e478a6239707dd77ea44212d",
-        "public_instance_commitment": "blake2b-256:c6bda5d1b9ca94e8f61ef0173287d97cb9310a794148c30b0b887171614f7f3f",
+        "public_instance_commitment": "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb",
         "source_gate_projection_output_commitment": "blake2b-256:d0d681a8db0c32b7c47e24425cda29b93512d40e46d6b9b9aafdb7cddd2880d8",
         "source_gate_value_projection_output_commitment": "blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2",
         "source_gate_value_projection_public_instance_commitment": "blake2b-256:a24402af117710fca3b0100bc8480ba03e73e4cb86914ba64f45bc785791d51e",
         "source_gate_value_projection_statement_commitment": "blake2b-256:e6dca036c80385d2d47c3953cb4aca15ed058b2a0ac3fc2596767a0658b30d6c",
-        "source_projection_boundary_payload_commitment": "sha256:627115a11d771a6da1c50407963efa5eb39c52226adf69deedc43083c05a0af6",
         "source_value_projection_output_commitment": "blake2b-256:b63e4d4fd6f1c3ba867f4cce7c332deafa67f003d2208bbbe1013b075b7b4781",
-        "statement_commitment": "blake2b-256:c5f7477df93b9ac35f81774c3505f89101c7be676c47e9f1dc6160566ff2dbef"
+        "statement_commitment": "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738"
       },
       "component_id": "activation_swiglu",
-      "decision": "GO_ATTENTION_DERIVED_D128_ACTIVATION_SWIGLU_INPUT",
-      "decision_matches_native": false,
-      "missing_required_native_fields": [
-        "validation_commands",
-        "proof_verifier_hardening"
-      ],
-      "native_component_input_status": "NO_GO_NOT_CURRENT_NATIVE_COMPONENT_INPUT",
-      "payload_key": "activation_swiglu_payload",
+      "decision": "GO_INPUT_FOR_D128_ACTIVATION_SWIGLU_AIR_PROOF",
+      "decision_matches_native": true,
+      "missing_required_native_fields": [],
+      "native_component_input_status": "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE",
+      "payload_key": "root",
       "required_native_decision": "GO_INPUT_FOR_D128_ACTIVATION_SWIGLU_AIR_PROOF",
       "required_native_schema": "zkai-d128-activation-swiglu-air-proof-input-v1",
-      "schema": "zkai-attention-derived-d128-activation-swiglu-input-v1",
-      "schema_matches_native": false,
-      "source_path": "docs/engineering/evidence/zkai-attention-derived-d128-activation-swiglu-2026-05.json"
+      "schema": "zkai-d128-activation-swiglu-air-proof-input-v1",
+      "schema_matches_native": true,
+      "source_path": "docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json"
     },
     {
       "commitments": {
@@ -256,7 +258,7 @@
     }
   ],
   "decision": "NO_GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_NOT_REGENERATED",
-  "first_blocker": "the attention-derived activation/SwiGLU slice is still a checked statement-chain payload, not a native component proof input accepted by the current Stwo RMSNorm-MLP fused proof builder",
+  "first_blocker": "the attention-derived down-projection slice is still a checked statement-chain payload, not a native component proof input accepted by the current Stwo RMSNorm-MLP fused proof builder",
   "missing_native_artifacts": [
     {
       "exists": false,
@@ -303,16 +305,10 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:0975502c8f3e4e839b263966f70a490e3b416a2332d8d07c52a50c3aa7f0528f",
+  "payload_commitment": "sha256:e36858566753d585c0b22f78c52bd2beb55e6e0b570a57a2855948f495271cf0",
   "result": "BOUNDED_NO_GO_NATIVE_COMPONENT_INPUTS_NOT_PARAMETERIZED",
   "schema": "zkai-attention-derived-d128-native-mlp-proof-route-gate-v1",
   "source_artifacts": [
-    {
-      "id": "zkai-attention-derived-d128-activation-swiglu-2026-05",
-      "path": "docs/engineering/evidence/zkai-attention-derived-d128-activation-swiglu-2026-05.json",
-      "payload_sha256": "0d8e05a078ae56baee16aac76b8e0871cf0b0365a369b9ddabdb8044dfc1c6d9",
-      "sha256": "66f88cb0732149685c2fd4e992c1c093ab472dd7c72b40c09a35deb79c234bd4"
-    },
     {
       "id": "zkai-attention-derived-d128-block-statement-chain-2026-05",
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json",
@@ -324,6 +320,18 @@
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-down-projection-2026-05.json",
       "payload_sha256": "8f8d23b61d7dc3131826d9d54d4f5be5290c3905d1c89d62a83270bcc1bd27ae",
       "sha256": "ba445196546ffd68fc8e533731e4d7fdb36822e353de4a89c90c6cdc5b26818c"
+    },
+    {
+      "id": "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json",
+      "payload_sha256": "74d4b51211d1bd97dd04d71397c98706e8e3bef5a9acc041ef5baa946396127c",
+      "sha256": "368ae5fc576e3ab293322d0f5dc7982ba3e3e5104fa2976fcd2eb0d008718bee"
+    },
+    {
+      "id": "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json",
+      "payload_sha256": "fccf5504f5165216a29a455deab3d6919b5e5fa902b1f47a6891a0d3d0f504d8",
+      "sha256": "320da30fdaf00215088b35c21e40a4bad3ae5a57808c88347d21718408fe0c49"
     },
     {
       "id": "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05",
@@ -381,12 +389,18 @@
     "current_mlp_typed_saving_ratio_vs_separate": 0.564167,
     "current_mlp_typed_saving_vs_separate_bytes": 32144,
     "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+    "derived_native_activation_envelope_bytes": 227031,
+    "derived_native_activation_hidden_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
+    "derived_native_activation_proof_backend_version": "stwo-d128-activation-swiglu-air-proof-v1",
+    "derived_native_activation_proof_bytes": 24455,
+    "derived_native_activation_public_instance_commitment": "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb",
+    "derived_native_activation_statement_commitment": "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738",
     "go_result": "GO for a value-connected attention-derived d128 statement chain",
     "missing_native_artifacts": 3,
-    "native_compatible_components": 3,
-    "native_incompatible_components": 3,
+    "native_compatible_components": 4,
+    "native_incompatible_components": 2,
     "no_go_result": "NO-GO for a regenerated attention-derived native RMSNorm-MLP fused proof today",
-    "route_commitment": "blake2b-256:55ed7721ba2efde50c8021a56defded7e689982ab922ccda5ba5e635831cecf0",
+    "route_commitment": "blake2b-256:5fb5177cbfab9e29a38e36b733caa6fb246c068d78374ea5f95faf5197df3e7a",
     "row_ratio": 1.010374,
     "value_connected_chain_rows": 199553
   },
