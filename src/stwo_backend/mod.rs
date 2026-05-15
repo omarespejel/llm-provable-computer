@@ -84,6 +84,8 @@ mod d128_native_component_two_slice_reprove;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_down_projection_proof;
 #[cfg(feature = "stwo-backend")]
+mod d128_native_gate_value_activation_fused_proof;
+#[cfg(feature = "stwo-backend")]
 mod d128_native_gate_value_projection_proof;
 #[cfg(feature = "stwo-backend")]
 mod d128_native_residual_add_proof;
@@ -991,6 +993,27 @@ pub use d128_native_down_projection_proof::{
     ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION, ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
     ZKAI_D128_DOWN_PROJECTION_SEMANTIC_SCOPE, ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT,
     ZKAI_D128_DOWN_PROJECTION_STATEMENT_VERSION, ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
+};
+#[cfg(feature = "stwo-backend")]
+pub use d128_native_gate_value_activation_fused_proof::{
+    build_zkai_d128_gate_value_activation_fused_input,
+    prove_zkai_d128_activation_swiglu_separate_envelope_for_fused_baseline,
+    prove_zkai_d128_gate_value_activation_fused_envelope,
+    prove_zkai_d128_gate_value_separate_envelope_for_fused_baseline,
+    verify_zkai_d128_gate_value_activation_fused_envelope,
+    zkai_d128_gate_value_activation_fused_envelope_from_json_slice,
+    zkai_d128_gate_value_activation_fused_input_from_json_str,
+    ZkAiD128GateValueActivationFusedEnvelope, ZkAiD128GateValueActivationFusedInput,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_DECISION,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_INPUT_DECISION,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_INPUT_SCHEMA,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_ENVELOPE_JSON_BYTES,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_JSON_BYTES,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_MAX_PROOF_BYTES,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_PROOF_VERSION,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_ROUTE_ID,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_SEMANTIC_SCOPE,
+    ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_STATEMENT_VERSION,
 };
 #[cfg(feature = "stwo-backend")]
 pub use d128_native_gate_value_projection_proof::{
