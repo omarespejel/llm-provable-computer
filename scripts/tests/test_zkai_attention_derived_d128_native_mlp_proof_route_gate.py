@@ -62,16 +62,16 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         ):
             GATE.build_core_payload(context)
 
-    def test_first_five_components_are_currently_native_input_shape(self) -> None:
+    def test_all_six_components_are_currently_native_input_shape(self) -> None:
         rows = {row["component_id"]: row for row in self.payload["component_input_frontier"]}
         self.assertEqual(rows["rmsnorm_public_rows"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
         self.assertEqual(rows["rmsnorm_projection_bridge"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
         self.assertEqual(rows["gate_value_projection"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
         self.assertEqual(rows["activation_swiglu"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
         self.assertEqual(rows["down_projection"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
-        self.assertEqual(rows["residual_add"]["native_component_input_status"], "NO_GO_NOT_CURRENT_NATIVE_COMPONENT_INPUT")
-        self.assertEqual(self.payload["summary"]["native_compatible_components"], 5)
-        self.assertEqual(self.payload["summary"]["native_incompatible_components"], 1)
+        self.assertEqual(rows["residual_add"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
+        self.assertEqual(self.payload["summary"]["native_compatible_components"], 6)
+        self.assertEqual(self.payload["summary"]["native_incompatible_components"], 0)
 
     def test_binds_derived_native_activation_proof_envelope(self) -> None:
         summary = self.payload["summary"]
@@ -93,6 +93,19 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.assertEqual(
             summary["derived_native_down_statement_commitment"],
             "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e",
+        )
+
+    def test_binds_derived_native_residual_add_proof_envelope(self) -> None:
+        summary = self.payload["summary"]
+        self.assertEqual(summary["derived_native_residual_proof_bytes"], 16_042)
+        self.assertEqual(summary["derived_native_residual_envelope_bytes"], 155_655)
+        self.assertEqual(
+            summary["derived_native_residual_output_commitment"],
+            "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
+        )
+        self.assertEqual(
+            summary["derived_native_residual_statement_commitment"],
+            "blake2b-256:0916313384f68227850286254909473f9efa232bdca3c1c5ee0e3c4f666644ab",
         )
 
     def test_rejects_coordinated_activation_down_statement_drift(self) -> None:
@@ -166,7 +179,7 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
     def test_tsv_output(self) -> None:
         tsv = GATE.to_tsv(self.payload, context=self.context)
         self.assertIn("native_incompatible_components", tsv.splitlines()[0])
-        self.assertTrue(tsv.splitlines()[1].endswith("\t5\t1\t24455\t227031\t58151\t480346"))
+        self.assertTrue(tsv.splitlines()[1].endswith("\t6\t0\t24455\t227031\t58151\t480346\t16042\t155655"))
 
     def test_written_payload_round_trip(self) -> None:
         tmp_root = ROOT / "docs" / "engineering" / "evidence"

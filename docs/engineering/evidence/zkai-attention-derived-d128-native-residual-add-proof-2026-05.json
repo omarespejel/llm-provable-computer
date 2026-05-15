@@ -1,0 +1,1342 @@
+{
+  "decision": "GO_INPUT_FOR_D128_RESIDUAL_ADD_AIR_PROOF",
+  "input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+  "input_q8": [
+    1,
+    1,
+    2,
+    -2,
+    1,
+    0,
+    4,
+    1,
+    4,
+    1,
+    1,
+    1,
+    -1,
+    4,
+    3,
+    0,
+    4,
+    -1,
+    0,
+    2,
+    2,
+    2,
+    -1,
+    0,
+    1,
+    2,
+    -1,
+    0,
+    1,
+    -2,
+    2,
+    1,
+    1,
+    3,
+    1,
+    -1,
+    1,
+    1,
+    -2,
+    1,
+    5,
+    1,
+    0,
+    -3,
+    -1,
+    5,
+    -2,
+    2,
+    3,
+    3,
+    -3,
+    -2,
+    1,
+    3,
+    3,
+    -3,
+    -4,
+    4,
+    0,
+    -2,
+    3,
+    2,
+    -1,
+    -1,
+    0,
+    2,
+    2,
+    -2,
+    0,
+    0,
+    5,
+    1,
+    3,
+    1,
+    2,
+    1,
+    -1,
+    4,
+    3,
+    1,
+    4,
+    -2,
+    0,
+    2,
+    2,
+    2,
+    -1,
+    0,
+    2,
+    1,
+    -1,
+    0,
+    2,
+    -2,
+    1,
+    0,
+    1,
+    4,
+    0,
+    -1,
+    1,
+    2,
+    -2,
+    1,
+    5,
+    1,
+    1,
+    -3,
+    -1,
+    4,
+    -2,
+    2,
+    3,
+    3,
+    -3,
+    -1,
+    1,
+    2,
+    3,
+    -2,
+    -4,
+    4,
+    0,
+    -2,
+    4,
+    2,
+    -1,
+    -1
+  ],
+  "next_backend_step": "compose all checked d128 slice receipts into one statement-bound block receipt before benchmarking",
+  "non_claims": [
+    "not recursive composition of all d128 proof slices",
+    "not private parameter-opening proof",
+    "not model-scale transformer inference",
+    "not verifier-time benchmark evidence for the full d128 block",
+    "not onchain deployment evidence"
+  ],
+  "output_activation_commitment": "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
+  "output_q8": [
+    -10093,
+    -4003,
+    4639,
+    7311,
+    5365,
+    13083,
+    -11566,
+    -2714,
+    -4617,
+    5600,
+    -165,
+    -13258,
+    -30,
+    4255,
+    -5466,
+    -6222,
+    801,
+    5076,
+    -4910,
+    -2113,
+    -413,
+    1673,
+    -586,
+    -10120,
+    1552,
+    -1142,
+    -5549,
+    3095,
+    -10835,
+    4442,
+    -1485,
+    1271,
+    2887,
+    -2334,
+    6068,
+    -991,
+    -8353,
+    -11205,
+    -1155,
+    -2390,
+    853,
+    -402,
+    -4486,
+    275,
+    -562,
+    6091,
+    -10302,
+    -10896,
+    -3775,
+    -6278,
+    -8225,
+    3140,
+    9127,
+    -2820,
+    -3471,
+    -5683,
+    4191,
+    -5632,
+    -14385,
+    -5913,
+    -2622,
+    -5646,
+    -1156,
+    10595,
+    -8259,
+    2820,
+    -2521,
+    -6123,
+    4099,
+    -9497,
+    -349,
+    -725,
+    2057,
+    2728,
+    4968,
+    -5682,
+    355,
+    -3495,
+    2689,
+    -8515,
+    -8937,
+    -6651,
+    8966,
+    -10278,
+    -4188,
+    -2178,
+    12707,
+    9352,
+    -6123,
+    8363,
+    238,
+    13411,
+    -4663,
+    6497,
+    -2778,
+    -3825,
+    -548,
+    2875,
+    1958,
+    -11244,
+    15877,
+    -1145,
+    -726,
+    -7273,
+    3586,
+    -6232,
+    -8032,
+    7326,
+    3431,
+    6986,
+    1850,
+    2820,
+    10119,
+    6933,
+    -14094,
+    6775,
+    -7635,
+    -5567,
+    -4061,
+    7249,
+    -414,
+    7118,
+    13458,
+    14338,
+    10483,
+    1355,
+    -5947,
+    -3337
+  ],
+  "proof_native_parameter_commitment": "blake2b-256:2d54c2e4ac69af9a4a149f791bb62ed05b903f495783a9c607314d5fc04e5b42",
+  "proof_verifier_hardening": [
+    "source RMSNorm input activation commitment recomputation before proof verification",
+    "source down-projection residual-delta commitment recomputation before proof verification",
+    "residual-add row commitment recomputation before proof verification",
+    "final output activation commitment recomputation before proof verification",
+    "AIR residual-add relation for every checked d128 output coordinate",
+    "q8 semantic bound only for the original input activation",
+    "signed-M31 bounds for residual delta and final output activations",
+    "intermediate commitment relabeling rejection",
+    "fixed PCS verifier profile before commitment-root recomputation",
+    "bounded proof bytes before JSON deserialization",
+    "commitment-vector length check before commitment indexing"
+  ],
+  "public_instance_commitment": "blake2b-256:0f5f90a32b53ea1274eac93e60665d2595cafde5ec53e57e3598fedbe6d2f195",
+  "range_policy": "input_activation_q8_semantic_bound_1024; residual_delta_and_output_signed_m31",
+  "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
+  "residual_add_row_commitment": "blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf",
+  "residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
+  "residual_delta_q8": [
+    -10094,
+    -4004,
+    4637,
+    7313,
+    5364,
+    13083,
+    -11570,
+    -2715,
+    -4621,
+    5599,
+    -166,
+    -13259,
+    -29,
+    4251,
+    -5469,
+    -6222,
+    797,
+    5077,
+    -4910,
+    -2115,
+    -415,
+    1671,
+    -585,
+    -10120,
+    1551,
+    -1144,
+    -5548,
+    3095,
+    -10836,
+    4444,
+    -1487,
+    1270,
+    2886,
+    -2337,
+    6067,
+    -990,
+    -8354,
+    -11206,
+    -1153,
+    -2391,
+    848,
+    -403,
+    -4486,
+    278,
+    -561,
+    6086,
+    -10300,
+    -10898,
+    -3778,
+    -6281,
+    -8222,
+    3142,
+    9126,
+    -2823,
+    -3474,
+    -5680,
+    4195,
+    -5636,
+    -14385,
+    -5911,
+    -2625,
+    -5648,
+    -1155,
+    10596,
+    -8259,
+    2818,
+    -2523,
+    -6121,
+    4099,
+    -9497,
+    -354,
+    -726,
+    2054,
+    2727,
+    4966,
+    -5683,
+    356,
+    -3499,
+    2686,
+    -8516,
+    -8941,
+    -6649,
+    8966,
+    -10280,
+    -4190,
+    -2180,
+    12708,
+    9352,
+    -6125,
+    8362,
+    239,
+    13411,
+    -4665,
+    6499,
+    -2779,
+    -3825,
+    -549,
+    2871,
+    1958,
+    -11243,
+    15876,
+    -1147,
+    -724,
+    -7274,
+    3581,
+    -6233,
+    -8033,
+    7329,
+    3432,
+    6982,
+    1852,
+    2818,
+    10116,
+    6930,
+    -14091,
+    6776,
+    -7636,
+    -5569,
+    -4064,
+    7251,
+    -410,
+    7114,
+    13458,
+    14340,
+    10479,
+    1353,
+    -5946,
+    -3336
+  ],
+  "residual_delta_remainder_q8": [
+    487,
+    39,
+    133,
+    472,
+    266,
+    236,
+    425,
+    493,
+    181,
+    305,
+    84,
+    414,
+    404,
+    268,
+    173,
+    371,
+    171,
+    305,
+    507,
+    496,
+    81,
+    493,
+    116,
+    190,
+    207,
+    225,
+    452,
+    111,
+    283,
+    2,
+    215,
+    90,
+    83,
+    53,
+    299,
+    86,
+    333,
+    174,
+    45,
+    436,
+    14,
+    355,
+    228,
+    151,
+    475,
+    248,
+    247,
+    318,
+    17,
+    479,
+    257,
+    303,
+    129,
+    0,
+    46,
+    426,
+    175,
+    449,
+    441,
+    168,
+    105,
+    278,
+    428,
+    299,
+    422,
+    429,
+    385,
+    502,
+    356,
+    76,
+    237,
+    151,
+    178,
+    204,
+    18,
+    204,
+    222,
+    233,
+    86,
+    66,
+    487,
+    77,
+    264,
+    95,
+    167,
+    192,
+    105,
+    490,
+    220,
+    45,
+    458,
+    386,
+    226,
+    108,
+    368,
+    131,
+    361,
+    10,
+    164,
+    209,
+    327,
+    392,
+    306,
+    46,
+    144,
+    329,
+    323,
+    457,
+    231,
+    115,
+    390,
+    487,
+    141,
+    151,
+    14,
+    206,
+    65,
+    233,
+    429,
+    296,
+    9,
+    142,
+    209,
+    252,
+    240,
+    54,
+    509,
+    407
+  ],
+  "residual_delta_remainder_sha256": "745d0cc14f1f5c595db32b81dd4b58b49df2e9b98b4ca6e7ec5fc3065811f895",
+  "residual_delta_scale_divisor": 512,
+  "row_count": 128,
+  "rows": [
+    {
+      "input_q8": 1,
+      "output_q8": -10093,
+      "residual_delta_q8": -10094,
+      "row_index": 0
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -4003,
+      "residual_delta_q8": -4004,
+      "row_index": 1
+    },
+    {
+      "input_q8": 2,
+      "output_q8": 4639,
+      "residual_delta_q8": 4637,
+      "row_index": 2
+    },
+    {
+      "input_q8": -2,
+      "output_q8": 7311,
+      "residual_delta_q8": 7313,
+      "row_index": 3
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 5365,
+      "residual_delta_q8": 5364,
+      "row_index": 4
+    },
+    {
+      "input_q8": 0,
+      "output_q8": 13083,
+      "residual_delta_q8": 13083,
+      "row_index": 5
+    },
+    {
+      "input_q8": 4,
+      "output_q8": -11566,
+      "residual_delta_q8": -11570,
+      "row_index": 6
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -2714,
+      "residual_delta_q8": -2715,
+      "row_index": 7
+    },
+    {
+      "input_q8": 4,
+      "output_q8": -4617,
+      "residual_delta_q8": -4621,
+      "row_index": 8
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 5600,
+      "residual_delta_q8": 5599,
+      "row_index": 9
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -165,
+      "residual_delta_q8": -166,
+      "row_index": 10
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -13258,
+      "residual_delta_q8": -13259,
+      "row_index": 11
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -30,
+      "residual_delta_q8": -29,
+      "row_index": 12
+    },
+    {
+      "input_q8": 4,
+      "output_q8": 4255,
+      "residual_delta_q8": 4251,
+      "row_index": 13
+    },
+    {
+      "input_q8": 3,
+      "output_q8": -5466,
+      "residual_delta_q8": -5469,
+      "row_index": 14
+    },
+    {
+      "input_q8": 0,
+      "output_q8": -6222,
+      "residual_delta_q8": -6222,
+      "row_index": 15
+    },
+    {
+      "input_q8": 4,
+      "output_q8": 801,
+      "residual_delta_q8": 797,
+      "row_index": 16
+    },
+    {
+      "input_q8": -1,
+      "output_q8": 5076,
+      "residual_delta_q8": 5077,
+      "row_index": 17
+    },
+    {
+      "input_q8": 0,
+      "output_q8": -4910,
+      "residual_delta_q8": -4910,
+      "row_index": 18
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -2113,
+      "residual_delta_q8": -2115,
+      "row_index": 19
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -413,
+      "residual_delta_q8": -415,
+      "row_index": 20
+    },
+    {
+      "input_q8": 2,
+      "output_q8": 1673,
+      "residual_delta_q8": 1671,
+      "row_index": 21
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -586,
+      "residual_delta_q8": -585,
+      "row_index": 22
+    },
+    {
+      "input_q8": 0,
+      "output_q8": -10120,
+      "residual_delta_q8": -10120,
+      "row_index": 23
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 1552,
+      "residual_delta_q8": 1551,
+      "row_index": 24
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -1142,
+      "residual_delta_q8": -1144,
+      "row_index": 25
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -5549,
+      "residual_delta_q8": -5548,
+      "row_index": 26
+    },
+    {
+      "input_q8": 0,
+      "output_q8": 3095,
+      "residual_delta_q8": 3095,
+      "row_index": 27
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -10835,
+      "residual_delta_q8": -10836,
+      "row_index": 28
+    },
+    {
+      "input_q8": -2,
+      "output_q8": 4442,
+      "residual_delta_q8": 4444,
+      "row_index": 29
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -1485,
+      "residual_delta_q8": -1487,
+      "row_index": 30
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 1271,
+      "residual_delta_q8": 1270,
+      "row_index": 31
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 2887,
+      "residual_delta_q8": 2886,
+      "row_index": 32
+    },
+    {
+      "input_q8": 3,
+      "output_q8": -2334,
+      "residual_delta_q8": -2337,
+      "row_index": 33
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 6068,
+      "residual_delta_q8": 6067,
+      "row_index": 34
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -991,
+      "residual_delta_q8": -990,
+      "row_index": 35
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -8353,
+      "residual_delta_q8": -8354,
+      "row_index": 36
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -11205,
+      "residual_delta_q8": -11206,
+      "row_index": 37
+    },
+    {
+      "input_q8": -2,
+      "output_q8": -1155,
+      "residual_delta_q8": -1153,
+      "row_index": 38
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -2390,
+      "residual_delta_q8": -2391,
+      "row_index": 39
+    },
+    {
+      "input_q8": 5,
+      "output_q8": 853,
+      "residual_delta_q8": 848,
+      "row_index": 40
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -402,
+      "residual_delta_q8": -403,
+      "row_index": 41
+    },
+    {
+      "input_q8": 0,
+      "output_q8": -4486,
+      "residual_delta_q8": -4486,
+      "row_index": 42
+    },
+    {
+      "input_q8": -3,
+      "output_q8": 275,
+      "residual_delta_q8": 278,
+      "row_index": 43
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -562,
+      "residual_delta_q8": -561,
+      "row_index": 44
+    },
+    {
+      "input_q8": 5,
+      "output_q8": 6091,
+      "residual_delta_q8": 6086,
+      "row_index": 45
+    },
+    {
+      "input_q8": -2,
+      "output_q8": -10302,
+      "residual_delta_q8": -10300,
+      "row_index": 46
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -10896,
+      "residual_delta_q8": -10898,
+      "row_index": 47
+    },
+    {
+      "input_q8": 3,
+      "output_q8": -3775,
+      "residual_delta_q8": -3778,
+      "row_index": 48
+    },
+    {
+      "input_q8": 3,
+      "output_q8": -6278,
+      "residual_delta_q8": -6281,
+      "row_index": 49
+    },
+    {
+      "input_q8": -3,
+      "output_q8": -8225,
+      "residual_delta_q8": -8222,
+      "row_index": 50
+    },
+    {
+      "input_q8": -2,
+      "output_q8": 3140,
+      "residual_delta_q8": 3142,
+      "row_index": 51
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 9127,
+      "residual_delta_q8": 9126,
+      "row_index": 52
+    },
+    {
+      "input_q8": 3,
+      "output_q8": -2820,
+      "residual_delta_q8": -2823,
+      "row_index": 53
+    },
+    {
+      "input_q8": 3,
+      "output_q8": -3471,
+      "residual_delta_q8": -3474,
+      "row_index": 54
+    },
+    {
+      "input_q8": -3,
+      "output_q8": -5683,
+      "residual_delta_q8": -5680,
+      "row_index": 55
+    },
+    {
+      "input_q8": -4,
+      "output_q8": 4191,
+      "residual_delta_q8": 4195,
+      "row_index": 56
+    },
+    {
+      "input_q8": 4,
+      "output_q8": -5632,
+      "residual_delta_q8": -5636,
+      "row_index": 57
+    },
+    {
+      "input_q8": 0,
+      "output_q8": -14385,
+      "residual_delta_q8": -14385,
+      "row_index": 58
+    },
+    {
+      "input_q8": -2,
+      "output_q8": -5913,
+      "residual_delta_q8": -5911,
+      "row_index": 59
+    },
+    {
+      "input_q8": 3,
+      "output_q8": -2622,
+      "residual_delta_q8": -2625,
+      "row_index": 60
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -5646,
+      "residual_delta_q8": -5648,
+      "row_index": 61
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -1156,
+      "residual_delta_q8": -1155,
+      "row_index": 62
+    },
+    {
+      "input_q8": -1,
+      "output_q8": 10595,
+      "residual_delta_q8": 10596,
+      "row_index": 63
+    },
+    {
+      "input_q8": 0,
+      "output_q8": -8259,
+      "residual_delta_q8": -8259,
+      "row_index": 64
+    },
+    {
+      "input_q8": 2,
+      "output_q8": 2820,
+      "residual_delta_q8": 2818,
+      "row_index": 65
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -2521,
+      "residual_delta_q8": -2523,
+      "row_index": 66
+    },
+    {
+      "input_q8": -2,
+      "output_q8": -6123,
+      "residual_delta_q8": -6121,
+      "row_index": 67
+    },
+    {
+      "input_q8": 0,
+      "output_q8": 4099,
+      "residual_delta_q8": 4099,
+      "row_index": 68
+    },
+    {
+      "input_q8": 0,
+      "output_q8": -9497,
+      "residual_delta_q8": -9497,
+      "row_index": 69
+    },
+    {
+      "input_q8": 5,
+      "output_q8": -349,
+      "residual_delta_q8": -354,
+      "row_index": 70
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -725,
+      "residual_delta_q8": -726,
+      "row_index": 71
+    },
+    {
+      "input_q8": 3,
+      "output_q8": 2057,
+      "residual_delta_q8": 2054,
+      "row_index": 72
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 2728,
+      "residual_delta_q8": 2727,
+      "row_index": 73
+    },
+    {
+      "input_q8": 2,
+      "output_q8": 4968,
+      "residual_delta_q8": 4966,
+      "row_index": 74
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -5682,
+      "residual_delta_q8": -5683,
+      "row_index": 75
+    },
+    {
+      "input_q8": -1,
+      "output_q8": 355,
+      "residual_delta_q8": 356,
+      "row_index": 76
+    },
+    {
+      "input_q8": 4,
+      "output_q8": -3495,
+      "residual_delta_q8": -3499,
+      "row_index": 77
+    },
+    {
+      "input_q8": 3,
+      "output_q8": 2689,
+      "residual_delta_q8": 2686,
+      "row_index": 78
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -8515,
+      "residual_delta_q8": -8516,
+      "row_index": 79
+    },
+    {
+      "input_q8": 4,
+      "output_q8": -8937,
+      "residual_delta_q8": -8941,
+      "row_index": 80
+    },
+    {
+      "input_q8": -2,
+      "output_q8": -6651,
+      "residual_delta_q8": -6649,
+      "row_index": 81
+    },
+    {
+      "input_q8": 0,
+      "output_q8": 8966,
+      "residual_delta_q8": 8966,
+      "row_index": 82
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -10278,
+      "residual_delta_q8": -10280,
+      "row_index": 83
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -4188,
+      "residual_delta_q8": -4190,
+      "row_index": 84
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -2178,
+      "residual_delta_q8": -2180,
+      "row_index": 85
+    },
+    {
+      "input_q8": -1,
+      "output_q8": 12707,
+      "residual_delta_q8": 12708,
+      "row_index": 86
+    },
+    {
+      "input_q8": 0,
+      "output_q8": 9352,
+      "residual_delta_q8": 9352,
+      "row_index": 87
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -6123,
+      "residual_delta_q8": -6125,
+      "row_index": 88
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 8363,
+      "residual_delta_q8": 8362,
+      "row_index": 89
+    },
+    {
+      "input_q8": -1,
+      "output_q8": 238,
+      "residual_delta_q8": 239,
+      "row_index": 90
+    },
+    {
+      "input_q8": 0,
+      "output_q8": 13411,
+      "residual_delta_q8": 13411,
+      "row_index": 91
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -4663,
+      "residual_delta_q8": -4665,
+      "row_index": 92
+    },
+    {
+      "input_q8": -2,
+      "output_q8": 6497,
+      "residual_delta_q8": 6499,
+      "row_index": 93
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -2778,
+      "residual_delta_q8": -2779,
+      "row_index": 94
+    },
+    {
+      "input_q8": 0,
+      "output_q8": -3825,
+      "residual_delta_q8": -3825,
+      "row_index": 95
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -548,
+      "residual_delta_q8": -549,
+      "row_index": 96
+    },
+    {
+      "input_q8": 4,
+      "output_q8": 2875,
+      "residual_delta_q8": 2871,
+      "row_index": 97
+    },
+    {
+      "input_q8": 0,
+      "output_q8": 1958,
+      "residual_delta_q8": 1958,
+      "row_index": 98
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -11244,
+      "residual_delta_q8": -11243,
+      "row_index": 99
+    },
+    {
+      "input_q8": 1,
+      "output_q8": 15877,
+      "residual_delta_q8": 15876,
+      "row_index": 100
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -1145,
+      "residual_delta_q8": -1147,
+      "row_index": 101
+    },
+    {
+      "input_q8": -2,
+      "output_q8": -726,
+      "residual_delta_q8": -724,
+      "row_index": 102
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -7273,
+      "residual_delta_q8": -7274,
+      "row_index": 103
+    },
+    {
+      "input_q8": 5,
+      "output_q8": 3586,
+      "residual_delta_q8": 3581,
+      "row_index": 104
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -6232,
+      "residual_delta_q8": -6233,
+      "row_index": 105
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -8032,
+      "residual_delta_q8": -8033,
+      "row_index": 106
+    },
+    {
+      "input_q8": -3,
+      "output_q8": 7326,
+      "residual_delta_q8": 7329,
+      "row_index": 107
+    },
+    {
+      "input_q8": -1,
+      "output_q8": 3431,
+      "residual_delta_q8": 3432,
+      "row_index": 108
+    },
+    {
+      "input_q8": 4,
+      "output_q8": 6986,
+      "residual_delta_q8": 6982,
+      "row_index": 109
+    },
+    {
+      "input_q8": -2,
+      "output_q8": 1850,
+      "residual_delta_q8": 1852,
+      "row_index": 110
+    },
+    {
+      "input_q8": 2,
+      "output_q8": 2820,
+      "residual_delta_q8": 2818,
+      "row_index": 111
+    },
+    {
+      "input_q8": 3,
+      "output_q8": 10119,
+      "residual_delta_q8": 10116,
+      "row_index": 112
+    },
+    {
+      "input_q8": 3,
+      "output_q8": 6933,
+      "residual_delta_q8": 6930,
+      "row_index": 113
+    },
+    {
+      "input_q8": -3,
+      "output_q8": -14094,
+      "residual_delta_q8": -14091,
+      "row_index": 114
+    },
+    {
+      "input_q8": -1,
+      "output_q8": 6775,
+      "residual_delta_q8": 6776,
+      "row_index": 115
+    },
+    {
+      "input_q8": 1,
+      "output_q8": -7635,
+      "residual_delta_q8": -7636,
+      "row_index": 116
+    },
+    {
+      "input_q8": 2,
+      "output_q8": -5567,
+      "residual_delta_q8": -5569,
+      "row_index": 117
+    },
+    {
+      "input_q8": 3,
+      "output_q8": -4061,
+      "residual_delta_q8": -4064,
+      "row_index": 118
+    },
+    {
+      "input_q8": -2,
+      "output_q8": 7249,
+      "residual_delta_q8": 7251,
+      "row_index": 119
+    },
+    {
+      "input_q8": -4,
+      "output_q8": -414,
+      "residual_delta_q8": -410,
+      "row_index": 120
+    },
+    {
+      "input_q8": 4,
+      "output_q8": 7118,
+      "residual_delta_q8": 7114,
+      "row_index": 121
+    },
+    {
+      "input_q8": 0,
+      "output_q8": 13458,
+      "residual_delta_q8": 13458,
+      "row_index": 122
+    },
+    {
+      "input_q8": -2,
+      "output_q8": 14338,
+      "residual_delta_q8": 14340,
+      "row_index": 123
+    },
+    {
+      "input_q8": 4,
+      "output_q8": 10483,
+      "residual_delta_q8": 10479,
+      "row_index": 124
+    },
+    {
+      "input_q8": 2,
+      "output_q8": 1355,
+      "residual_delta_q8": 1353,
+      "row_index": 125
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -5947,
+      "residual_delta_q8": -5946,
+      "row_index": 126
+    },
+    {
+      "input_q8": -1,
+      "output_q8": -3337,
+      "residual_delta_q8": -3336,
+      "row_index": 127
+    }
+  ],
+  "schema": "zkai-d128-residual-add-air-proof-input-v1",
+  "source_down_projection_proof_version": "stwo-d128-down-projection-air-proof-v1",
+  "source_down_projection_public_instance_commitment": "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735",
+  "source_down_projection_statement_commitment": "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e",
+  "source_rmsnorm_proof_version": "zkai-attention-derived-d128-input-gate-v1",
+  "source_rmsnorm_statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
+  "statement_commitment": "blake2b-256:0916313384f68227850286254909473f9efa232bdca3c1c5ee0e3c4f666644ab",
+  "target_id": "rmsnorm-swiglu-residual-d128-v1",
+  "validation_commands": [
+    "python3 scripts/zkai_d128_residual_add_proof_input.py --rmsnorm-source-json docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json --down-source-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_residual_add_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_residual_add_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate"
+  ],
+  "verifier_domain": "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1",
+  "width": 128
+}

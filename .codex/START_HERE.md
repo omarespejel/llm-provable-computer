@@ -106,8 +106,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 100. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
 101. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
 102. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
-103. `docs/engineering/reproducibility.md`
-104. `git status --short --branch`
+103. `docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`
+104. `docs/engineering/reproducibility.md`
+105. `git status --short --branch`
 
 ## What this repository is now
 
@@ -147,14 +148,15 @@ This repository currently has three live lanes.
      `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`.
    - The attention-derived native MLP proof-route gate now narrows that next
      experiment: the value-connected d128 statement chain is a GO at `199,553`
-     rows, and `5 / 6` derived slice payloads currently have the native
+     rows, and `6 / 6` derived slice payloads currently have the native
      component input shape accepted by the downstream native verifiers. The
-     remaining first blocker is residual-add, and the existing fused proof
-     consumes the older synthetic input commitment, so it must not be relabeled
+     remaining first blocker is a regenerated fused RMSNorm-MLP proof artifact
+     over the derived input commitment, because the existing fused proof
+     consumes the older synthetic input commitment and must not be relabeled
      as attention-derived. See
      `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
      and
-     `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`.
+     `docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`.
    - The d64 gate/value and down-projection slices intentionally use
      fixed-point floor-quotient semantics, not raw projection sums. The
      quotient scale divisors and remainder hashes are now checked in the

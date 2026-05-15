@@ -51,6 +51,28 @@ pub const ZKAI_D128_INPUT_ACTIVATION_COMMITMENT: &str =
     "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78";
 pub const ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT: &str =
     "blake2b-256:869a0046bdaba3f6a7f98a3ffec618479c9dc91df2a342900c76f9ba53215fc1";
+pub const ZKAI_D128_ATTENTION_DERIVED_INPUT_PROOF_VERSION: &str =
+    "zkai-attention-derived-d128-input-gate-v1";
+pub const ZKAI_D128_ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT: &str =
+    "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b";
+pub const ZKAI_D128_ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT: &str =
+    "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35";
+pub const ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_STATEMENT_COMMITMENT: &str =
+    "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e";
+pub const ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT: &str =
+    "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735";
+pub const ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT: &str =
+    "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec";
+pub const ZKAI_D128_ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT: &str =
+    "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9";
+pub const ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_ROW_COMMITMENT: &str =
+    "blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf";
+pub const ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_PROOF_NATIVE_PARAMETER_COMMITMENT: &str =
+    "blake2b-256:2d54c2e4ac69af9a4a149f791bb62ed05b903f495783a9c607314d5fc04e5b42";
+pub const ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT: &str =
+    "blake2b-256:0f5f90a32b53ea1274eac93e60665d2595cafde5ec53e57e3598fedbe6d2f195";
+pub const ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_STATEMENT_COMMITMENT: &str =
+    "blake2b-256:0916313384f68227850286254909473f9efa232bdca3c1c5ee0e3c4f666644ab";
 pub const ZKAI_D128_RESIDUAL_ADD_PROOF_NATIVE_PARAMETER_COMMITMENT: &str =
     "blake2b-256:f958da6fa72df8bc32873b3602a128ed35b65f9427e8627af0b39ff7e21b31bc";
 pub const ZKAI_D128_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT: &str =
@@ -71,6 +93,8 @@ const ZKAI_D128_RESIDUAL_ROWS: usize = ZKAI_D128_WIDTH;
 const ZKAI_D128_RESIDUAL_DELTA_SCALE_DIVISOR: usize = 512;
 const ZKAI_D128_RESIDUAL_DELTA_REMAINDER_SHA256: &str =
     "a99010fcd4f0898287b58960f979b086208ea7eff6ca51f0e8af827ec916ef3d";
+const ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256: &str =
+    "745d0cc14f1f5c595db32b81dd4b58b49df2e9b98b4ca6e7ec5fc3065811f895";
 const INPUT_ACTIVATION_DOMAIN: &str = "ptvm:zkai:d128-input-activation:v1";
 const RESIDUAL_DELTA_DOMAIN: &str = "ptvm:zkai:d128-residual-delta:v1";
 const OUTPUT_ACTIVATION_DOMAIN: &str = "ptvm:zkai:d128-output-activation:v1";
@@ -117,6 +141,31 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "just gate-fast",
     "just gate",
 ];
+const EXPECTED_DERIVED_VALIDATION_COMMANDS: &[&str] = &[
+    "python3 scripts/zkai_d128_residual_add_proof_input.py --rmsnorm-source-json docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json --down-source-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_d128_residual_add_proof_input",
+    "cargo +nightly-2025-07-14 test d128_native_residual_add_proof --lib --features stwo-backend",
+    "just gate-fast",
+    "just gate",
+];
+
+#[derive(Debug, Clone, Copy)]
+struct ResidualAddSourceAnchor {
+    name: &'static str,
+    source_rmsnorm_proof_version: &'static str,
+    source_rmsnorm_statement_commitment: &'static str,
+    source_down_projection_statement_commitment: &'static str,
+    source_down_projection_public_instance_commitment: &'static str,
+    input_activation_commitment: &'static str,
+    residual_delta_commitment: &'static str,
+    residual_delta_remainder_sha256: &'static str,
+    output_activation_commitment: &'static str,
+    residual_add_row_commitment: &'static str,
+    proof_native_parameter_commitment: &'static str,
+    public_instance_commitment: &'static str,
+    statement_commitment: &'static str,
+    validation_commands: &'static [&'static str],
+}
 
 #[derive(Debug, Clone)]
 pub(super) struct D128ResidualAddEval {
@@ -241,7 +290,7 @@ pub fn prove_zkai_d128_residual_add_envelope(
         statement_version: ZKAI_D128_RESIDUAL_ADD_STATEMENT_VERSION.to_string(),
         semantic_scope: ZKAI_D128_RESIDUAL_ADD_SEMANTIC_SCOPE.to_string(),
         decision: ZKAI_D128_RESIDUAL_ADD_DECISION.to_string(),
-        source_rmsnorm_proof_version: ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION.to_string(),
+        source_rmsnorm_proof_version: input.source_rmsnorm_proof_version.clone(),
         source_down_projection_proof_version: ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION.to_string(),
         input: input.clone(),
         proof: prove_residual_add_rows(input)?,
@@ -281,7 +330,7 @@ fn validate_residual_add_envelope(envelope: &ZkAiD128ResidualAddEnvelope) -> Res
     )?;
     expect_eq(
         &envelope.source_rmsnorm_proof_version,
-        ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION,
+        &envelope.input.source_rmsnorm_proof_version,
         "source RMSNorm proof version",
     )?;
     expect_eq(
@@ -322,36 +371,6 @@ fn validate_residual_add_input(input: &ZkAiD128ResidualAddProofInput) -> Result<
     )?;
     expect_usize(input.width, ZKAI_D128_WIDTH, "width")?;
     expect_usize(input.row_count, ZKAI_D128_RESIDUAL_ROWS, "row count")?;
-    expect_eq(
-        &input.source_rmsnorm_proof_version,
-        ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION,
-        "source RMSNorm proof version",
-    )?;
-    expect_eq(
-        &input.source_rmsnorm_statement_commitment,
-        ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
-        "source RMSNorm statement commitment",
-    )?;
-    expect_eq(
-        &input.source_down_projection_proof_version,
-        ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION,
-        "source down-projection proof version",
-    )?;
-    expect_eq(
-        &input.source_down_projection_statement_commitment,
-        ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT,
-        "source down-projection statement commitment",
-    )?;
-    expect_eq(
-        &input.source_down_projection_public_instance_commitment,
-        ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
-        "source down-projection public-instance commitment",
-    )?;
-    expect_eq(
-        &input.range_policy,
-        ZKAI_D128_RESIDUAL_ADD_RANGE_POLICY,
-        "range policy",
-    )?;
     if input.residual_delta_commitment == input.output_activation_commitment {
         return Err(residual_add_error(
             "residual delta commitment must not relabel as full output activation commitment",
@@ -362,14 +381,45 @@ fn validate_residual_add_input(input: &ZkAiD128ResidualAddProofInput) -> Result<
             "input activation commitment must not relabel as output activation commitment",
         ));
     }
+    let source_anchor = approved_residual_add_source_anchor(input)?;
+    expect_eq(
+        &input.source_rmsnorm_proof_version,
+        source_anchor.source_rmsnorm_proof_version,
+        "source RMSNorm proof version",
+    )?;
+    expect_eq(
+        &input.source_rmsnorm_statement_commitment,
+        source_anchor.source_rmsnorm_statement_commitment,
+        "source RMSNorm statement commitment",
+    )?;
+    expect_eq(
+        &input.source_down_projection_proof_version,
+        ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION,
+        "source down-projection proof version",
+    )?;
+    expect_eq(
+        &input.source_down_projection_statement_commitment,
+        source_anchor.source_down_projection_statement_commitment,
+        "source down-projection statement commitment",
+    )?;
+    expect_eq(
+        &input.source_down_projection_public_instance_commitment,
+        source_anchor.source_down_projection_public_instance_commitment,
+        "source down-projection public-instance commitment",
+    )?;
+    expect_eq(
+        &input.range_policy,
+        ZKAI_D128_RESIDUAL_ADD_RANGE_POLICY,
+        "range policy",
+    )?;
     expect_eq(
         &input.input_activation_commitment,
-        ZKAI_D128_INPUT_ACTIVATION_COMMITMENT,
+        source_anchor.input_activation_commitment,
         "input activation commitment",
     )?;
     expect_eq(
         &input.residual_delta_commitment,
-        ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
+        source_anchor.residual_delta_commitment,
         "residual delta commitment",
     )?;
     expect_usize(
@@ -379,32 +429,32 @@ fn validate_residual_add_input(input: &ZkAiD128ResidualAddProofInput) -> Result<
     )?;
     expect_eq(
         &input.residual_delta_remainder_sha256,
-        ZKAI_D128_RESIDUAL_DELTA_REMAINDER_SHA256,
+        source_anchor.residual_delta_remainder_sha256,
         "residual delta remainder hash",
     )?;
     expect_eq(
         &input.output_activation_commitment,
-        ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT,
+        source_anchor.output_activation_commitment,
         "output activation commitment",
     )?;
     expect_eq(
         &input.residual_add_row_commitment,
-        ZKAI_D128_RESIDUAL_ADD_ROW_COMMITMENT,
+        source_anchor.residual_add_row_commitment,
         "residual-add row commitment",
     )?;
     expect_eq(
         &input.proof_native_parameter_commitment,
-        ZKAI_D128_RESIDUAL_ADD_PROOF_NATIVE_PARAMETER_COMMITMENT,
+        source_anchor.proof_native_parameter_commitment,
         "proof-native parameter commitment",
     )?;
     expect_eq(
         &input.public_instance_commitment,
-        ZKAI_D128_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT,
+        source_anchor.public_instance_commitment,
         "public instance commitment",
     )?;
     expect_eq(
         &input.statement_commitment,
-        ZKAI_D128_RESIDUAL_ADD_STATEMENT_COMMITMENT,
+        source_anchor.statement_commitment,
         "statement commitment",
     )?;
     expect_str_set_eq(
@@ -424,7 +474,7 @@ fn validate_residual_add_input(input: &ZkAiD128ResidualAddProofInput) -> Result<
     )?;
     expect_str_list_eq(
         input.validation_commands.iter().map(String::as_str),
-        EXPECTED_VALIDATION_COMMANDS,
+        source_anchor.validation_commands,
         "validation commands",
     )?;
     if input.input_q8.len() != ZKAI_D128_WIDTH {
@@ -513,6 +563,114 @@ fn validate_residual_add_input(input: &ZkAiD128ResidualAddProofInput) -> Result<
         "residual-add row recomputed commitment",
     )?;
     Ok(())
+}
+
+fn approved_residual_add_source_anchor(
+    input: &ZkAiD128ResidualAddProofInput,
+) -> Result<ResidualAddSourceAnchor> {
+    let anchors = [
+        ResidualAddSourceAnchor {
+            name: "synthetic",
+            source_rmsnorm_proof_version: ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION,
+            source_rmsnorm_statement_commitment: ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
+            source_down_projection_statement_commitment:
+                ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+            source_down_projection_public_instance_commitment:
+                ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            input_activation_commitment: ZKAI_D128_INPUT_ACTIVATION_COMMITMENT,
+            residual_delta_commitment: ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
+            residual_delta_remainder_sha256: ZKAI_D128_RESIDUAL_DELTA_REMAINDER_SHA256,
+            output_activation_commitment: ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT,
+            residual_add_row_commitment: ZKAI_D128_RESIDUAL_ADD_ROW_COMMITMENT,
+            proof_native_parameter_commitment:
+                ZKAI_D128_RESIDUAL_ADD_PROOF_NATIVE_PARAMETER_COMMITMENT,
+            public_instance_commitment: ZKAI_D128_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT,
+            statement_commitment: ZKAI_D128_RESIDUAL_ADD_STATEMENT_COMMITMENT,
+            validation_commands: EXPECTED_VALIDATION_COMMANDS,
+        },
+        ResidualAddSourceAnchor {
+            name: "attention_derived",
+            source_rmsnorm_proof_version: ZKAI_D128_ATTENTION_DERIVED_INPUT_PROOF_VERSION,
+            source_rmsnorm_statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT,
+            source_down_projection_statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+            source_down_projection_public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            input_activation_commitment: ZKAI_D128_ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT,
+            residual_delta_commitment: ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT,
+            residual_delta_remainder_sha256:
+                ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256,
+            output_activation_commitment: ZKAI_D128_ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT,
+            residual_add_row_commitment: ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_ROW_COMMITMENT,
+            proof_native_parameter_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_PROOF_NATIVE_PARAMETER_COMMITMENT,
+            public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT,
+            statement_commitment: ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_STATEMENT_COMMITMENT,
+            validation_commands: EXPECTED_DERIVED_VALIDATION_COMMANDS,
+        },
+    ];
+    anchors
+        .iter()
+        .copied()
+        .find(|anchor| {
+            input.source_rmsnorm_proof_version == anchor.source_rmsnorm_proof_version
+                && input.source_rmsnorm_statement_commitment
+                    == anchor.source_rmsnorm_statement_commitment
+                && input.source_down_projection_statement_commitment
+                    == anchor.source_down_projection_statement_commitment
+                && input.source_down_projection_public_instance_commitment
+                    == anchor.source_down_projection_public_instance_commitment
+                && input.input_activation_commitment == anchor.input_activation_commitment
+                && input.residual_delta_commitment == anchor.residual_delta_commitment
+                && input.residual_delta_remainder_sha256 == anchor.residual_delta_remainder_sha256
+        })
+        .ok_or_else(|| residual_add_error(&residual_add_anchor_error(input, &anchors)))
+}
+
+fn residual_add_anchor_error(
+    input: &ZkAiD128ResidualAddProofInput,
+    anchors: &[ResidualAddSourceAnchor],
+) -> String {
+    if let Some(anchor) = anchors.iter().find(|anchor| {
+        input.input_activation_commitment == anchor.input_activation_commitment
+            || input.residual_delta_commitment == anchor.residual_delta_commitment
+    }) {
+        let mut mismatches = Vec::new();
+        if input.source_rmsnorm_proof_version != anchor.source_rmsnorm_proof_version {
+            mismatches.push("source_rmsnorm_proof_version mismatch");
+        }
+        if input.source_rmsnorm_statement_commitment != anchor.source_rmsnorm_statement_commitment {
+            mismatches.push("source_rmsnorm_statement_commitment mismatch");
+        }
+        if input.source_down_projection_statement_commitment
+            != anchor.source_down_projection_statement_commitment
+        {
+            mismatches.push("source_down_projection_statement_commitment mismatch");
+        }
+        if input.source_down_projection_public_instance_commitment
+            != anchor.source_down_projection_public_instance_commitment
+        {
+            mismatches.push("source_down_projection_public_instance_commitment mismatch");
+        }
+        if input.input_activation_commitment != anchor.input_activation_commitment {
+            mismatches.push("input_activation_commitment mismatch");
+        }
+        if input.residual_delta_commitment != anchor.residual_delta_commitment {
+            mismatches.push("residual_delta_commitment mismatch");
+        }
+        if input.residual_delta_remainder_sha256 != anchor.residual_delta_remainder_sha256 {
+            mismatches.push("residual_delta_remainder_sha256 mismatch");
+        }
+        return format!(
+            "residual-add source anchor is not approved for {} anchor: {}",
+            anchor.name,
+            mismatches.join(", ")
+        );
+    }
+    "residual-add source anchor is not approved: no synthetic or attention_derived anchor matched"
+        .to_string()
 }
 
 fn validate_residual_add_row(row: &D128ResidualAddRow, expected_index: usize) -> Result<()> {
@@ -926,9 +1084,17 @@ mod tests {
 
     const INPUT_JSON: &str =
         include_str!("../../docs/engineering/evidence/zkai-d128-residual-add-proof-2026-05.json");
+    const DERIVED_INPUT_JSON: &str = include_str!(
+        "../../docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json"
+    );
 
     fn input() -> ZkAiD128ResidualAddProofInput {
         zkai_d128_residual_add_input_from_json_str(INPUT_JSON).expect("residual-add input")
+    }
+
+    fn derived_input() -> ZkAiD128ResidualAddProofInput {
+        zkai_d128_residual_add_input_from_json_str(DERIVED_INPUT_JSON)
+            .expect("derived residual-add input")
     }
 
     #[test]
@@ -965,6 +1131,51 @@ mod tests {
     }
 
     #[test]
+    fn residual_add_accepts_attention_derived_source_anchor() {
+        let input = derived_input();
+        assert_eq!(
+            input.source_rmsnorm_proof_version,
+            ZKAI_D128_ATTENTION_DERIVED_INPUT_PROOF_VERSION
+        );
+        assert_eq!(
+            input.source_rmsnorm_statement_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT
+        );
+        assert_eq!(
+            input.source_down_projection_statement_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_STATEMENT_COMMITMENT
+        );
+        assert_eq!(
+            input.input_activation_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT
+        );
+        assert_eq!(
+            input.residual_delta_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT
+        );
+        assert_eq!(
+            input.output_activation_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT
+        );
+        assert_eq!(
+            input.residual_add_row_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_ROW_COMMITMENT
+        );
+        assert_eq!(input.input_q8[..5], [1, 1, 2, -2, 1]);
+        assert_eq!(
+            input.residual_delta_q8[..5],
+            [-10094, -4004, 4637, 7313, 5364]
+        );
+        assert_eq!(input.output_q8[..5], [-10093, -4003, 4639, 7311, 5365]);
+        expect_str_list_eq(
+            input.validation_commands.iter().map(String::as_str),
+            EXPECTED_DERIVED_VALIDATION_COMMANDS,
+            "derived validation commands",
+        )
+        .expect("derived validation command anchor");
+    }
+
+    #[test]
     fn residual_add_pcs_config_uses_shared_publication_v1_profile() {
         let actual = residual_add_pcs_config();
         let expected = crate::stwo_backend::publication_v1_pcs_config();
@@ -988,6 +1199,33 @@ mod tests {
         let envelope = prove_zkai_d128_residual_add_envelope(&input).expect("residual-add proof");
         assert!(!envelope.proof.is_empty());
         assert!(verify_zkai_d128_residual_add_envelope(&envelope).expect("verify"));
+    }
+
+    #[test]
+    fn residual_add_air_proof_round_trips_attention_derived_anchor() {
+        let input = derived_input();
+        let envelope =
+            prove_zkai_d128_residual_add_envelope(&input).expect("derived residual-add proof");
+        assert_eq!(
+            envelope.source_rmsnorm_proof_version,
+            ZKAI_D128_ATTENTION_DERIVED_INPUT_PROOF_VERSION
+        );
+        assert!(!envelope.proof.is_empty());
+        assert!(verify_zkai_d128_residual_add_envelope(&envelope).expect("verify"));
+    }
+
+    #[test]
+    fn residual_add_rejects_mixed_source_anchor() {
+        let mut value: Value = serde_json::from_str(DERIVED_INPUT_JSON).expect("json");
+        value["source_down_projection_statement_commitment"] =
+            Value::String(ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT.to_string());
+        let error = zkai_d128_residual_add_input_from_json_str(
+            &serde_json::to_string(&value).expect("json"),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains(
+            "attention_derived anchor: source_down_projection_statement_commitment mismatch"
+        ));
     }
 
     #[test]
