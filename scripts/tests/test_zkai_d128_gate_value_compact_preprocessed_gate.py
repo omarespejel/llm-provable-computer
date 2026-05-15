@@ -250,6 +250,11 @@ class D128GateValueCompactPreprocessedGateTests(unittest.TestCase):
                 include_mutations=False,
                 compact_envelope_size_bytes=gate.COMPACT_ENVELOPE_BYTES + 1,
             )
+        with self.assertRaisesRegex(gate.GateValueCompactGateError, "baseline envelope JSON size drift"):
+            build_payload(
+                include_mutations=False,
+                baseline_envelope_size_bytes=gate.BASELINE_ENVELOPE_BYTES + 1,
+            )
 
     def test_rejects_bool_encoded_metrics(self):
         summary = cli_summary()
