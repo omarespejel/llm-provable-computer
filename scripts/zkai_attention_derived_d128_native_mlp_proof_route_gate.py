@@ -9,8 +9,10 @@ import csv
 import hashlib
 import io
 import json
+import os
 import pathlib
 import sys
+import tempfile
 from typing import Any, Callable
 
 
@@ -642,9 +644,23 @@ def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path 
 
 def atomic_write(path: pathlib.Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f".{path.name}.{hashlib.sha256(text.encode('utf-8')).hexdigest()[:16]}.tmp")
-    tmp.write_text(text, encoding="utf-8")
-    tmp.replace(path)
+    fd: int | None = None
+    tmp: pathlib.Path | None = None
+    try:
+        fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+        tmp = pathlib.Path(tmp_name)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            fd = None
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp, path)
+    except Exception:
+        if fd is not None:
+            os.close(fd)
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
+        raise
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
