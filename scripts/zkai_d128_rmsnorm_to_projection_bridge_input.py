@@ -427,11 +427,7 @@ def validation_commands_for_source_payload(source: dict[str, Any]) -> list[str]:
 
 
 def validation_commands_for_source(path: pathlib.Path) -> list[str]:
-    try:
-        return validation_commands_for_source_payload(load_source(path))
-    except D128BridgeInputError:
-        return list(VALIDATION_COMMANDS)
-    return list(VALIDATION_COMMANDS)
+    return validation_commands_for_source_payload(load_source(path))
 
 
 def validation_commands_match(commands: Any) -> bool:
@@ -699,10 +695,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    source = load_source(args.source_json)
+    target = load_target(args.target_json)
     payload = build_payload(
-        load_source(args.source_json),
-        load_target(args.target_json),
-        validation_commands=validation_commands_for_source(args.source_json),
+        source,
+        target,
+        validation_commands=validation_commands_for_source_payload(source),
     )
     if args.write_json is not None or args.write_tsv is not None:
         write_outputs(payload, args.write_json, args.write_tsv)
