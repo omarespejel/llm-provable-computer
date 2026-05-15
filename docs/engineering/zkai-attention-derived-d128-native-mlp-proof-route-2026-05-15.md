@@ -119,7 +119,7 @@ This gate records:
 ```bash
 python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.tsv
 python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input
-cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_rmsnorm_to_projection_bridge_proof --lib
+cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend
 python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv
 python3 -m py_compile scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_native_mlp_proof_route_gate.py
 python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate

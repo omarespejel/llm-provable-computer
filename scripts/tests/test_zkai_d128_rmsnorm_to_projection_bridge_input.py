@@ -71,6 +71,17 @@ class ZkAiD128RmsnormToProjectionBridgeInputTests(unittest.TestCase):
         with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "public instance"):
             BRIDGE.validate_payload(payload)
 
+    def test_payload_accepts_validation_commands_as_multiset(self) -> None:
+        payload = self.fresh_payload()
+        payload["validation_commands"] = list(reversed(payload["validation_commands"]))
+        BRIDGE.validate_payload(payload)
+
+    def test_payload_rejects_validation_command_duplicate(self) -> None:
+        payload = self.fresh_payload()
+        payload["validation_commands"] = [*payload["validation_commands"], payload["validation_commands"][0]]
+        with self.assertRaisesRegex(BRIDGE.D128BridgeInputError, "validation commands drift"):
+            BRIDGE.validate_payload(payload)
+
     def test_source_validation_rejects_normed_m31_bound_drift(self) -> None:
         source = copy.deepcopy(BRIDGE.load_source())
         source["rows"][0]["normed_q8"] = BRIDGE.M31_MODULUS

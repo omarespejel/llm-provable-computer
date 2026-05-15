@@ -9,6 +9,7 @@ composition, recursion, or full-block metric is claimed here.
 
 from __future__ import annotations
 
+from collections import Counter
 import argparse
 import csv
 import hashlib
@@ -298,6 +299,13 @@ def validation_commands_for_source(path: pathlib.Path) -> list[str]:
     return list(VALIDATION_COMMANDS)
 
 
+def validation_commands_match(commands: Any) -> bool:
+    if not isinstance(commands, list) or not all(isinstance(item, str) for item in commands):
+        return False
+    command_counts = Counter(commands)
+    return any(command_counts == Counter(allowed) for allowed in ALLOWED_VALIDATION_COMMANDS)
+
+
 def build_payload(
     source: dict[str, Any] | None = None,
     target: dict[str, Any] | None = None,
@@ -401,7 +409,7 @@ def validate_payload(payload: Any, *, target: dict[str, Any] | None = None) -> N
     for field, expected in constants.items():
         if payload.get(field) != expected:
             raise D128BridgeInputError(f"payload field mismatch: {field}")
-    if payload.get("validation_commands") not in ALLOWED_VALIDATION_COMMANDS:
+    if not validation_commands_match(payload.get("validation_commands")):
         raise D128BridgeInputError("validation commands drift")
     for field in (
         "source_rmsnorm_statement_commitment",
