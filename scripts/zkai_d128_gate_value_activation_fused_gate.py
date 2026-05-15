@@ -490,7 +490,7 @@ def validate_payload(payload: dict[str, Any]) -> None:
         raise FusedGateError("payload commitment mismatch")
 
 
-def mutation_cases(payload: dict[str, Any]) -> list[tuple[str, Any]]:
+def mutation_cases() -> list[tuple[str, Any]]:
     return [
         ("schema_relabeling", lambda p: p.__setitem__("schema", "v2")),
         ("decision_overclaim", lambda p: p.__setitem__("decision", "BREAKTHROUGH_FULL_BLOCK")),
@@ -516,7 +516,7 @@ def mutation_cases(payload: dict[str, Any]) -> list[tuple[str, Any]]:
 
 def run_mutations(payload: dict[str, Any]) -> dict[str, Any]:
     cases = []
-    for name, mutate in mutation_cases(payload):
+    for name, mutate in mutation_cases():
         candidate = copy.deepcopy(payload)
         mutate(candidate)
         try:
@@ -536,14 +536,19 @@ def resolve_repo_output_path(path: pathlib.Path, label: str) -> pathlib.Path:
     candidate = path if path.is_absolute() else ROOT / path
     if candidate.is_symlink():
         raise FusedGateError(f"{label} output must not be a symlink: {path}")
-    parent = candidate.parent
+    resolved = candidate.resolve(strict=False)
+    try:
+        resolved.relative_to(ROOT.resolve())
+    except ValueError as err:
+        raise FusedGateError(f"{label} output escapes repository: {path}") from err
+    parent = resolved.parent
     parent.mkdir(parents=True, exist_ok=True)
     resolved_parent = parent.resolve(strict=True)
     try:
         resolved_parent.relative_to(ROOT.resolve())
     except ValueError as err:
-        raise FusedGateError(f"{label} output escapes repository: {path}") from err
-    resolved = resolved_parent / candidate.name
+        raise FusedGateError(f"{label} output parent escapes repository: {path}") from err
+    resolved = resolved_parent / resolved.name
     try:
         existing = resolved.lstat()
     except FileNotFoundError:
@@ -562,7 +567,9 @@ def write_bytes_atomic(path: pathlib.Path, data: bytes, label: str) -> None:
     try:
         flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
         fd = os.open(tmp, flags, 0o600)
-        os.write(fd, data)
+        total_written = 0
+        while total_written < len(data):
+            total_written += os.write(fd, data[total_written:])
         os.fsync(fd)
         os.close(fd)
         fd = None
