@@ -73,7 +73,9 @@ const PROOF_NATIVE_PARAMETER_DOMAIN: &str =
     "ptvm:zkai:d128-gate-value-activation-fused-proof-native-parameter:v1";
 const PROOF_NATIVE_PARAMETER_KIND: &str =
     "d128-gate-value-activation-fused-proof-native-parameter-v1";
+const EXPECTED_TARGET_ID: &str = "rmsnorm-swiglu-residual-d128-v1";
 const EXPECTED_REQUIRED_BACKEND_VERSION: &str = "stwo-rmsnorm-swiglu-residual-d128-v1";
+const EXPECTED_VERIFIER_DOMAIN: &str = "ptvm:zkai:d128-rmsnorm-swiglu-statement-target:v1";
 
 const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- prove docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-d128-activation-swiglu-proof-2026-05.envelope.json",
@@ -345,6 +347,12 @@ fn validate_fused_input(input: &ZkAiD128GateValueActivationFusedInput) -> Result
         ZKAI_D128_GATE_VALUE_ACTIVATION_FUSED_ROUTE_ID,
         "route id",
     )?;
+    expect_eq(&input.target_id, EXPECTED_TARGET_ID, "target id")?;
+    expect_eq(
+        &input.verifier_domain,
+        EXPECTED_VERIFIER_DOMAIN,
+        "verifier domain",
+    )?;
     expect_usize(input.width, WIDTH, "width")?;
     expect_usize(input.ff_dim, FF_DIM, "ff dim")?;
     expect_usize(
@@ -461,6 +469,21 @@ fn validate_handoff(
     gate_value_input: &ZkAiD128GateValueProjectionProofInput,
     activation_input: &ZkAiD128ActivationSwiGluProofInput,
 ) -> Result<()> {
+    expect_eq(
+        &activation_input.target_id,
+        &gate_value_input.target_id,
+        "activation target id matches gate/value target id",
+    )?;
+    expect_eq(
+        &activation_input.required_backend_version,
+        &gate_value_input.required_backend_version,
+        "activation required backend version matches gate/value required backend version",
+    )?;
+    expect_eq(
+        &activation_input.verifier_domain,
+        &gate_value_input.verifier_domain,
+        "activation verifier domain matches gate/value verifier domain",
+    )?;
     expect_eq(
         &activation_input.source_gate_value_projection_statement_commitment,
         &gate_value_input.statement_commitment,
@@ -674,7 +697,7 @@ fn validate_fused_pcs_config(config: PcsConfig) -> Result<PcsConfig> {
     if !publication_v1_pcs_config_matches(&config) {
         return Err(fused_error("unexpected PCS config for fused proof"));
     }
-    Ok(config)
+    Ok(publication_v1_pcs_config())
 }
 
 fn statement_commitment(input: &ZkAiD128GateValueActivationFusedInput) -> Result<String> {
@@ -851,6 +874,28 @@ mod tests {
         let error = zkai_d128_gate_value_activation_fused_input_from_json_str(&raw)
             .expect_err("backend version drift should reject");
         assert!(error.to_string().contains("required backend version"));
+    }
+
+    #[test]
+    fn fused_rejects_target_id_drift() {
+        let input = input_fixture();
+        let mut value = serde_json::to_value(&input).expect("input json");
+        value["target_id"] = Value::String("wrong-target".to_string());
+        let raw = serde_json::to_string(&value).expect("mutated input");
+        let error = zkai_d128_gate_value_activation_fused_input_from_json_str(&raw)
+            .expect_err("target id drift should reject");
+        assert!(error.to_string().contains("target id"));
+    }
+
+    #[test]
+    fn fused_rejects_verifier_domain_drift() {
+        let input = input_fixture();
+        let mut value = serde_json::to_value(&input).expect("input json");
+        value["verifier_domain"] = Value::String("wrong-domain".to_string());
+        let raw = serde_json::to_string(&value).expect("mutated input");
+        let error = zkai_d128_gate_value_activation_fused_input_from_json_str(&raw)
+            .expect_err("verifier domain drift should reject");
+        assert!(error.to_string().contains("verifier domain"));
     }
 
     #[test]
