@@ -202,11 +202,30 @@ fn read_bounded_utf8(path: &Path, max_bytes: usize, label: &str) -> Result<Strin
 
 #[cfg(feature = "stwo-backend")]
 fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>, String> {
-    let metadata = fs::symlink_metadata(path)
-        .map_err(|error| format!("failed to stat {}: {error}", path.display()))?;
-    if metadata.file_type().is_symlink() {
-        return Err(format!("refusing symlink for {label}: {}", path.display()));
-    }
+    #[cfg(unix)]
+    let file = {
+        use std::os::unix::fs::OpenOptionsExt;
+
+        fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+            .open(path)
+            .map_err(|error| {
+                format!(
+                    "failed to open {label} {} without following symlinks: io_kind={:?}: {error}",
+                    path.display(),
+                    error.kind()
+                )
+            })?
+    };
+    #[cfg(not(unix))]
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .open(path)
+        .map_err(|error| format!("failed to open {label} {}: {error}", path.display()))?;
+    let metadata = file
+        .metadata()
+        .map_err(|error| format!("failed to stat opened {label} {}: {error}", path.display()))?;
     if !metadata.is_file() {
         return Err(format!(
             "expected regular file for {label}: {}",
@@ -220,11 +239,15 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
             "{label} exceeds max size: got {size} bytes, limit {max_bytes} bytes"
         ));
     }
-    let mut file = fs::File::open(path)
-        .map_err(|error| format!("failed to open {}: {error}", path.display()))?;
     let mut bytes = Vec::with_capacity(size);
-    file.read_to_end(&mut bytes)
+    file.take(max_bytes.saturating_add(1) as u64)
+        .read_to_end(&mut bytes)
         .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
+    if bytes.len() > max_bytes {
+        return Err(format!(
+            "{label} exceeds max size: got more than {max_bytes} bytes, limit {max_bytes} bytes"
+        ));
+    }
     Ok(bytes)
 }
 
@@ -262,12 +285,37 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
         file.sync_all()
             .map_err(|error| format!("failed to sync {}: {error}", tmp_path.display()))?;
     }
-    fs::rename(&tmp_path, path).map_err(|error| {
-        let _ = fs::remove_file(&tmp_path);
-        format!(
-            "failed to move {} to {}: {error}",
-            tmp_path.display(),
-            path.display()
-        )
-    })
+    publish_temp_file(&tmp_path, path, label)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), String> {
+    match fs::rename(tmp_path, path) {
+        Ok(()) => Ok(()),
+        Err(first_error) if path.exists() => {
+            if let Err(remove_error) = fs::remove_file(path) {
+                let _ = fs::remove_file(tmp_path);
+                return Err(format!(
+                    "failed to replace existing {label} {} after publish error {first_error}: {remove_error}",
+                    path.display()
+                ));
+            }
+            if let Err(second_error) = fs::rename(tmp_path, path) {
+                let _ = fs::remove_file(tmp_path);
+                return Err(format!(
+                    "failed to publish replacement {label} {} after removing existing destination: {second_error}",
+                    path.display()
+                ));
+            }
+            Ok(())
+        }
+        Err(error) => {
+            let _ = fs::remove_file(tmp_path);
+            Err(format!(
+                "failed to move {} to {}: {error}",
+                tmp_path.display(),
+                path.display()
+            ))
+        }
+    }
 }
