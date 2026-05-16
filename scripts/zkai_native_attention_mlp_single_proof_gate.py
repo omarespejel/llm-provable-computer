@@ -132,6 +132,18 @@ MUTATION_NAMES = (
     "missing_non_claim",
 )
 
+EXPECTED_MUTATION_REASONS = {
+    "single_typed_bytes_drift": "summary drift",
+    "two_proof_frontier_drift": "summary drift",
+    "proof_json_bytes_drift": "summary drift",
+    "adapter_promoted_to_native_air": "routes drift",
+    "pcs_lifting_log_size_drift": "summary drift",
+    "nanozk_win_promoted": "routes drift",
+    "route_commitment_drift": "route commitment drift",
+    "payload_commitment_drift": "payload commitment drift",
+    "missing_non_claim": "non-claims drift",
+}
+
 
 class NativeAttentionMlpSingleProofGateError(ValueError):
     pass
@@ -297,7 +309,12 @@ def validate_payload(payload: dict[str, Any], *, context: dict[str, Any] | None 
     if not all(case.get("rejected") is True for case in cases):
         raise NativeAttentionMlpSingleProofGateError("mutation rejection drift")
     for case in cases:
-        _str(case.get("reason"), "mutation rejection reason")
+        name = _str(case.get("name"), "mutation name")
+        reason = _str(case.get("reason"), "mutation rejection reason")
+        if reason != EXPECTED_MUTATION_REASONS.get(name):
+            raise NativeAttentionMlpSingleProofGateError(
+                f"mutation reason drift for {name}: got {reason!r}, expected {EXPECTED_MUTATION_REASONS.get(name)!r}"
+            )
     if payload.get("mutation_inventory") != {"cases": list(MUTATION_NAMES)}:
         raise NativeAttentionMlpSingleProofGateError("mutation inventory drift")
 
@@ -314,13 +331,22 @@ def build_payload_no_mutations(context: dict[str, Any]) -> dict[str, Any]:
     envelope = _dict(context["envelope"], "envelope")
     input_payload = _dict(envelope.get("input"), "envelope input")
     row = accounting_row(_dict(context["accounting"], "accounting"))
+    route_budget = _dict(context["route_budget"], "route budget")
+    route_budget_routes = _dict(route_budget.get("routes"), "route budget routes")
+    current_two_proof_frontier = _dict(
+        route_budget_routes.get("current_two_proof_frontier"),
+        "route budget current two-proof frontier",
+    )
     local = _dict(row.get("local_binary_accounting"), "local binary accounting")
     metadata = _dict(row.get("envelope_metadata"), "envelope metadata")
     envelope_bytes = len(_bytes(context.get("envelope_raw_bytes"), "single envelope raw bytes"))
     single_typed = _int(local.get("typed_size_estimate_bytes"), "single typed bytes")
     single_json = _int(row.get("proof_json_size_bytes"), "single JSON proof bytes")
     two_typed = _int(input_payload.get("current_two_proof_frontier_typed_bytes"), "two proof typed bytes")
-    two_json = EXPECTED["two_proof_frontier_json_bytes"]
+    two_json = _int(
+        current_two_proof_frontier.get("current_two_proof_json_proof_bytes"),
+        "two proof frontier JSON bytes",
+    )
     nanozk = _int(input_payload.get("nanozk_reported_d128_block_proof_bytes"), "NANOZK reported bytes")
     typed_gap_to_nanozk = single_typed - nanozk
     payload = {
@@ -405,6 +431,12 @@ def validate_context(context: dict[str, Any]) -> None:
     envelope = _dict(context["envelope"], "envelope")
     input_payload = _dict(envelope.get("input"), "envelope input")
     row = accounting_row(_dict(context["accounting"], "accounting"))
+    route_budget = _dict(context["route_budget"], "route budget")
+    route_budget_routes = _dict(route_budget.get("routes"), "route budget routes")
+    current_two_proof_frontier = _dict(
+        route_budget_routes.get("current_two_proof_frontier"),
+        "route budget current two-proof frontier",
+    )
     local = _dict(row.get("local_binary_accounting"), "local binary accounting")
     metadata = _dict(row.get("envelope_metadata"), "envelope metadata")
     checks = {
@@ -421,11 +453,10 @@ def validate_context(context: dict[str, Any]) -> None:
         "attention_fused_typed_bytes": input_payload.get("current_attention_fused_typed_bytes"),
         "derived_mlp_fused_typed_bytes": input_payload.get("current_derived_mlp_fused_typed_bytes"),
         "two_proof_frontier_typed_bytes": input_payload.get("current_two_proof_frontier_typed_bytes"),
+        "two_proof_frontier_json_bytes": current_two_proof_frontier.get("current_two_proof_json_proof_bytes"),
         "nanozk_reported_d128_block_proof_bytes": input_payload.get("nanozk_reported_d128_block_proof_bytes"),
     }
     for key, expected in EXPECTED.items():
-        if key == "two_proof_frontier_json_bytes":
-            continue
         if checks.get(key) != expected:
             raise NativeAttentionMlpSingleProofGateError(
                 f"context {key} drift: got {checks.get(key)!r}, expected {expected!r}"
@@ -446,7 +477,7 @@ def mutation_result_placeholder() -> dict[str, Any]:
             {
                 "name": name,
                 "rejected": True,
-                "reason": "valid baseline placeholder before mutation execution",
+                "reason": EXPECTED_MUTATION_REASONS[name],
             }
             for name in MUTATION_NAMES
         ]
