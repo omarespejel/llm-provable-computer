@@ -13,7 +13,6 @@ import os
 import pathlib
 import secrets
 import stat
-import tempfile
 from collections.abc import Callable
 from typing import Any
 
@@ -270,14 +269,49 @@ def _is_blake2b_commitment(value: Any) -> bool:
     )
 
 
-def read_json(path: pathlib.Path, label: str) -> tuple[dict[str, Any], bytes]:
-    resolved = path.resolve()
+def evidence_leaf_name(path: pathlib.Path, label: str) -> str:
+    candidate = ROOT / path if not path.is_absolute() else path
     evidence_root = EVIDENCE_DIR.resolve()
-    if evidence_root not in resolved.parents and resolved != evidence_root:
-        raise TranscriptStableComparisonError(f"{label} path must stay under docs/engineering/evidence")
+    if candidate.parent.resolve() != evidence_root:
+        raise TranscriptStableComparisonError(
+            f"{label} path must stay under docs/engineering/evidence as a direct child"
+        )
+    if candidate.name in {"", ".", ".."}:
+        raise TranscriptStableComparisonError(f"{label} path has invalid filename")
+    return candidate.name
+
+
+PINNED_INPUT_PATHS = {
+    EVIDENCE_DIR.resolve() / path.name
+    for path in (ABLATION_PATH, CURRENT_GATE_PATH, CURRENT_ENVELOPE_PATH, CURRENT_ACCOUNTING_PATH)
+}
+
+
+def open_evidence_dir() -> int:
     try:
-        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        fd = os.open(EVIDENCE_DIR, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
     except OSError as err:
+        raise TranscriptStableComparisonError(f"failed to open evidence directory: {err}") from err
+    try:
+        directory_stat = os.fstat(fd)
+        if not stat.S_ISDIR(directory_stat.st_mode):
+            raise TranscriptStableComparisonError("evidence path must be a directory")
+    except Exception:
+        os.close(fd)
+        raise
+    return fd
+
+
+def read_json(path: pathlib.Path, label: str) -> tuple[dict[str, Any], bytes]:
+    leaf_name = evidence_leaf_name(path, label)
+    try:
+        directory_fd = open_evidence_dir()
+    except TranscriptStableComparisonError as err:
+        raise TranscriptStableComparisonError(f"failed to open {label} evidence directory: {err}") from err
+    try:
+        fd = os.open(leaf_name, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=directory_fd)
+    except OSError as err:
+        os.close(directory_fd)
         raise TranscriptStableComparisonError(f"failed to open {label} {path}: {err}") from err
     try:
         before = os.fstat(fd)
@@ -301,6 +335,7 @@ def read_json(path: pathlib.Path, label: str) -> tuple[dict[str, Any], bytes]:
             raise TranscriptStableComparisonError(f"{label} changed while reading")
     finally:
         os.close(fd)
+        os.close(directory_fd)
     try:
         payload = json.loads(
             raw,
@@ -788,57 +823,53 @@ def to_tsv(payload: dict[str, Any]) -> str:
 def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path | None:
     if path is None:
         return None
-    candidate = ROOT / path if not path.is_absolute() else path
-    resolved_parent = candidate.parent.resolve()
-    resolved = resolved_parent / candidate.name
-    evidence_root = EVIDENCE_DIR.resolve()
-    if evidence_root not in resolved.parents:
-        raise TranscriptStableComparisonError("output path must stay under docs/engineering/evidence")
-    if resolved.suffix != suffix:
+    leaf_name = evidence_leaf_name(path, "output")
+    resolved = EVIDENCE_DIR.resolve() / leaf_name
+    if pathlib.Path(leaf_name).suffix != suffix:
         raise TranscriptStableComparisonError(f"output path must end with {suffix}")
+    if resolved in PINNED_INPUT_PATHS:
+        raise TranscriptStableComparisonError("output path must not overwrite pinned input evidence")
     return resolved
 
 
 def write_text_atomic(path: pathlib.Path, text: str) -> None:
-    parent = path.parent
-    parent.mkdir(parents=True, exist_ok=True)
-    parent_fd = -1
+    leaf_name = evidence_leaf_name(path, "output")
+    if EVIDENCE_DIR.resolve() / leaf_name in PINNED_INPUT_PATHS:
+        raise TranscriptStableComparisonError("output path must not overwrite pinned input evidence")
+    directory_fd = -1
     temp_name: str | None = None
     fd = -1
     try:
-        parent_fd = os.open(parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
-        parent_stat = os.fstat(parent_fd)
-        if not stat.S_ISDIR(parent_stat.st_mode):
-            raise TranscriptStableComparisonError("output parent must be a directory")
+        directory_fd = open_evidence_dir()
         try:
-            target_stat = os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False)
+            target_stat = os.stat(leaf_name, dir_fd=directory_fd, follow_symlinks=False)
         except FileNotFoundError:
             pass
         else:
             if stat.S_ISLNK(target_stat.st_mode):
                 raise TranscriptStableComparisonError("refusing to write through symlink")
-        temp_name = f".{path.name}.tmp-{os.getpid()}-{secrets.token_hex(8)}"
-        fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=parent_fd)
+        temp_name = f".{leaf_name}.tmp-{os.getpid()}-{secrets.token_hex(8)}"
+        fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=directory_fd)
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             fd = -1
             handle.write(text)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temp_name, path.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        os.replace(temp_name, leaf_name, src_dir_fd=directory_fd, dst_dir_fd=directory_fd)
         temp_name = None
-        os.fsync(parent_fd)
+        os.fsync(directory_fd)
     except OSError as err:
         raise TranscriptStableComparisonError(f"atomic write failed for {path}: {err}") from err
     finally:
         if fd != -1:
             os.close(fd)
-        if temp_name is not None and parent_fd != -1:
+        if temp_name is not None and directory_fd != -1:
             try:
-                os.unlink(temp_name, dir_fd=parent_fd)
+                os.unlink(temp_name, dir_fd=directory_fd)
             except FileNotFoundError:
                 pass
-        if parent_fd != -1:
-            os.close(parent_fd)
+        if directory_fd != -1:
+            os.close(directory_fd)
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
