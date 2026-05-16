@@ -1,4 +1,4 @@
-use std::process::ExitCode;
+use std::process::{self, ExitCode};
 
 #[cfg(feature = "stwo-backend")]
 use std::fs;
@@ -148,30 +148,37 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
             })?
     };
     #[cfg(not(unix))]
-    let file = fs::OpenOptions::new()
-        .read(true)
-        .open(path)
-        .map_err(|error| format!("failed to open {label} {}: {error}", path.display()))?;
-
+    let file = {
+        return Err(format!(
+            "{label} requires Unix O_NOFOLLOW file opening for path safety: {}",
+            path.display()
+        ));
+    };
     let metadata = file
         .metadata()
-        .map_err(|error| format!("failed to stat {label} {}: {error}", path.display()))?;
+        .map_err(|error| format!("failed to stat opened {label} {}: {error}", path.display()))?;
     if !metadata.is_file() {
-        return Err(format!("{label} is not a regular file: {}", path.display()));
-    }
-    if metadata.len() as usize > max_bytes {
         return Err(format!(
-            "{label} exceeds max size: got {} bytes, limit {} bytes",
-            metadata.len(),
-            max_bytes
+            "expected regular file for {label}: {}",
+            path.display()
         ));
     }
-
-    let mut reader = std::io::BufReader::new(file);
-    let mut bytes = Vec::with_capacity(metadata.len() as usize);
-    reader
+    let size = usize::try_from(metadata.len())
+        .map_err(|_| format!("{label} size does not fit usize: {}", path.display()))?;
+    if size > max_bytes {
+        return Err(format!(
+            "{label} exceeds max size: got {size} bytes, limit {max_bytes} bytes"
+        ));
+    }
+    let mut bytes = Vec::with_capacity(max_bytes.min(size));
+    file.take(max_bytes.saturating_add(1) as u64)
         .read_to_end(&mut bytes)
-        .map_err(|error| format!("failed to read {label} {}: {error}", path.display()))?;
+        .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
+    if bytes.len() > max_bytes {
+        return Err(format!(
+            "{label} exceeds max size: got more than {max_bytes} bytes, limit {max_bytes} bytes"
+        ));
+    }
     Ok(bytes)
 }
 
@@ -179,46 +186,121 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
 fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .map_err(|error| format!("failed to create parent dir for {label}: {error}"))?;
+            .map_err(|error| format!("failed to create {}: {error}", parent.display()))?;
+    }
+    let metadata = fs::symlink_metadata(path).ok();
+    if metadata
+        .as_ref()
+        .is_some_and(|meta| meta.file_type().is_symlink())
+    {
+        return Err(format!(
+            "refusing to overwrite symlink for {label}: {}",
+            path.display()
+        ));
     }
     let parent = path.parent().unwrap_or_else(|| Path::new("."));
-    let nanos = SystemTime::now()
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| format!("invalid output path: {}", path.display()))?;
+    let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_err(|error| format!("system time before UNIX_EPOCH: {error}"))?
+        .map_err(|error| format!("system clock before epoch: {error}"))?
         .as_nanos();
-    let tmp_path = parent.join(format!(
-        ".{}.{}.tmp",
-        path.file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or("zkai-proof-envelope"),
-        nanos
-    ));
+    let tmp_path = parent.join(format!(".{file_name}.tmp.{}.{}", process::id(), nonce));
     {
-        #[cfg(unix)]
-        let mut file = {
-            use std::os::unix::fs::OpenOptionsExt;
-
-            fs::OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .mode(0o600)
-                .open(&tmp_path)
-                .map_err(|error| format!("failed to create temp {label}: {error}"))?
-        };
-        #[cfg(not(unix))]
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&tmp_path)
-            .map_err(|error| format!("failed to create temp {label}: {error}"))?;
-
+        let mut file = fs::File::create_new(&tmp_path)
+            .map_err(|error| format!("failed to create {}: {error}", tmp_path.display()))?;
         file.write_all(bytes)
-            .map_err(|error| format!("failed to write temp {label}: {error}"))?;
+            .map_err(|error| format!("failed to write {}: {error}", tmp_path.display()))?;
         file.sync_all()
-            .map_err(|error| format!("failed to sync temp {label}: {error}"))?;
+            .map_err(|error| format!("failed to sync {}: {error}", tmp_path.display()))?;
     }
-    fs::rename(&tmp_path, path).map_err(|error| {
-        let _ = fs::remove_file(&tmp_path);
-        format!("failed to replace {label} {}: {error}", path.display())
-    })
+    publish_temp_file(&tmp_path, path, label)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), String> {
+    match fs::rename(tmp_path, path) {
+        Ok(()) => Ok(()),
+        Err(first_error) if path.exists() => {
+            if let Err(remove_error) = fs::remove_file(path) {
+                let _ = fs::remove_file(tmp_path);
+                return Err(format!(
+                    "failed to replace existing {label} {} after publish error {first_error}: {remove_error}",
+                    path.display()
+                ));
+            }
+            if let Err(second_error) = fs::rename(tmp_path, path) {
+                let _ = fs::remove_file(tmp_path);
+                return Err(format!(
+                    "failed to publish replacement {label} {} after removing existing destination: {second_error}",
+                    path.display()
+                ));
+            }
+            Ok(())
+        }
+        Err(error) => {
+            let _ = fs::remove_file(tmp_path);
+            Err(format!(
+                "failed to move {} to {}: {error}",
+                tmp_path.display(),
+                path.display()
+            ))
+        }
+    }
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+mod tests {
+    use super::*;
+    #[cfg(unix)]
+    use std::os::unix::fs::symlink;
+
+    #[cfg(unix)]
+    #[test]
+    fn read_bounded_file_rejects_symlink_input() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let target = dir.path().join("target.json");
+        let link = dir.path().join("input.json");
+        fs::write(&target, b"{}").expect("write target");
+        symlink(&target, &link).expect("create symlink");
+
+        let error = read_bounded_file(&link, 1024, "test input").expect_err("symlink must reject");
+        assert!(
+            error.contains("without following symlinks") || error.contains("symlink"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
+    fn read_bounded_file_enforces_post_read_limit() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let target = dir.path().join("input.json");
+        fs::write(&target, b"0123456789").expect("write target");
+
+        let error =
+            read_bounded_file(&target, 4, "test input").expect_err("oversized input must reject");
+        assert!(
+            error.contains("exceeds max size"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn atomic_write_file_rejects_symlink_target() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let target = dir.path().join("target.json");
+        let link = dir.path().join("output.json");
+        fs::write(&target, b"{}").expect("write target");
+        symlink(&target, &link).expect("create symlink");
+
+        let error =
+            atomic_write_file(&link, b"{}", "test output").expect_err("symlink must reject");
+        assert!(
+            error.contains("refusing to overwrite symlink"),
+            "unexpected error: {error}"
+        );
+    }
 }
