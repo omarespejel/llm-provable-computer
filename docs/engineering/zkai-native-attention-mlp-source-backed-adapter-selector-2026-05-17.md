@@ -35,8 +35,12 @@ boolean bit constraints.
 Compact saves `2,416` typed bytes and `8,494` JSON proof bytes versus the
 matching source-backed duplicate selector.
 
-Compact is still `112` typed bytes above the current two-proof frontier, so this
-is not a typed proof-size frontier win. It is a real mechanism win and a useful
+Under typed accounting, compact is `40,812` bytes versus the current two-proof
+frontier at `40,700` bytes, so it remains `112` typed bytes above the frontier.
+Under JSON proof bytes, compact is `116,091` bytes versus the two-proof JSON
+frontier at `116,258` bytes, so it is `167` JSON bytes below that surface.
+Typed accounting remains the primary comparison surface here, so this is not a
+typed proof-size frontier win. It is a real mechanism win and a useful
 near-miss.
 
 The typed saving decomposes as:
@@ -83,6 +87,20 @@ This PR does not show:
 - `docs/engineering/evidence/zkai-native-attention-mlp-source-backed-adapter-selector-2026-05.json`
 - `docs/engineering/evidence/zkai-native-attention-mlp-source-backed-adapter-selector-2026-05.tsv`
 
+## Reproducibility metadata
+
+- Backend binary: `zkai_native_attention_mlp_single_proof`
+- Backend versions:
+  `stwo-native-attention-mlp-single-proof-object-duplicate-adapter-selector-v1`
+  and
+  `stwo-native-attention-mlp-single-proof-object-compact-adapter-selector-v1`
+- Timing mode: proof-size accounting only; no timing or median-of-5 claim.
+- Toolchain: `nightly-2025-07-14`
+- PCS/profile note: publication-v1 PCS with explicit lifting log size `19`.
+- Checked surface: native attention-plus-MLP single proof over d8 fused
+  attention and d128 RMSNorm-MLP, with a `128`-row adapter in duplicate
+  (`1,536` base cells) and compact (`1,024` base cells) modes.
+
 ## Reproduction
 
 ```bash
@@ -96,4 +114,7 @@ cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_p
 python3 scripts/zkai_native_attention_mlp_source_backed_adapter_selector_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-source-backed-adapter-selector-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-source-backed-adapter-selector-2026-05.tsv
 python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_source_backed_adapter_selector_gate
 cargo +nightly-2025-07-14 test --locked --features stwo-backend native_attention_mlp_single_proof --lib
+git diff --check
+just gate-fast
+just gate
 ```

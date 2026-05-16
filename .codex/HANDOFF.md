@@ -154,13 +154,37 @@ verifies at `116,091` JSON proof bytes / `40,812` local typed bytes. Compact
 saves `2,416` typed bytes (`0.944110x`) and `8,494` JSON bytes versus the
 matching source-backed duplicate selector, and recovers `1,120` typed bytes
 versus the current native adapter-AIR frontier. It is still `112` typed bytes
-above the `40,700` typed-byte two-proof frontier, so this is a mechanism GO and
-a frontier NO-GO, not a NANOZK comparison or proof-size win. Only `112` typed
-bytes are direct opened-value savings; `2,304` bytes are path-sensitive
-FRI/Merkle/query-position savings. See
+above the `40,700` typed-byte two-proof frontier, while sitting `167` JSON
+proof bytes below the `116,258` JSON-byte two-proof frontier. Typed accounting
+remains the stricter surface, so this is a mechanism GO and a frontier NO-GO,
+not a NANOZK comparison or proof-size win. Only `112` typed bytes are direct
+opened-value savings; `2,304` bytes are path-sensitive FRI/Merkle/query-position
+savings. See
 `docs/engineering/zkai-native-attention-mlp-source-backed-adapter-selector-2026-05-17.md`.
 Follow-up issue `#639` tracks the next direct attack on the remaining `112`
 typed-byte gap.
+
+Source-backed selector reproducibility metadata:
+
+- Backend binary: `zkai_native_attention_mlp_single_proof`.
+- Backend versions:
+  `stwo-native-attention-mlp-single-proof-object-duplicate-adapter-selector-v1`
+  and
+  `stwo-native-attention-mlp-single-proof-object-compact-adapter-selector-v1`.
+- Timing mode: proof-size accounting only; no timing or median-of-5 claim.
+- PCS/profile note: publication-v1 PCS with explicit lifting log size `19`.
+- Checked surface: native attention-plus-MLP single proof over d8 fused
+  attention and d128 RMSNorm-MLP, with a `128`-row adapter in duplicate
+  (`1,536` base cells) and compact (`1,024` base cells) modes.
+- Evidence paths:
+  `docs/engineering/evidence/zkai-native-attention-mlp-source-backed-duplicate-adapter-2026-05.input.json`,
+  `docs/engineering/evidence/zkai-native-attention-mlp-source-backed-duplicate-adapter-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-native-attention-mlp-source-backed-compact-adapter-2026-05.input.json`,
+  `docs/engineering/evidence/zkai-native-attention-mlp-source-backed-compact-adapter-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-native-attention-mlp-source-backed-adapter-selector-binary-accounting-2026-05.json`,
+  `docs/engineering/evidence/zkai-native-attention-mlp-source-backed-adapter-selector-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-native-attention-mlp-source-backed-adapter-selector-2026-05.tsv`.
 
 Single-proof object reproducibility metadata:
 

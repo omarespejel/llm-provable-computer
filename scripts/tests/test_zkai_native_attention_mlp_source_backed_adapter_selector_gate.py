@@ -33,6 +33,30 @@ class SourceBackedAdapterSelectorGateTests(unittest.TestCase):
         with self.assertRaises(gate.SourceBackedAdapterSelectorError):
             gate.validate_payload(candidate, context=context)
 
+    def test_duplicate_accounting_row_path_is_rejected(self) -> None:
+        context = gate.build_context()
+        accounting = copy.deepcopy(context["accounting"])
+        accounting["rows"][1]["evidence_relative_path"] = accounting["rows"][0]["evidence_relative_path"]
+
+        with self.assertRaisesRegex(gate.SourceBackedAdapterSelectorError, "duplicate accounting row path"):
+            gate.accounting_rows_by_path(accounting)
+
+    def test_accounting_row_path_drift_is_rejected(self) -> None:
+        context = gate.build_context()
+        accounting = copy.deepcopy(context["accounting"])
+        accounting["rows"][1]["evidence_relative_path"] = "unexpected-envelope.json"
+
+        with self.assertRaisesRegex(gate.SourceBackedAdapterSelectorError, "accounting row path drift"):
+            gate.accounting_rows_by_path(accounting)
+
+    def test_missing_variant_accounting_row_is_structured_error(self) -> None:
+        context = gate.build_context()
+        rows = gate.accounting_rows_by_path(context["accounting"])
+        rows.pop(gate.EXPECTED_VARIANTS["compact_selector"]["accounting_relative_path"])
+
+        with self.assertRaisesRegex(gate.SourceBackedAdapterSelectorError, "missing accounting row"):
+            gate.variant_payload("compact_selector", context, rows)
+
 
 if __name__ == "__main__":
     unittest.main()

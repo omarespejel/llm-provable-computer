@@ -115,7 +115,7 @@
     "not a full transformer block proof",
     "not production-ready zkML"
   ],
-  "payload_commitment": "blake2b-256:45e26f54a51ffd29ace91a2d81a520c7b193b3af7a2b849dc731f4b839ac9b9d",
+  "payload_commitment": "blake2b-256:d3e06d3edb7f62ea1d268a77c574354fcf2166c12cad010390d1f2bfb28fca5f",
   "result": "GO_SOURCE_BACKED_COMPACT_ARTIFACT_NO_GO_TWO_PROOF_FRONTIER_BEAT",
   "schema": "zkai-native-attention-mlp-source-backed-adapter-selector-gate-v1",
   "source_artifacts": [
@@ -173,7 +173,8 @@
     "python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_source_backed_adapter_selector_gate",
     "cargo +nightly-2025-07-14 test --locked --features stwo-backend native_attention_mlp_single_proof --lib",
     "git diff --check",
-    "just gate-fast"
+    "just gate-fast",
+    "just gate"
   ],
   "variants": {
     "compact_selector": {

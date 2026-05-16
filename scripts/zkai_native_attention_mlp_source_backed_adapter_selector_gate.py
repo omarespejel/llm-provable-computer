@@ -87,6 +87,9 @@ EXPECTED_VARIANTS = {
         "record_stream_sha256": "8ed8db52bfb240a2b742df9877aa8d01ece09334616540771812e28081c5d996",
     },
 }
+EXPECTED_ACCOUNTING_RELATIVE_PATHS = frozenset(
+    variant["accounting_relative_path"] for variant in EXPECTED_VARIANTS.values()
+)
 
 EXPECTED_GROUP_DELTAS = {
     "fixed_overhead": 0,
@@ -120,6 +123,7 @@ VALIDATION_COMMANDS = (
     "cargo +nightly-2025-07-14 test --locked --features stwo-backend native_attention_mlp_single_proof --lib",
     "git diff --check",
     "just gate-fast",
+    "just gate",
 )
 
 CORE_KEYS = {
@@ -268,13 +272,23 @@ def source_artifacts(context: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def accounting_rows_by_path(accounting: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    raw_rows = _list(accounting.get("rows"), "accounting rows")
+    if len(raw_rows) != len(EXPECTED_ACCOUNTING_RELATIVE_PATHS):
+        raise SourceBackedAdapterSelectorError(
+            f"expected {len(EXPECTED_ACCOUNTING_RELATIVE_PATHS)} accounting rows, got {len(raw_rows)}"
+        )
     rows = {}
-    for row in _list(accounting.get("rows"), "accounting rows"):
+    for row in raw_rows:
         row_dict = _dict(row, "accounting row")
         path = _str(row_dict.get("evidence_relative_path"), "accounting relative path")
+        if path in rows:
+            raise SourceBackedAdapterSelectorError(f"duplicate accounting row path: {path}")
         rows[path] = row_dict
-    if len(rows) != 2:
-        raise SourceBackedAdapterSelectorError(f"expected 2 accounting rows, got {len(rows)}")
+    actual_paths = frozenset(rows)
+    if actual_paths != EXPECTED_ACCOUNTING_RELATIVE_PATHS:
+        missing = sorted(EXPECTED_ACCOUNTING_RELATIVE_PATHS - actual_paths)
+        extra = sorted(actual_paths - EXPECTED_ACCOUNTING_RELATIVE_PATHS)
+        raise SourceBackedAdapterSelectorError(f"accounting row path drift: missing={missing} extra={extra}")
     return rows
 
 
@@ -286,7 +300,10 @@ def variant_payload(role: str, context: dict[str, Any], rows: dict[str, dict[str
     envelope = _dict(context[envelope_key], f"{role} envelope")
     input_payload = _dict(envelope.get("input"), f"{role} envelope input")
     standalone_input = _dict(context[input_key], f"{role} input")
-    row = rows[expected["accounting_relative_path"]]
+    accounting_path = expected["accounting_relative_path"]
+    row = rows.get(accounting_path)
+    if row is None:
+        raise SourceBackedAdapterSelectorError(f"{role} missing accounting row: {accounting_path}")
     local = _dict(row.get("local_binary_accounting"), f"{role} local accounting")
     metadata = _dict(row.get("envelope_metadata"), f"{role} envelope metadata")
 
