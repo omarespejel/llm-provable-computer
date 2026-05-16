@@ -1086,6 +1086,12 @@ fn validate_fused_input(input: &ZkAiD128RmsnormMlpFusedInput) -> Result<()> {
     )
 }
 
+pub(super) fn zkai_d128_rmsnorm_mlp_fused_validate_input(
+    input: &ZkAiD128RmsnormMlpFusedInput,
+) -> Result<()> {
+    validate_fused_input(input)
+}
+
 fn validate_nested_rmsnorm_input(input: &ZkAiD128RmsnormPublicRowProofInput) -> Result<()> {
     let raw =
         serde_json::to_string(input).map_err(|error| VmError::Serialization(error.to_string()))?;

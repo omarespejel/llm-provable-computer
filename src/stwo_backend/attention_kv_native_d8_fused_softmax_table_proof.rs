@@ -94,7 +94,7 @@ const EXPECTED_NON_CLAIMS: &[&str] = &[
 relation!(AttentionKvD8FusedSoftmaxTableRelation, 2);
 
 #[derive(Debug, Clone)]
-struct AttentionKvNativeD8FusedSoftmaxTableEval {
+pub(super) struct AttentionKvNativeD8FusedSoftmaxTableEval {
     lookup_elements: AttentionKvD8FusedSoftmaxTableRelation,
 }
 
@@ -475,6 +475,18 @@ fn validate_source_input(
     validate_zkai_attention_kv_native_d8_bounded_softmax_table_input(input)
 }
 
+pub(super) fn zkai_attention_kv_native_d8_fused_softmax_table_validate_source_input(
+    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+) -> Result<()> {
+    validate_source_input(input)
+}
+
+pub(super) fn zkai_attention_kv_native_d8_fused_softmax_table_summary(
+    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+) -> Result<ZkAiAttentionKvNativeD8FusedSoftmaxTableSummary> {
+    fused_summary(input)
+}
+
 fn fused_summary(
     input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
 ) -> Result<ZkAiAttentionKvNativeD8FusedSoftmaxTableSummary> {
@@ -604,6 +616,13 @@ fn fused_preprocessed_trace(
         .collect())
 }
 
+pub(super) fn zkai_attention_kv_native_d8_fused_softmax_table_preprocessed_trace(
+    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+    summary: &ZkAiAttentionKvNativeD8FusedSoftmaxTableSummary,
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    fused_preprocessed_trace(input, summary)
+}
+
 fn fused_base_trace(
     input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
 ) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
@@ -630,6 +649,12 @@ fn fused_base_trace(
             .bit_reverse()
         })
         .collect())
+}
+
+pub(super) fn zkai_attention_kv_native_d8_fused_softmax_table_base_trace(
+    input: &ZkAiAttentionKvNativeD8BoundedSoftmaxTableProofInput,
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    fused_base_trace(input)
 }
 
 fn row_values(
@@ -897,11 +922,33 @@ fn fused_interaction_trace(
     logup_gen.finalize_last()
 }
 
+pub(super) fn zkai_attention_kv_native_d8_fused_softmax_table_interaction_trace(
+    log_size: u32,
+    base_trace: &ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
+    preprocessed_trace: &ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
+    lookup_elements: &AttentionKvD8FusedSoftmaxTableRelation,
+) -> (
+    ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
+    SecureField,
+) {
+    fused_interaction_trace(log_size, base_trace, preprocessed_trace, lookup_elements)
+}
+
 fn fused_component(
     lookup_elements: AttentionKvD8FusedSoftmaxTableRelation,
 ) -> FrameworkComponent<AttentionKvNativeD8FusedSoftmaxTableEval> {
-    FrameworkComponent::new(
+    zkai_attention_kv_native_d8_fused_softmax_table_component_with_allocator(
         &mut TraceLocationAllocator::new_with_preprocessed_columns(&fused_preprocessed_column_ids()),
+        lookup_elements,
+    )
+}
+
+pub(super) fn zkai_attention_kv_native_d8_fused_softmax_table_component_with_allocator(
+    allocator: &mut TraceLocationAllocator,
+    lookup_elements: AttentionKvD8FusedSoftmaxTableRelation,
+) -> FrameworkComponent<AttentionKvNativeD8FusedSoftmaxTableEval> {
+    FrameworkComponent::new(
+        allocator,
         AttentionKvNativeD8FusedSoftmaxTableEval { lookup_elements },
         SecureField::zero(),
     )
@@ -1040,6 +1087,11 @@ fn fused_preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
     ids.push(preprocessed_column_id(PREPROCESSED_TABLE_WEIGHT));
     ids.push(preprocessed_column_id(PREPROCESSED_TABLE_MULTIPLICITY));
     ids
+}
+
+pub(super) fn zkai_attention_kv_native_d8_fused_softmax_table_preprocessed_column_ids(
+) -> Vec<PreProcessedColumnId> {
+    fused_preprocessed_column_ids()
 }
 
 fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {

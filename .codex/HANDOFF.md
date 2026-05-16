@@ -72,6 +72,20 @@ NANOZK's paper-reported `6,900` byte d128 row and would need another `69.4366%`
 reduction from that floor. See
 `docs/engineering/zkai-native-attention-mlp-single-proof-route-2026-05-16.md`.
 
+Latest native attention-plus-MLP single-proof object: the first checked one
+native Stwo proof object now verifies locally for the d8 fused attention
+Softmax-table LogUp surface plus the attention-derived d128 RMSNorm-MLP fused
+surface. It is `40,668` local typed bytes and `115,924` JSON proof bytes,
+versus the previous two-proof frontier at `40,700` typed bytes and `116,258`
+JSON proof bytes. The win is real but tiny: `32` typed bytes (`0.999214x`) and
+`334` JSON bytes (`0.997127x`). The route requires explicit
+`pcs_lifting_log_size = 19` because the attention interaction tree is much
+smaller than the MLP base tree. This is not a native AIR proof of the
+attention-output-to-d128-input adapter and not NANOZK-comparable; the gap to
+NANOZK's paper-reported `6,900` byte d128 row is still `33,768` typed bytes
+(`83.0333%` reduction needed). See
+`docs/engineering/zkai-native-attention-mlp-single-proof-object-2026-05-16.md`.
+
 Reproducibility metadata:
 
 - Backend binary/version:

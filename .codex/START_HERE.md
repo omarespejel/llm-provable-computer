@@ -110,8 +110,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 104. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
 105. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
 106. `docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`
-107. `docs/engineering/reproducibility.md`
-108. `git status --short --branch`
+107. `docs/engineering/zkai-native-attention-mlp-single-proof-object-2026-05-16.md`
+108. `docs/engineering/reproducibility.md`
+109. `git status --short --branch`
 
 ## What this repository is now
 
@@ -153,6 +154,18 @@ This repository currently has three live lanes.
      `33,800` typed bytes (`83.0467%`) and the workload/object class is not
      matched. See
      `docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`.
+   - The next native attention-plus-MLP probe now has one real Stwo proof
+     object over the d8 fused attention + Softmax-table LogUp surface and the
+     attention-derived d128 RMSNorm-MLP fused surface. It verifies locally at
+     `40,668` typed proof bytes / `115,924` JSON proof bytes, saving only `32`
+     typed bytes and `334` JSON proof bytes versus the prior two-proof target.
+     The route needs explicit `pcs_lifting_log_size = 19` because the combined
+     proof has heterogeneous tree sizes. The attention-output-to-d128-input
+     adapter is still statement-bound, not AIR-proven, and matching NANOZK's
+     paper-reported `6,900` byte row would still require removing `33,768`
+     typed bytes (`83.0333%`). Treat this as a narrow one-proof-object
+     feasibility result, not a compression breakthrough or NANOZK win; see
+     `docs/engineering/zkai-native-attention-mlp-single-proof-object-2026-05-16.md`.
    - The current attention-to-RMSNorm/MLP boundary is a checked NO-GO for one
      value-connected native proof object: the attention-derived d128 statement
      chain has `199,553` accounted rows (`1.010374x` the MLP fused surface),
