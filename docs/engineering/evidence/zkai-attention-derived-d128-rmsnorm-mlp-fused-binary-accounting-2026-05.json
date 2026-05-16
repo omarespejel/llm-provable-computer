@@ -13,7 +13,7 @@
         "target_id": null,
         "verifier_domain": null
       },
-      "envelope_sha256": "80bb63f93366ea2415b5539bc7711b992debf18bfece4e52f25e9c823b51c3cc",
+      "envelope_sha256": "e7ea0946a675a6d7e5ba556bcc93d3dad2ed7fa2a8b4ef45ec1c756b55efd4ba",
       "evidence_relative_path": "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
       "local_binary_accounting": {
         "component_sum_bytes": 22576,

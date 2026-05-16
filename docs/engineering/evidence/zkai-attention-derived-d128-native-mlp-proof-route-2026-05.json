@@ -112,8 +112,8 @@
     "current_mlp_typed_saving_ratio_vs_separate": 0.564167,
     "current_mlp_typed_saving_vs_separate_bytes": 32144,
     "current_native_fused_proof_can_be_reused_for_derived_input": false,
-    "derived_fused_envelope_bytes": 716944,
-    "derived_fused_input_bytes": 151596,
+    "derived_fused_envelope_bytes": 717049,
+    "derived_fused_input_bytes": 151701,
     "derived_fused_proof_backend_version": "stwo-d128-rmsnorm-mlp-fused-air-proof-v1",
     "derived_fused_proof_bytes": 68560,
     "derived_fused_public_instance_commitment": "blake2b-256:281440678289f1a5ab4ca85cf07aaf831ae6e4f881c00f33500dd67e535f2bee",
@@ -348,7 +348,7 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:bfb4f42c6aef04492507c7b6637d8cad463f43db70145d91d6a8722394a45f10",
+  "payload_commitment": "sha256:fdbb92ce1ba4ee3a1a35d9ecf3780ff4fa58c78d019d25262ff059f40d14a7f8",
   "required_derived_fused_artifacts": [
     {
       "exists": true,
@@ -441,20 +441,20 @@
     {
       "id": "zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05",
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
-      "payload_sha256": "fb9d8469e4a6cc386564a303b23d4a389f1f43fb41a1896370a7e6042b4d0279",
-      "sha256": "c52931f9b6cf8576232925d31f98802f876f0ed67d74ab98b9818d88ac884120"
+      "payload_sha256": "687f4ceb8ec171f7b22d0178a34ef37c5157c37269391259cc1b8b30de3cdf84",
+      "sha256": "4a5dcbe33ca5c5e80e4b9a3255d7f0e3c260f0f093d67e95028ddd642c19a3e8"
     },
     {
       "id": "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope",
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
-      "payload_sha256": "e1011bac558466e0fbd24dac186dad3d33bfa7c5e995350e84f1967c655d0426",
-      "sha256": "80bb63f93366ea2415b5539bc7711b992debf18bfece4e52f25e9c823b51c3cc"
+      "payload_sha256": "7d72965020a74860ff1b4774683a9bed5cfc04e627cb941fa7dd8ceca393fff7",
+      "sha256": "e7ea0946a675a6d7e5ba556bcc93d3dad2ed7fa2a8b4ef45ec1c756b55efd4ba"
     },
     {
       "id": "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input",
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
-      "payload_sha256": "042757fb128078e938bfd29c24aa494ac16ca886a411cb3a25c039faa0e75b6b",
-      "sha256": "d4f0f78c87576bc650ddf8e75cd3ed7b84de7cae9523ba677e5473e58ef81043"
+      "payload_sha256": "0028037a52e77f85cdab28c6bc6dc3cb299c8e5bc685eb7b797fe998e6d4c064",
+      "sha256": "ce4bdbb3ca7a3e3686ae68485fcd6b11f1e425ee5d62d2556edcbd8b4d91bc80"
     },
     {
       "id": "zkai-attention-derived-d128-rmsnorm-public-row-2026-05",
@@ -490,8 +490,8 @@
     "current_mlp_input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
     "current_mlp_typed_saving_ratio_vs_separate": 0.564167,
     "current_mlp_typed_saving_vs_separate_bytes": 32144,
-    "derived_fused_envelope_bytes": 716944,
-    "derived_fused_input_bytes": 151596,
+    "derived_fused_envelope_bytes": 717049,
+    "derived_fused_input_bytes": 151701,
     "derived_fused_proof_backend_version": "stwo-d128-rmsnorm-mlp-fused-air-proof-v1",
     "derived_fused_proof_bytes": 68560,
     "derived_fused_public_instance_commitment": "blake2b-256:281440678289f1a5ab4ca85cf07aaf831ae6e4f881c00f33500dd67e535f2bee",
@@ -538,7 +538,7 @@
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- build-input docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
     "python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv",
     "python3 -m py_compile scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_native_mlp_proof_route_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate",

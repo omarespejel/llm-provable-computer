@@ -36,7 +36,7 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.assertEqual(summary["current_mlp_typed_saving_vs_separate_bytes"], 32_144)
         self.assertEqual(summary["current_mlp_typed_saving_ratio_vs_separate"], 0.564167)
         self.assertEqual(summary["derived_fused_proof_bytes"], 68_560)
-        self.assertEqual(summary["derived_fused_envelope_bytes"], 716_944)
+        self.assertEqual(summary["derived_fused_envelope_bytes"], 717_049)
         self.assertEqual(summary["derived_fused_typed_bytes"], 22_576)
         self.assertEqual(summary["available_separate_component_count"], 4)
         self.assertEqual(summary["available_separate_typed_bytes"], 46_208)
@@ -166,6 +166,66 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
             with self.assertRaisesRegex(
                 GATE.NativeMlpProofRouteError,
                 "derived native activation statement_commitment drift",
+            ):
+                GATE.build_context()
+
+    def test_rejects_derived_fused_accounting_path_order_drift(self) -> None:
+        original_load_json = GATE._load_json
+
+        def load_with_accounting_drift(path: pathlib.Path, label: str):
+            payload, raw = original_load_json(path, label)
+            if path == GATE.DERIVED_FUSED_ACCOUNTING:
+                payload = dict(payload)
+                rows = list(payload["rows"])
+                first = dict(rows[0])
+                first["evidence_relative_path"] = "tampered-path.envelope.json"
+                rows[0] = first
+                payload["rows"] = rows
+            return payload, raw
+
+        with mock.patch.object(GATE, "_load_json", side_effect=load_with_accounting_drift):
+            with self.assertRaisesRegex(
+                GATE.NativeMlpProofRouteError,
+                "derived fused accounting path order drift",
+            ):
+                GATE.build_context()
+
+    def test_rejects_derived_fused_accounting_proof_byte_drift(self) -> None:
+        original_load_json = GATE._load_json
+
+        def load_with_accounting_drift(path: pathlib.Path, label: str):
+            payload, raw = original_load_json(path, label)
+            if path == GATE.DERIVED_FUSED_ACCOUNTING:
+                payload = dict(payload)
+                rows = list(payload["rows"])
+                first = dict(rows[0])
+                first["proof_json_size_bytes"] += 1
+                rows[0] = first
+                payload["rows"] = rows
+            return payload, raw
+
+        with mock.patch.object(GATE, "_load_json", side_effect=load_with_accounting_drift):
+            with self.assertRaisesRegex(
+                GATE.NativeMlpProofRouteError,
+                "derived fused accounting/proof byte mismatch",
+            ):
+                GATE.build_context()
+
+    def test_rejects_zero_available_separate_accounting_denominator(self) -> None:
+        original_load_json = GATE._load_json
+
+        def load_with_zero_denominator(path: pathlib.Path, label: str):
+            payload, raw = original_load_json(path, label)
+            if path == GATE.DERIVED_FUSED_ACCOUNTING:
+                payload = copy.deepcopy(payload)
+                for row in payload["rows"][1:]:
+                    row["proof_json_size_bytes"] = 0
+            return payload, raw
+
+        with mock.patch.object(GATE, "_load_json", side_effect=load_with_zero_denominator):
+            with self.assertRaisesRegex(
+                GATE.NativeMlpProofRouteError,
+                "available separate proof bytes must be positive",
             ):
                 GATE.build_context()
 

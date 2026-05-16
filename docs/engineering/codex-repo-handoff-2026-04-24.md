@@ -92,7 +92,7 @@ hypotheses with explicit GO/NO-GO gates, required artifacts, and non-claims.
 Latest attention-derived d128 native RMSNorm-MLP fused result: the derived input
 and six derived native component inputs now feed a regenerated native
 RMSNorm-MLP fused proof object. The checked fused proof covers `197,504` rows,
-has `68,560` proof bytes, `22,576` local typed bytes, a `716,944` byte
+has `68,560` proof bytes, `22,576` local typed bytes, a `717,049` byte
 envelope, and verifies true. It consumes the attention-derived input commitment
 `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
 not the older synthetic MLP input commitment. Against the four available
@@ -1225,7 +1225,7 @@ rows, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
 down-projection, and residual-add. The derived fused proof consumes the
 attention-derived input commitment
 `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
-has `68,560` proof bytes, `22,576` local typed bytes, and a `716,944` byte
+has `68,560` proof bytes, `22,576` local typed bytes, and a `717,049` byte
 envelope. Against the four available derived separate envelopes it saves
 `23,632` typed bytes (`0.488573x` ratio), while the matched six-separate
 derived baseline remains incomplete because separate RMSNorm-row and bridge

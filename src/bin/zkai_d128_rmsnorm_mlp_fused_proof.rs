@@ -32,6 +32,13 @@ use llm_provable_computer::stwo_backend::{
 };
 
 #[cfg(feature = "stwo-backend")]
+const ATTENTION_DERIVED_RMSNORM_WRAPPER_SCHEMA: &str =
+    "zkai-attention-derived-d128-rmsnorm-public-row-gate-v1";
+#[cfg(feature = "stwo-backend")]
+const ATTENTION_DERIVED_RMSNORM_WRAPPER_DECISION: &str =
+    "GO_ATTENTION_DERIVED_D128_RMSNORM_PUBLIC_ROW_INPUT";
+
+#[cfg(feature = "stwo-backend")]
 fn main() -> ExitCode {
     match run() {
         Ok(summary) => {
@@ -201,12 +208,12 @@ fn rmsnorm_public_row_input_from_json_str(
                 return Err(direct_error.to_string());
             };
             if wrapper.get("schema").and_then(serde_json::Value::as_str)
-                != Some("zkai-attention-derived-d128-rmsnorm-public-row-gate-v1")
+                != Some(ATTENTION_DERIVED_RMSNORM_WRAPPER_SCHEMA)
             {
                 return Err("RMSNorm wrapper schema is not approved for fused input".to_string());
             }
             if wrapper.get("decision").and_then(serde_json::Value::as_str)
-                != Some("GO_ATTENTION_DERIVED_D128_RMSNORM_PUBLIC_ROW_INPUT")
+                != Some(ATTENTION_DERIVED_RMSNORM_WRAPPER_DECISION)
             {
                 return Err("RMSNorm wrapper decision is not approved for fused input".to_string());
             }
@@ -363,4 +370,57 @@ fn reject_symlink(path: &Path, label: &str) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+#[cfg(all(test, feature = "stwo-backend"))]
+mod tests {
+    use super::*;
+
+    const DERIVED_INPUT_COMMITMENT: &str =
+        "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35";
+
+    fn derived_wrapper() -> serde_json::Value {
+        serde_json::from_str(include_str!(
+            "../../docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json"
+        ))
+        .expect("derived RMSNorm wrapper")
+    }
+
+    #[test]
+    fn rmsnorm_wrapper_happy_path() {
+        let wrapper = derived_wrapper();
+        assert_eq!(
+            wrapper.get("schema").and_then(serde_json::Value::as_str),
+            Some(ATTENTION_DERIVED_RMSNORM_WRAPPER_SCHEMA)
+        );
+        assert_eq!(
+            wrapper.get("decision").and_then(serde_json::Value::as_str),
+            Some(ATTENTION_DERIVED_RMSNORM_WRAPPER_DECISION)
+        );
+        let parsed = rmsnorm_public_row_input_from_json_str(
+            &serde_json::to_string(&wrapper).expect("wrapper JSON"),
+        )
+        .expect("wrapped RMSNorm input parses");
+        assert_eq!(parsed.input_activation_commitment, DERIVED_INPUT_COMMITMENT);
+    }
+
+    #[test]
+    fn rmsnorm_wrapper_rejects_invalid_wrapper() {
+        let mut wrapper = derived_wrapper();
+        wrapper["schema"] = serde_json::Value::String("wrong-schema".to_string());
+        assert!(rmsnorm_public_row_input_from_json_str(
+            &serde_json::to_string(&wrapper).expect("wrapper JSON")
+        )
+        .is_err());
+
+        let mut wrapper = derived_wrapper();
+        wrapper
+            .as_object_mut()
+            .expect("wrapper object")
+            .remove("rmsnorm_public_row_payload");
+        assert!(rmsnorm_public_row_input_from_json_str(
+            &serde_json::to_string(&wrapper).expect("wrapper JSON")
+        )
+        .is_err());
+    }
 }
