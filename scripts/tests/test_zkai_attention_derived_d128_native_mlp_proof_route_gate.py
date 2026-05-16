@@ -23,11 +23,11 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.context = GATE.build_context()
         self.payload = GATE.build_gate_result()
 
-    def test_records_native_route_no_go_without_weakening_existing_mlp_result(self) -> None:
+    def test_records_native_route_go_without_weakening_existing_mlp_result(self) -> None:
         summary = self.payload["summary"]
         self.assertEqual(
             self.payload["decision"],
-            "NO_GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_NOT_REGENERATED",
+            "GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_REGENERATED",
         )
         self.assertEqual(summary["value_connected_chain_rows"], 199_553)
         self.assertEqual(summary["current_mlp_fused_rows"], 197_504)
@@ -35,6 +35,13 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.assertEqual(summary["current_mlp_fused_typed_bytes"], 24_832)
         self.assertEqual(summary["current_mlp_typed_saving_vs_separate_bytes"], 32_144)
         self.assertEqual(summary["current_mlp_typed_saving_ratio_vs_separate"], 0.564167)
+        self.assertEqual(summary["derived_fused_proof_bytes"], 68_560)
+        self.assertEqual(summary["derived_fused_envelope_bytes"], 716_944)
+        self.assertEqual(summary["derived_fused_typed_bytes"], 22_576)
+        self.assertEqual(summary["available_separate_component_count"], 4)
+        self.assertEqual(summary["available_separate_typed_bytes"], 46_208)
+        self.assertEqual(summary["typed_saving_vs_available_separate_bytes"], 23_632)
+        self.assertEqual(summary["typed_ratio_vs_available_separate"], 0.488573)
 
     def test_keeps_derived_and_current_input_commitments_separate(self) -> None:
         summary = self.payload["summary"]
@@ -162,16 +169,22 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
             ):
                 GATE.build_context()
 
-    def test_pins_missing_native_attention_derived_artifacts(self) -> None:
-        missing = self.payload["missing_native_artifacts"]
-        self.assertEqual(len(missing), 3)
-        for artifact in missing:
+    def test_pins_required_fused_artifacts_and_missing_matched_baseline(self) -> None:
+        required = self.payload["required_derived_fused_artifacts"]
+        self.assertEqual(len(required), 3)
+        for artifact in required:
             self.assertTrue(artifact["required_for_go"])
-            self.assertFalse(artifact["exists"])
+            self.assertTrue(artifact["exists"])
             self.assertEqual(
                 artifact["status"],
-                "MISSING_REQUIRED_NATIVE_ATTENTION_DERIVED_PROOF_ARTIFACT",
+                "PRESENT_REQUIRED_NATIVE_ATTENTION_DERIVED_FUSED_PROOF_ARTIFACT",
             )
+        missing = self.payload["missing_matched_separate_envelopes"]
+        self.assertEqual(len(missing), 2)
+        for artifact in missing:
+            self.assertTrue(artifact["required_for_complete_six_separate_baseline"])
+            self.assertFalse(artifact["exists"])
+            self.assertEqual(artifact["status"], "MISSING_MATCHED_DERIVED_SEPARATE_COMPONENT_ENVELOPE")
 
     def test_rejects_zero_current_mlp_rows_before_ratio(self) -> None:
         context = copy.deepcopy(self.context)
@@ -199,11 +212,16 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "native route status drift"):
             GATE.validate_payload(payload, context=self.context)
 
-    def test_rejects_missing_artifact_relabeling(self) -> None:
+    def test_rejects_required_artifact_and_matched_baseline_relabeling(self) -> None:
         payload = copy.deepcopy(self.payload)
-        payload["missing_native_artifacts"][0]["exists"] = True
+        payload["required_derived_fused_artifacts"][0]["exists"] = False
         GATE.refresh_payload_commitment(payload)
-        with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "payload content drift|missing native artifact"):
+        with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "payload content drift|required derived fused artifact"):
+            GATE.validate_payload(payload, context=self.context)
+        payload = copy.deepcopy(self.payload)
+        payload["missing_matched_separate_envelopes"][0]["exists"] = True
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "payload content drift|matched separate envelope"):
             GATE.validate_payload(payload, context=self.context)
 
     def test_tsv_output(self) -> None:

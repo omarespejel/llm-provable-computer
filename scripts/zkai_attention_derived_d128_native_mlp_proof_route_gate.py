@@ -45,6 +45,15 @@ DERIVED_NATIVE_RESIDUAL = (
 DERIVED_NATIVE_RESIDUAL_ENVELOPE = (
     EVIDENCE_DIR / "zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json"
 )
+DERIVED_FUSED_INPUT = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json"
+)
+DERIVED_FUSED_ENVELOPE = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json"
+)
+DERIVED_FUSED_ACCOUNTING = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json"
+)
 DERIVED_PROJECTION = EVIDENCE_DIR / "zkai-attention-derived-d128-projection-boundary-2026-05.json"
 DERIVED_RESIDUAL = EVIDENCE_DIR / "zkai-attention-derived-d128-residual-add-2026-05.json"
 DERIVED_CHAIN = EVIDENCE_DIR / "zkai-attention-derived-d128-block-statement-chain-2026-05.json"
@@ -55,13 +64,14 @@ JSON_OUT = EVIDENCE_DIR / "zkai-attention-derived-d128-native-mlp-proof-route-20
 TSV_OUT = EVIDENCE_DIR / "zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv"
 
 SCHEMA = "zkai-attention-derived-d128-native-mlp-proof-route-gate-v1"
-DECISION = "NO_GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_NOT_REGENERATED"
-RESULT = "BOUNDED_NO_GO_NATIVE_FUSED_ARTIFACTS_NOT_REGENERATED"
+DECISION = "GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_REGENERATED"
+RESULT = "GO_DERIVED_NATIVE_RMSNORM_MLP_FUSED_PROOF_EXISTS_WITH_PARTIAL_BASELINE_SAVING"
 VALUE_CHAIN_STATUS = "GO_ATTENTION_DERIVED_D128_VALUE_CONNECTED_STATEMENT_CHAIN"
-NATIVE_ROUTE_STATUS = "GO_DERIVED_COMPONENT_INPUTS_NATIVE_SHAPE_NO_GO_FUSED_ARTIFACTS"
+NATIVE_ROUTE_STATUS = "GO_DERIVED_COMPONENT_INPUTS_NATIVE_SHAPE_AND_FUSED_PROOF_REGENERATED"
 FIRST_BLOCKER = (
-    "all six attention-derived RMSNorm-MLP component inputs now have native proof shape, "
-    "but the fused RMSNorm-MLP proof artifact has not been regenerated on the derived input commitment"
+    "the attention-derived RMSNorm-MLP fused proof now exists, but attention arithmetic is not yet "
+    "inside the same native proof object and the matched six-separate derived baseline still lacks "
+    "separate RMSNorm-row and bridge envelopes"
 )
 PAYLOAD_DOMAIN = "ptvm:zkai:attention-derived-d128:native-mlp-proof-route:v1"
 EXPECTED_DERIVED_INPUT_COMMITMENT = (
@@ -103,11 +113,28 @@ EXPECTED_NATIVE_RESIDUAL_OUTPUT_COMMITMENT = (
 EXPECTED_NATIVE_RESIDUAL_ROW_COMMITMENT = (
     "blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf"
 )
+EXPECTED_DERIVED_FUSED_STATEMENT_COMMITMENT = (
+    "blake2b-256:ed6524cc9f5da4b614e14b6e6c32b9e5170e089ee2ea50872b8ff90f2748ffe3"
+)
+EXPECTED_DERIVED_FUSED_PUBLIC_INSTANCE_COMMITMENT = (
+    "blake2b-256:281440678289f1a5ab4ca85cf07aaf831ae6e4f881c00f33500dd67e535f2bee"
+)
 
-REQUIRED_NATIVE_PROOF_ARTIFACTS = (
+REQUIRED_DERIVED_FUSED_ARTIFACTS = (
     "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
     "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
     "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
+)
+MISSING_MATCHED_SEPARATE_ENVELOPES = (
+    "docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json",
+    "docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json",
+)
+EXPECTED_ACCOUNTING_PATHS = (
+    "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+    "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json",
+    "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json",
+    "zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json",
+    "zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json",
 )
 
 COMPONENT_SPECS = (
@@ -162,17 +189,21 @@ COMPONENT_SPECS = (
 )
 
 NON_CLAIMS = [
-    "not a regenerated attention-derived native RMSNorm-MLP fused proof",
     "not attention plus MLP in one native proof object",
+    "not matched six-separate derived baseline accounting",
     "not a full transformer block proof",
     "not a NANOZK benchmark win",
-    "not proof-size evidence for the attention-derived route",
+    "not a matched external zkML benchmark",
     "not timing evidence",
     "not recursion or proof-carrying data",
     "not production-ready zkML",
 ]
 
 VALIDATION_COMMANDS = [
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- build-input docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json",
     "python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv",
     "python3 -m py_compile scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_native_mlp_proof_route_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate",
@@ -192,7 +223,8 @@ CORE_KEYS = {
     "first_blocker",
     "source_artifacts",
     "component_input_frontier",
-    "missing_native_artifacts",
+    "required_derived_fused_artifacts",
+    "missing_matched_separate_envelopes",
     "comparison",
     "summary",
     "non_claims",
@@ -214,6 +246,13 @@ TSV_COLUMNS = (
     "row_ratio",
     "current_mlp_fused_typed_bytes",
     "current_mlp_typed_saving_vs_separate_bytes",
+    "derived_fused_proof_bytes",
+    "derived_fused_envelope_bytes",
+    "derived_fused_typed_bytes",
+    "available_separate_component_count",
+    "available_separate_typed_bytes",
+    "typed_saving_vs_available_separate_bytes",
+    "typed_ratio_vs_available_separate",
     "native_compatible_components",
     "native_incompatible_components",
     "derived_native_activation_proof_bytes",
@@ -366,6 +405,17 @@ def component_frontier_row(spec: dict[str, Any], source_payloads: dict[pathlib.P
     }
 
 
+def accounting_typed_bytes(row: dict[str, Any], label: str) -> int:
+    accounting = _dict(row.get("local_binary_accounting"), f"{label} local binary accounting")
+    return _int(accounting.get("typed_size_estimate_bytes"), f"{label} typed bytes")
+
+
+def accounting_group(row: dict[str, Any], label: str) -> dict[str, int]:
+    accounting = _dict(row.get("local_binary_accounting"), f"{label} local binary accounting")
+    group = _dict(accounting.get("grouped_reconstruction"), f"{label} grouped reconstruction")
+    return {key: _int(group.get(key), f"{label} grouped {key}") for key in group}
+
+
 def build_context() -> dict[str, Any]:
     paths = {
         DERIVED_RMSNORM,
@@ -377,6 +427,9 @@ def build_context() -> dict[str, Any]:
         DERIVED_NATIVE_DOWN_ENVELOPE,
         DERIVED_NATIVE_RESIDUAL,
         DERIVED_NATIVE_RESIDUAL_ENVELOPE,
+        DERIVED_FUSED_INPUT,
+        DERIVED_FUSED_ENVELOPE,
+        DERIVED_FUSED_ACCOUNTING,
         DERIVED_PROJECTION,
         DERIVED_RESIDUAL,
         DERIVED_CHAIN,
@@ -403,6 +456,9 @@ def build_context() -> dict[str, Any]:
     native_down_envelope = loaded[DERIVED_NATIVE_DOWN_ENVELOPE]
     native_residual = loaded[DERIVED_NATIVE_RESIDUAL]
     native_residual_envelope = loaded[DERIVED_NATIVE_RESIDUAL_ENVELOPE]
+    derived_fused_input = loaded[DERIVED_FUSED_INPUT]
+    derived_fused_envelope = loaded[DERIVED_FUSED_ENVELOPE]
+    derived_fused_accounting = loaded[DERIVED_FUSED_ACCOUNTING]
     derived_input_commitment = _commitment(
         chain_summary.get("derived_input_activation_commitment"),
         "derived input activation commitment",
@@ -421,6 +477,27 @@ def build_context() -> dict[str, Any]:
         raise NativeMlpProofRouteError("current MLP input commitment drift")
     if envelope_input_commitment != current_input_commitment:
         raise NativeMlpProofRouteError("current MLP envelope/input activation commitment mismatch")
+    derived_fused_input_commitment = _commitment(
+        derived_fused_input.get("input_activation_commitment"),
+        "derived fused input activation commitment",
+    )
+    derived_fused_envelope_input = _dict(derived_fused_envelope.get("input"), "derived fused envelope input")
+    if derived_fused_input_commitment != EXPECTED_DERIVED_INPUT_COMMITMENT:
+        raise NativeMlpProofRouteError("derived fused input commitment drift")
+    if derived_fused_envelope_input != derived_fused_input:
+        raise NativeMlpProofRouteError("derived fused envelope/input mismatch")
+    if derived_fused_envelope.get("proof_backend_version") != "stwo-d128-rmsnorm-mlp-fused-air-proof-v1":
+        raise NativeMlpProofRouteError("derived fused proof backend version drift")
+    if derived_fused_envelope.get("statement_version") != "zkai-d128-rmsnorm-mlp-fused-statement-v1":
+        raise NativeMlpProofRouteError("derived fused statement version drift")
+    if derived_fused_envelope.get("decision") != "GO_D128_RMSNORM_MLP_FUSED_AIR_PROOF":
+        raise NativeMlpProofRouteError("derived fused proof decision drift")
+    if derived_fused_input.get("statement_commitment") != EXPECTED_DERIVED_FUSED_STATEMENT_COMMITMENT:
+        raise NativeMlpProofRouteError("derived fused statement commitment drift")
+    if derived_fused_input.get("public_instance_commitment") != EXPECTED_DERIVED_FUSED_PUBLIC_INSTANCE_COMMITMENT:
+        raise NativeMlpProofRouteError("derived fused public instance commitment drift")
+    if derived_fused_input.get("input_activation_commitment") == current_input_commitment:
+        raise NativeMlpProofRouteError("derived fused input relabeled as current MLP input")
     if _dict(native_activation_envelope.get("input"), "derived native activation envelope input") != native_activation:
         raise NativeMlpProofRouteError("derived native activation envelope/input mismatch")
     if native_activation_envelope.get("proof_backend_version") != "stwo-d128-activation-swiglu-air-proof-v1":
@@ -552,25 +629,58 @@ def build_context() -> dict[str, Any]:
     activation_proof = _list(native_activation_envelope.get("proof"), "derived native activation proof bytes")
     down_proof = _list(native_down_envelope.get("proof"), "derived native down proof bytes")
     residual_proof = _list(native_residual_envelope.get("proof"), "derived native residual proof bytes")
+    derived_fused_proof = _list(derived_fused_envelope.get("proof"), "derived fused proof bytes")
+    accounting_rows_payload = _list(derived_fused_accounting.get("rows"), "derived fused accounting rows")
+    accounting_paths = tuple(_str(row.get("evidence_relative_path"), "accounting evidence path") for row in accounting_rows_payload)
+    if accounting_paths != EXPECTED_ACCOUNTING_PATHS:
+        raise NativeMlpProofRouteError("derived fused accounting path order drift")
+    if _int(accounting_rows_payload[0].get("proof_json_size_bytes"), "derived fused accounting proof bytes") != len(
+        derived_fused_proof
+    ):
+        raise NativeMlpProofRouteError("derived fused accounting/proof byte mismatch")
+    derived_fused_typed_bytes = accounting_typed_bytes(accounting_rows_payload[0], "derived fused")
+    available_separate_typed_bytes = sum(
+        accounting_typed_bytes(row, f"available separate {index}")
+        for index, row in enumerate(accounting_rows_payload[1:], start=1)
+    )
+    available_separate_json_bytes = sum(
+        _int(row.get("proof_json_size_bytes"), f"available separate {index} proof bytes")
+        for index, row in enumerate(accounting_rows_payload[1:], start=1)
+    )
+    grouped_delta = {}
+    fused_group = accounting_group(accounting_rows_payload[0], "derived fused")
+    separate_groups = [accounting_group(row, f"available separate {index}") for index, row in enumerate(accounting_rows_payload[1:], start=1)]
+    for key in sorted(fused_group):
+        grouped_delta[key] = fused_group[key] - sum(group.get(key, 0) for group in separate_groups)
     rows = _int(chain_summary.get("accounted_relation_rows"), "attention-derived relation rows")
     mlp_rows = _int(current_aggregate.get("fused_total_row_count"), "current MLP fused rows")
     if mlp_rows <= 0:
         raise NativeMlpProofRouteError("current MLP fused rows must be positive before computing row_ratio")
     component_rows = [component_frontier_row(spec, loaded) for spec in COMPONENT_SPECS]
-    missing_native_artifacts = [
+    required_derived_fused_artifacts = [
         {
             "path": path,
             "exists": (ROOT / path).exists(),
             "required_for_go": True,
-            "status": "MISSING_REQUIRED_NATIVE_ATTENTION_DERIVED_PROOF_ARTIFACT",
+            "status": "PRESENT_REQUIRED_NATIVE_ATTENTION_DERIVED_FUSED_PROOF_ARTIFACT",
         }
-        for path in REQUIRED_NATIVE_PROOF_ARTIFACTS
+        for path in REQUIRED_DERIVED_FUSED_ARTIFACTS
+    ]
+    missing_matched_separate_envelopes = [
+        {
+            "path": path,
+            "exists": (ROOT / path).exists(),
+            "required_for_complete_six_separate_baseline": True,
+            "status": "MISSING_MATCHED_DERIVED_SEPARATE_COMPONENT_ENVELOPE",
+        }
+        for path in MISSING_MATCHED_SEPARATE_ENVELOPES
     ]
     return {
         "loaded": loaded,
         "source_artifacts": artifacts,
         "component_input_frontier": component_rows,
-        "missing_native_artifacts": missing_native_artifacts,
+        "required_derived_fused_artifacts": required_derived_fused_artifacts,
+        "missing_matched_separate_envelopes": missing_matched_separate_envelopes,
         "comparison": {
             "derived_input_activation_commitment": derived_input_commitment,
             "current_mlp_input_activation_commitment": current_input_commitment,
@@ -579,6 +689,31 @@ def build_context() -> dict[str, Any]:
                 current_envelope.get("proof_backend_version"),
                 "current MLP proof backend version",
             ),
+            "derived_fused_statement_commitment": _commitment(
+                derived_fused_input.get("statement_commitment"),
+                "derived fused statement commitment",
+            ),
+            "derived_fused_public_instance_commitment": _commitment(
+                derived_fused_input.get("public_instance_commitment"),
+                "derived fused public instance commitment",
+            ),
+            "derived_fused_proof_backend_version": _str(
+                derived_fused_envelope.get("proof_backend_version"),
+                "derived fused proof backend version",
+            ),
+            "derived_fused_proof_bytes": len(derived_fused_proof),
+            "derived_fused_envelope_bytes": len(raw_by_path[DERIVED_FUSED_ENVELOPE]),
+            "derived_fused_input_bytes": len(raw_by_path[DERIVED_FUSED_INPUT]),
+            "derived_fused_typed_bytes": derived_fused_typed_bytes,
+            "available_separate_component_count": len(accounting_rows_payload) - 1,
+            "available_separate_proof_bytes": available_separate_json_bytes,
+            "available_separate_typed_bytes": available_separate_typed_bytes,
+            "json_saving_vs_available_separate_bytes": available_separate_json_bytes - len(derived_fused_proof),
+            "json_ratio_vs_available_separate": round(len(derived_fused_proof) / available_separate_json_bytes, 6),
+            "typed_saving_vs_available_separate_bytes": available_separate_typed_bytes - derived_fused_typed_bytes,
+            "typed_ratio_vs_available_separate": round(derived_fused_typed_bytes / available_separate_typed_bytes, 6),
+            "grouped_typed_delta_vs_available_separate": grouped_delta,
+            "matched_six_separate_derived_baseline_status": "PARTIAL_ONLY_MISSING_RMSNORM_AND_BRIDGE_SEPARATE_ENVELOPES",
             "value_connected_chain_rows": rows,
             "current_mlp_fused_rows": mlp_rows,
             "row_ratio": round(rows / mlp_rows, 6),
@@ -690,13 +825,40 @@ def build_core_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
         "first_blocker": FIRST_BLOCKER,
         "source_artifacts": copy.deepcopy(context["source_artifacts"]),
         "component_input_frontier": copy.deepcopy(context["component_input_frontier"]),
-        "missing_native_artifacts": copy.deepcopy(context["missing_native_artifacts"]),
+        "required_derived_fused_artifacts": copy.deepcopy(context["required_derived_fused_artifacts"]),
+        "missing_matched_separate_envelopes": copy.deepcopy(context["missing_matched_separate_envelopes"]),
         "comparison": copy.deepcopy(comparison),
         "summary": {
             "go_result": "GO for a value-connected attention-derived d128 statement chain",
-            "no_go_result": "NO-GO for a regenerated attention-derived native RMSNorm-MLP fused proof today",
+            "proof_result": "GO for a regenerated attention-derived native RMSNorm-MLP fused proof",
+            "remaining_no_go_result": "NO-GO for attention plus MLP in one native proof object or matched external benchmark",
             "derived_input_activation_commitment": comparison["derived_input_activation_commitment"],
             "current_mlp_input_activation_commitment": comparison["current_mlp_input_activation_commitment"],
+            "derived_fused_statement_commitment": comparison["derived_fused_statement_commitment"],
+            "derived_fused_public_instance_commitment": comparison[
+                "derived_fused_public_instance_commitment"
+            ],
+            "derived_fused_proof_backend_version": comparison[
+                "derived_fused_proof_backend_version"
+            ],
+            "derived_fused_proof_bytes": comparison["derived_fused_proof_bytes"],
+            "derived_fused_envelope_bytes": comparison["derived_fused_envelope_bytes"],
+            "derived_fused_input_bytes": comparison["derived_fused_input_bytes"],
+            "derived_fused_typed_bytes": comparison["derived_fused_typed_bytes"],
+            "available_separate_component_count": comparison["available_separate_component_count"],
+            "available_separate_proof_bytes": comparison["available_separate_proof_bytes"],
+            "available_separate_typed_bytes": comparison["available_separate_typed_bytes"],
+            "json_saving_vs_available_separate_bytes": comparison[
+                "json_saving_vs_available_separate_bytes"
+            ],
+            "json_ratio_vs_available_separate": comparison["json_ratio_vs_available_separate"],
+            "typed_saving_vs_available_separate_bytes": comparison[
+                "typed_saving_vs_available_separate_bytes"
+            ],
+            "typed_ratio_vs_available_separate": comparison["typed_ratio_vs_available_separate"],
+            "matched_six_separate_derived_baseline_status": comparison[
+                "matched_six_separate_derived_baseline_status"
+            ],
             "value_connected_chain_rows": comparison["value_connected_chain_rows"],
             "current_mlp_fused_rows": comparison["current_mlp_fused_rows"],
             "row_ratio": comparison["row_ratio"],
@@ -765,13 +927,17 @@ def build_core_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
             ],
             "native_compatible_components": compatible_count,
             "native_incompatible_components": incompatible_count,
-            "missing_native_artifacts": len(context["missing_native_artifacts"]),
+            "required_derived_fused_artifacts_present": sum(
+                1 for artifact in context["required_derived_fused_artifacts"] if artifact["exists"]
+            ),
+            "missing_matched_separate_envelopes": len(context["missing_matched_separate_envelopes"]),
             "route_commitment": blake2b_commitment(
                 {
                     "derived_input": comparison["derived_input_activation_commitment"],
-                    "current_mlp_input": comparison["current_mlp_input_activation_commitment"],
+                    "derived_fused": comparison["derived_fused_statement_commitment"],
                     "component_frontier": context["component_input_frontier"],
-                    "missing_native_artifacts": context["missing_native_artifacts"],
+                    "required_derived_fused_artifacts": context["required_derived_fused_artifacts"],
+                    "missing_matched_separate_envelopes": context["missing_matched_separate_envelopes"],
                 },
                 PAYLOAD_DOMAIN,
             ),
@@ -814,16 +980,37 @@ def validate_payload(payload: Any, *, context: dict[str, Any] | None = None) -> 
         raise NativeMlpProofRouteError("native component frontier drift")
     if _int(summary.get("native_incompatible_components"), "native incompatible components") != 0:
         raise NativeMlpProofRouteError("native component frontier drift")
-    if _int(summary.get("missing_native_artifacts"), "missing native artifacts") <= 0:
-        raise NativeMlpProofRouteError("native fused artifact overclaim")
+    if _int(summary.get("required_derived_fused_artifacts_present"), "required derived fused artifacts") != len(
+        REQUIRED_DERIVED_FUSED_ARTIFACTS
+    ):
+        raise NativeMlpProofRouteError("required derived fused artifact missing")
+    if _int(summary.get("missing_matched_separate_envelopes"), "missing matched separate envelopes") != len(
+        MISSING_MATCHED_SEPARATE_ENVELOPES
+    ):
+        raise NativeMlpProofRouteError("matched separate baseline boundary drift")
+    if data["comparison"]["derived_fused_typed_bytes"] >= data["comparison"]["available_separate_typed_bytes"]:
+        raise NativeMlpProofRouteError("derived fused partial-baseline saving disappeared")
     if data["comparison"]["current_native_fused_proof_can_be_reused_for_derived_input"] is not False:
         raise NativeMlpProofRouteError("current proof reuse overclaim")
-    for row in _list(data.get("missing_native_artifacts"), "missing native artifacts"):
-        artifact = _dict(row, "missing native artifact")
-        if _bool(artifact.get("exists"), "missing artifact exists") is not False:
-            raise NativeMlpProofRouteError("missing native artifact relabeled as existing")
+    for row in _list(data.get("required_derived_fused_artifacts"), "required derived fused artifacts"):
+        artifact = _dict(row, "required derived fused artifact")
+        if _bool(artifact.get("exists"), "required artifact exists") is not True:
+            raise NativeMlpProofRouteError("required derived fused artifact missing")
         if _bool(artifact.get("required_for_go"), "required for go") is not True:
-            raise NativeMlpProofRouteError("required native artifact no longer required")
+            raise NativeMlpProofRouteError("required derived fused artifact no longer required")
+        if artifact.get("status") != "PRESENT_REQUIRED_NATIVE_ATTENTION_DERIVED_FUSED_PROOF_ARTIFACT":
+            raise NativeMlpProofRouteError("required derived fused artifact status drift")
+    for row in _list(data.get("missing_matched_separate_envelopes"), "missing matched separate envelopes"):
+        artifact = _dict(row, "missing matched separate envelope")
+        if _bool(artifact.get("exists"), "missing matched separate envelope exists") is not False:
+            raise NativeMlpProofRouteError("matched separate envelope relabeled as existing")
+        if _bool(
+            artifact.get("required_for_complete_six_separate_baseline"),
+            "required for complete six separate baseline",
+        ) is not True:
+            raise NativeMlpProofRouteError("matched separate baseline requirement weakened")
+        if artifact.get("status") != "MISSING_MATCHED_DERIVED_SEPARATE_COMPONENT_ENVELOPE":
+            raise NativeMlpProofRouteError("missing matched separate envelope status drift")
     if data.get("payload_commitment") != payload_commitment(data):
         raise NativeMlpProofRouteError("payload commitment drift")
     if set(data) == FINAL_KEYS:
@@ -872,9 +1059,13 @@ def _relabel_residual_component_source(payload: dict[str, Any]) -> None:
 
 
 MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
-    ("decision_promoted_to_go", lambda p: p.__setitem__("decision", "GO_ATTENTION_DERIVED_NATIVE_MLP_PROOF"), True),
-    ("result_promoted_to_proof", lambda p: p.__setitem__("result", "GO_NATIVE_PROOF_REGENERATED"), True),
-    ("native_route_status_promoted", lambda p: p.__setitem__("native_route_status", "GO_NATIVE_ROUTE"), True),
+    (
+        "decision_downgraded_to_no_go",
+        lambda p: p.__setitem__("decision", "NO_GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_NOT_REGENERATED"),
+        True,
+    ),
+    ("result_overclaims_full_block", lambda p: p.__setitem__("result", "GO_FULL_TRANSFORMER_BLOCK"), True),
+    ("native_route_status_overclaims_attention", lambda p: p.__setitem__("native_route_status", "GO_ATTENTION_PLUS_MLP_NATIVE_BLOCK"), True),
     ("first_blocker_removed", lambda p: p.__setitem__("first_blocker", ""), True),
     (
         "derived_input_relabels_current_mlp_input",
@@ -899,13 +1090,32 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
         True,
     ),
     (
-        "missing_native_artifact_marked_existing",
-        lambda p: p["missing_native_artifacts"][0].__setitem__("exists", True),
+        "required_fused_artifact_marked_missing",
+        lambda p: p["required_derived_fused_artifacts"][0].__setitem__("exists", False),
         True,
     ),
     (
-        "missing_native_artifact_not_required",
-        lambda p: p["missing_native_artifacts"][0].__setitem__("required_for_go", False),
+        "required_fused_artifact_not_required",
+        lambda p: p["required_derived_fused_artifacts"][0].__setitem__("required_for_go", False),
+        True,
+    ),
+    (
+        "matched_separate_envelope_marked_existing",
+        lambda p: p["missing_matched_separate_envelopes"][0].__setitem__("exists", True),
+        True,
+    ),
+    (
+        "matched_separate_baseline_requirement_removed",
+        lambda p: p["missing_matched_separate_envelopes"][0].__setitem__(
+            "required_for_complete_six_separate_baseline", False
+        ),
+        True,
+    ),
+    (
+        "partial_baseline_saving_smuggled",
+        lambda p: p["comparison"].__setitem__(
+            "derived_fused_typed_bytes", p["comparison"]["available_separate_typed_bytes"] + 1
+        ),
         True,
     ),
     ("non_claim_removed", lambda p: p.__setitem__("non_claims", p["non_claims"][1:]), True),
@@ -967,6 +1177,15 @@ def to_tsv(payload: dict[str, Any], *, context: dict[str, Any] | None = None) ->
             "current_mlp_typed_saving_vs_separate_bytes": summary[
                 "current_mlp_typed_saving_vs_separate_bytes"
             ],
+            "derived_fused_proof_bytes": summary["derived_fused_proof_bytes"],
+            "derived_fused_envelope_bytes": summary["derived_fused_envelope_bytes"],
+            "derived_fused_typed_bytes": summary["derived_fused_typed_bytes"],
+            "available_separate_component_count": summary["available_separate_component_count"],
+            "available_separate_typed_bytes": summary["available_separate_typed_bytes"],
+            "typed_saving_vs_available_separate_bytes": summary[
+                "typed_saving_vs_available_separate_bytes"
+            ],
+            "typed_ratio_vs_available_separate": summary["typed_ratio_vs_available_separate"],
             "native_compatible_components": summary["native_compatible_components"],
             "native_incompatible_components": summary["native_incompatible_components"],
             "derived_native_activation_proof_bytes": summary["derived_native_activation_proof_bytes"],

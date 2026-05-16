@@ -4,164 +4,127 @@ Date: 2026-05-15
 
 ## Result
 
-The current attention-derived d128 path is still **NO-GO** for a regenerated
-native RMSNorm-MLP fused proof, but the component-input frontier has moved.
+The attention-derived d128 path is now a **GO** for a regenerated native
+RMSNorm-MLP fused proof over the attention-derived input commitment.
 
-This is a route-classification result, not a rejection of the fusion thesis. The
-value-connected statement chain exists, and the current MLP-side native fused
-proof remains strong. All six attention-derived RMSNorm-MLP component inputs
-now have native proof shape: RMSNorm public rows, RMSNorm-to-projection bridge,
-gate/value projection, activation/SwiGLU, down-projection, and residual-add.
-The remaining blocker is not component shape. It is the absence of regenerated
-fused RMSNorm-MLP artifacts over the derived input commitment.
+This closes the previous route blocker. The fused proof consumes the derived
+RMSNorm public-row payload, RMSNorm-to-projection bridge, gate/value projection,
+activation/SwiGLU, down-projection, and residual-add inputs. It is not a relabel
+of the older synthetic-input fused proof.
 
 Decision:
 
-`NO_GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_NOT_REGENERATED`
+`GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_REGENERATED`
 
 Result:
 
-`BOUNDED_NO_GO_NATIVE_FUSED_ARTIFACTS_NOT_REGENERATED`
+`GO_DERIVED_NATIVE_RMSNORM_MLP_FUSED_PROOF_EXISTS_WITH_PARTIAL_BASELINE_SAVING`
 
 ## Human Meaning
 
-We should not relabel the current native RMSNorm-MLP fused proof as
-attention-derived. It consumes the older synthetic d128 input commitment:
+The prior NO-GO was correct: the older native RMSNorm-MLP fused proof consumed
+the synthetic d128 input commitment:
 
 `blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78`
 
-The value-connected attention-derived chain consumes:
+The new fused proof consumes the attention-derived d128 input commitment:
 
 `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`
 
-Those are different inputs. The existing fused proof cannot be reused for the
-derived chain.
+That is the important change. We now have a native Stwo proof object over the
+derived MLP-side route. The next blocker is not "can we regenerate the fused MLP
+proof?" anymore. The next blocker is putting attention arithmetic into the same
+native proof object, plus filling the missing separate RMSNorm-row and bridge
+envelopes if we want exact six-separate derived baseline accounting.
 
 ## Checked Numbers
 
 - value-connected attention-derived chain rows: `199,553`
-- current RMSNorm-MLP fused rows: `197,504`
-- row ratio: `1.010374x`
-- current RMSNorm-MLP fused typed bytes: `24,832`
-- current six-separate typed bytes: `56,976`
-- current typed saving: `32,144` bytes, `56.4167%`
-- native-compatible attention-derived components today: `6 / 6`
-- native-incompatible attention-derived components today: `0 / 6`
-- missing required native attention-derived proof artifacts: `3`
-- mutation gate: `13 / 13` mutations rejected
-- derived native activation/SwiGLU proof bytes: `24,455`
-- derived native activation/SwiGLU envelope bytes: `227,031`
-- derived native down-projection proof bytes: `58,151`
-- derived native down-projection envelope bytes: `480,346`
-- derived native residual-add proof bytes: `16,042`
-- derived native residual-add envelope bytes: `155,655`
+- regenerated fused RMSNorm-MLP rows: `197,504`
+- row ratio versus current MLP fused surface: `1.010374x`
+- regenerated fused proof bytes: `68,560`
+- regenerated fused local typed proof-field bytes: `22,576`
+- regenerated fused envelope bytes: `716,944`
+- regenerated fused input bytes: `151,596`
+- available derived separate envelopes: `4`
+- available separate proof bytes: `163,299`
+- available separate local typed bytes: `46,208`
+- typed saving versus available separate envelopes: `23,632` bytes
+- typed ratio versus available separate envelopes: `0.488573x`
+- JSON proof saving versus available separate envelopes: `94,739` bytes
+- JSON proof ratio versus available separate envelopes: `0.419843x`
+- required fused artifacts present: `3 / 3`
+- missing matched six-separate derived envelopes: `2`
+- native-compatible attention-derived component inputs: `6 / 6`
+- mutation gate: `16 / 16` mutations rejected
 
-## First Blocker
-
-The previous blocker was residual-add. That blocker is now closed: the
-attention-derived residual-add slice has a native Stwo proof input and verified
-proof envelope.
-
-The attention-derived native activation/SwiGLU proof emits hidden activation:
-
-`blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4`
-
-The derived native down-projection proof consumes that hidden activation and
-emits residual delta:
-
-`blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec`
-
-The derived native residual-add proof consumes that residual delta and the
-attention-derived input commitment, then emits output activation:
-
-`blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9`
-
-The next real implementation step is to rerun or adapt the RMSNorm-MLP fused
-proof builder on the derived component inputs and produce the missing fused
-input JSON, proof envelope, and binary accounting artifacts.
-
-Follow-up issue: `#608`.
-
-## Artifact Scope
-
-The missing native fused artifacts are intentional evidence for this NO-GO
-classification, not placeholders to be filled in by this PR. Publishing a proof
-envelope, fused input JSON, or binary accounting file here would overclaim unless
-the native proof builder has actually consumed the attention-derived input
-commitment above. This PR therefore records the absence explicitly and leaves the
-artifact-producing work to follow-up issue `#608`.
+The available-separate comparison is intentionally conservative and incomplete:
+it only includes the four derived separate envelopes that currently exist
+(gate/value, activation/SwiGLU, down-projection, residual-add). The fused object
+also includes RMSNorm public rows and the RMSNorm-to-projection bridge, so it is
+already smaller while proving more local MLP-side surface. This is useful
+architecture evidence, but it is not a complete matched six-separate baseline.
 
 ## Claim Boundary
 
 This gate records:
 
 - GO for a value-connected attention-derived d128 statement chain.
-- GO for the existing synthetic-input RMSNorm-MLP native fused proof result.
-- NO-GO for claiming the existing fused proof is attention-derived.
-- NO-GO for a regenerated attention-derived native RMSNorm-MLP fused proof
-  today.
+- GO for a regenerated attention-derived native RMSNorm-MLP fused proof.
+- GO for partial proof-size evidence against the four available derived
+  separate envelopes.
+- NO-GO for claiming attention plus MLP in one native proof object.
+- NO-GO for a matched six-separate derived baseline until the missing RMSNorm
+  public-row and bridge separate envelopes exist.
+- NO-GO for any NANOZK benchmark win.
+
+## Correctness Boundary
+
+The gate checks:
+
+- derived fused envelope/input equality
+- derived fused input commitment is the attention-derived commitment, not the
+  older synthetic MLP commitment
+- proof backend version and statement version
+- fused statement and public-instance commitments
+- derived activation/down/residual envelope/input equality
+- activation-to-down hidden commitment handoff
+- down-to-residual statement, public-instance, and residual-delta handoffs
+- binary accounting path order and fused proof-byte equality
+- required fused artifact presence
+- missing matched-baseline envelope boundary
+- mutation rejection for overclaims, relabeling, metric drift, and commitment
+  drift
 
 ## Non-Claims
 
-- Not a regenerated attention-derived native RMSNorm-MLP fused proof.
 - Not attention plus MLP in one native proof object.
+- Not matched six-separate derived baseline accounting.
 - Not a full transformer block proof.
 - Not a NANOZK benchmark win.
-- Not proof-size evidence for the attention-derived route.
+- Not a matched external zkML benchmark.
 - Not timing evidence.
 - Not recursion or proof-carrying data.
 - Not production-ready zkML.
 
 ## Evidence
 
-- current MLP proof backend version:
-  `stwo-d128-rmsnorm-mlp-fused-air-proof-v1`
+- `docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json`
+- `docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json`
+- `docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`
 - `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.tsv`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.tsv`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.tsv`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv`
-- `docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json`
-- `docs/engineering/evidence/zkai-attention-derived-d128-block-statement-chain-2026-05.json`
-- `docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-gate-2026-05.json`
 
 ## Validation
 
 ```bash
-python3 scripts/zkai_d128_rmsnorm_to_projection_bridge_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.tsv
-python3 -m unittest scripts.tests.test_zkai_d128_rmsnorm_to_projection_bridge_input
-cargo +nightly-2025-07-14 test d128_native_rmsnorm_to_projection_bridge_proof --lib --features stwo-backend
-python3 scripts/zkai_d128_gate_value_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.tsv
-cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_projection_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json
-python3 scripts/zkai_d128_activation_swiglu_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.tsv
-python3 -m unittest scripts.tests.test_zkai_d128_activation_swiglu_proof_input
-cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json
-python3 scripts/zkai_d128_down_projection_proof_input.py --source-json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.tsv
-python3 -m unittest scripts.tests.test_zkai_d128_down_projection_proof_input
-cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json
-python3 scripts/zkai_d128_residual_add_proof_input.py --rmsnorm-source-json docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json --down-source-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv
-python3 -m unittest scripts.tests.test_zkai_d128_residual_add_proof_input
-cargo +nightly-2025-07-14 test d128_native_residual_add_proof --lib --features stwo-backend
-cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_residual_add_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json
-cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_residual_add_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- build-input docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json
+cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json
 python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv
-python3 -m py_compile scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_native_mlp_proof_route_gate.py
 python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate
-python3 scripts/research_issue_lint.py --repo-root .
-python3 scripts/paper/paper_preflight.py --repo-root .
+cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_rmsnorm_mlp_fused_proof --lib
 git diff --check
 just gate-fast
 just gate
