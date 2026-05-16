@@ -77,11 +77,12 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 66. `docs/engineering/zkai-native-attention-mlp-single-proof-route-2026-05-16.md`
 67. `docs/engineering/zkai-native-attention-mlp-single-proof-object-2026-05-16.md`
 68. `docs/engineering/zkai-native-attention-mlp-lifting-ablation-2026-05-16.md`
-69. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
-70. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
-71. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
-72. `docs/engineering/reproducibility.md`
-73. `git status --short --branch`
+69. `docs/engineering/zkai-native-attention-mlp-adapter-air-frontier-2026-05-16.md`
+70. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
+71. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
+72. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
+73. `docs/engineering/reproducibility.md`
+74. `git status --short --branch`
 
 ## Current lane split
 
@@ -170,6 +171,20 @@ byte d128 row (`82.7621%` further reduction needed). Treat this as
 `NO_GO_LIFTING_ONLY_BREAKTHROUGH`; the next attack should be native adapter
 AIR, query-value/opening reduction, or a different component boundary. See
 `docs/engineering/zkai-native-attention-mlp-lifting-ablation-2026-05-16.md`.
+
+Latest native adapter-AIR frontier: the attention-output-to-d128-input adapter
+now has a pinned native AIR candidate surface, but not yet a regenerated Stwo
+proof with that component included. The candidate has `128` rows, `9` value
+columns plus `3` remainder-bit columns, `1,536` trace cells, and `10` checked
+constraints over the fixed public projection policy. The adapter outputs match
+the d128 RMSNorm input commitment
+`blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
+and all floor remainders fit in `3` bits. The key budget is strict: the current
+single proof is `40,668` typed bytes versus the `40,700` typed-byte two-proof
+frontier, so there are only `32` typed bytes of slack before native adapter AIR
+loses the current tiny size win. Treat the next implementation as a correctness
+gate first, not a proof-size breakthrough. See
+`docs/engineering/zkai-native-attention-mlp-adapter-air-frontier-2026-05-16.md`.
 
 Reproducibility metadata:
 
