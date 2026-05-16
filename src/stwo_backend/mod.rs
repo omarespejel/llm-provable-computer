@@ -1538,10 +1538,11 @@ pub use lookup_prover::{
 #[cfg(feature = "stwo-backend")]
 pub use native_attention_mlp_single_proof::{
     build_zkai_native_attention_mlp_single_proof_input,
+    build_zkai_native_attention_mlp_single_proof_input_with_adapter_mode,
     prove_zkai_native_attention_mlp_single_proof_envelope,
     verify_zkai_native_attention_mlp_single_proof_envelope,
     zkai_native_attention_mlp_single_proof_envelope_from_json_slice,
-    zkai_native_attention_mlp_single_proof_input_from_json_str,
+    zkai_native_attention_mlp_single_proof_input_from_json_str, ZkAiNativeAttentionMlpAdapterMode,
     ZkAiNativeAttentionMlpSingleProofEnvelope, ZkAiNativeAttentionMlpSingleProofInput,
     ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_BACKEND_VERSION,
     ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_DECISION,

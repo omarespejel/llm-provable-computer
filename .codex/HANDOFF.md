@@ -145,6 +145,23 @@ source-backed duplicate and compact proof artifacts with query-inventory
 fingerprints. See
 `docs/engineering/zkai-native-attention-mlp-variant-invariant-reprove-preflight-2026-05-16.md`.
 
+Latest source-backed adapter selector: issue `#637` now has real source-backed
+duplicate and compact native Stwo proof artifacts. The duplicate selector keeps
+the `1,536` adapter base cells and verifies at `124,585` JSON proof bytes /
+`43,228` local typed bytes. The compact selector keeps the 12 verifier
+preprocessed adapter columns but proves only `1,024` adapter base cells and
+verifies at `116,091` JSON proof bytes / `40,812` local typed bytes. Compact
+saves `2,416` typed bytes (`0.944110x`) and `8,494` JSON bytes versus the
+matching source-backed duplicate selector, and recovers `1,120` typed bytes
+versus the current native adapter-AIR frontier. It is still `112` typed bytes
+above the `40,700` typed-byte two-proof frontier, so this is a mechanism GO and
+a frontier NO-GO, not a NANOZK comparison or proof-size win. Only `112` typed
+bytes are direct opened-value savings; `2,304` bytes are path-sensitive
+FRI/Merkle/query-position savings. See
+`docs/engineering/zkai-native-attention-mlp-source-backed-adapter-selector-2026-05-17.md`.
+Follow-up issue `#639` tracks the next direct attack on the remaining `112`
+typed-byte gap.
+
 Single-proof object reproducibility metadata:
 
 - Backend binary/version: `zkai_native_attention_mlp_single_proof` with
