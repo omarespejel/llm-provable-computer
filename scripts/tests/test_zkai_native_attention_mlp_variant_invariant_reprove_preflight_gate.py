@@ -134,10 +134,10 @@ class NativeAttentionMlpVariantInvariantReprovePreflightGateTests(unittest.TestC
             link = gate.JSON_OUT
             backup = gate.JSON_OUT.read_bytes() if gate.JSON_OUT.exists() else None
             target.write_text("{}", encoding="utf-8")
-            if link.exists():
-                link.unlink()
-            link.symlink_to(target)
             try:
+                if link.exists():
+                    link.unlink()
+                link.symlink_to(target)
                 with self.assertRaisesRegex(gate.VariantInvariantReprovePreflightError, "symlink"):
                     gate.write_outputs(payload, link, None)
             finally:
