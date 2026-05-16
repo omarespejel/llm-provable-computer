@@ -12,7 +12,8 @@ import json
 import os
 import pathlib
 import stat
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
