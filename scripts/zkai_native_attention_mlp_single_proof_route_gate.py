@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 import copy
 import csv
 import hashlib
@@ -13,7 +14,7 @@ import os
 import pathlib
 import stat
 import sys
-from typing import Any, Callable
+from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -181,7 +182,18 @@ def read_json_and_raw_bytes(path: pathlib.Path, label: str) -> tuple[Any, bytes]
             raise NativeAttentionMlpSingleProofRouteError(f"{label} changed while opening: {path}")
         if post.st_size > MAX_SOURCE_BYTES:
             raise NativeAttentionMlpSingleProofRouteError(f"{label} exceeds max size: got {post.st_size} bytes")
-        raw = os.read(fd, MAX_SOURCE_BYTES + 1)
+        chunks: list[bytes] = []
+        total = 0
+        while total < post.st_size:
+            chunk = os.read(fd, min(65_536, post.st_size - total))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+        raw = b"".join(chunks)
+        after = os.fstat(fd)
+        if (post.st_dev, post.st_ino, post.st_size) != (after.st_dev, after.st_ino, after.st_size):
+            raise NativeAttentionMlpSingleProofRouteError(f"{label} changed while reading: {path}")
     finally:
         if fd is not None:
             os.close(fd)
@@ -439,7 +451,10 @@ def validate_payload(payload: Any, *, expected: dict[str, Any] | None = None, co
     data = _dict(payload, "payload")
     key_set = set(data)
     if key_set not in (CORE_KEYS, FINAL_KEYS):
-        raise NativeAttentionMlpSingleProofRouteError(f"unexpected payload keys: {sorted(key_set ^ FINAL_KEYS)}")
+        expected_keys = FINAL_KEYS if key_set & MUTATION_KEYS else CORE_KEYS
+        extras = sorted(key_set - expected_keys)
+        missing = sorted(expected_keys - key_set)
+        raise NativeAttentionMlpSingleProofRouteError(f"payload key drift: extra={extras}, missing={missing}")
     for key, expected_value in (
         ("schema", SCHEMA),
         ("decision", DECISION),
