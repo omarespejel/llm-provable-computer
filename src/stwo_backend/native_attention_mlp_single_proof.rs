@@ -187,6 +187,7 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
 #[derive(Debug, Clone)]
 struct D128AttentionAdapterEval {
     log_size: u32,
+    preprocessed_column_ids: [PreProcessedColumnId; ADAPTER_TRACE_COLUMNS],
 }
 
 impl FrameworkEval for D128AttentionAdapterEval {
@@ -226,8 +227,13 @@ impl FrameworkEval for D128AttentionAdapterEval {
             remainder_bit_1.clone(),
             remainder_bit_2.clone(),
         ];
-        for (column_id, trace_value) in ADAPTER_COLUMN_IDS.iter().zip(trace_values.iter()) {
-            let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
+        for (column_id, trace_value) in self
+            .preprocessed_column_ids
+            .iter()
+            .cloned()
+            .zip(trace_values.iter())
+        {
+            let public_value = eval.get_preprocessed_column(column_id);
             eval.add_constraint(trace_value.clone() - public_value);
         }
 
@@ -1090,16 +1096,18 @@ fn zkai_native_attention_mlp_adapter_component_with_allocator(
         allocator,
         D128AttentionAdapterEval {
             log_size: ADAPTER_LOG_SIZE,
+            preprocessed_column_ids: adapter_preprocessed_column_id_array(),
         },
         SecureField::from(BaseField::from(0u32)),
     )
 }
 
+fn adapter_preprocessed_column_id_array() -> [PreProcessedColumnId; ADAPTER_TRACE_COLUMNS] {
+    ADAPTER_COLUMN_IDS.map(preprocessed_column_id)
+}
+
 fn adapter_preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
-    ADAPTER_COLUMN_IDS
-        .into_iter()
-        .map(preprocessed_column_id)
-        .collect()
+    adapter_preprocessed_column_id_array().into()
 }
 
 fn adapter_trace(
