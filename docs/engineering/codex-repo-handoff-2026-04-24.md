@@ -74,11 +74,12 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 63. `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
 64. `docs/engineering/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05-16.md`
 65. `docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`
-66. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
-67. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
-68. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
-69. `docs/engineering/reproducibility.md`
-70. `git status --short --branch`
+66. `docs/engineering/zkai-native-attention-mlp-single-proof-route-2026-05-16.md`
+67. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
+68. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
+69. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
+70. `docs/engineering/reproducibility.md`
+71. `git status --short --branch`
 
 ## Current lane split
 
@@ -130,6 +131,17 @@ removing `33,800` typed bytes (`83.0467%`), and the workload/object class is
 not matched. The compressed statement-chain handoff remains useful at `2,559`
 bytes (`0.174986x` source artifact ratio), but it is not a proof object. See
 `docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`.
+
+Latest native attention-plus-MLP single-proof route budget: the next honest
+implementation target is now pinned. A real one-native attention-plus-MLP proof
+object must verify locally and come in below the current `40,700` typed-byte
+two-proof frontier. If it can preserve the current attention-derived MLP fused
+proof surface, the floor is `22,576` typed bytes (`0.554693x` the two-proof
+target), saving `18,124` typed bytes (`44.5307%`). That route is still not a
+NANOZK comparison: even the MLP-surface floor remains `15,676` typed bytes above
+NANOZK's paper-reported `6,900` byte d128 row and would need another `69.4366%`
+reduction from that floor. See
+`docs/engineering/zkai-native-attention-mlp-single-proof-route-2026-05-16.md`.
 
 ### 1. Publication/default lane
 
