@@ -71,6 +71,19 @@ NON_CLAIMS = (
     "not production-ready zkML",
 )
 
+EXPECTED_VALIDATION_COMMANDS = (
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- build-input docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- prove docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.input.json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- verify docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json",
+    "python3 scripts/zkai_native_attention_mlp_single_proof_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_single_proof_gate",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend native_attention_mlp_single_proof --lib",
+    "git diff --check",
+    "just gate-fast",
+    "just gate",
+)
+
 CORE_KEYS = {
     "schema",
     "decision",
@@ -432,7 +445,9 @@ def validate_context(context: dict[str, Any]) -> None:
     )
     local = _dict(row.get("local_binary_accounting"), "local binary accounting")
     metadata = _dict(row.get("envelope_metadata"), "envelope metadata")
-    _str_list(input_payload.get("validation_commands"), "input validation commands")
+    validation_commands = _str_list(input_payload.get("validation_commands"), "input validation commands")
+    if validation_commands != list(EXPECTED_VALIDATION_COMMANDS):
+        raise NativeAttentionMlpSingleProofGateError("input validation commands drift")
     checks = {
         "proof_backend_version": envelope.get("proof_backend_version"),
         "proof_schema_version": envelope.get("proof_schema_version"),
