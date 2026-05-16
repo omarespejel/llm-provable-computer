@@ -1,4 +1,5 @@
 import copy
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -146,6 +147,40 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
             gate.validate_payload(loaded, context=self.context)
         finally:
             path.unlink(missing_ok=True)
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symlink support required")
+    def test_json_output_rejects_symlink(self) -> None:
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR, prefix=".tmp-single-proof-json-symlink-") as tmp:
+            temp_dir = Path(tmp)
+            target = temp_dir / "target.json"
+            link = temp_dir / "out.json"
+            target.write_text("{}", encoding="utf-8")
+            link.symlink_to(target)
+            with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "symlink"):
+                gate.write_json(link, self.fresh_payload())
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symlink support required")
+    def test_tsv_output_rejects_symlink(self) -> None:
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR, prefix=".tmp-single-proof-tsv-symlink-") as tmp:
+            temp_dir = Path(tmp)
+            target = temp_dir / "target.tsv"
+            link = temp_dir / "out.tsv"
+            target.write_text("", encoding="utf-8")
+            link.symlink_to(target)
+            with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "symlink"):
+                gate.write_tsv(link, self.fresh_payload(), self.context)
+
+    def test_json_output_path_escape_rejects(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = Path(tmp) / "single-proof.json"
+            with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "escapes evidence directory"):
+                gate.write_json(outside, self.fresh_payload())
+
+    def test_tsv_output_path_escape_rejects(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = Path(tmp) / "single-proof.tsv"
+            with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "escapes evidence directory"):
+                gate.write_tsv(outside, self.fresh_payload(), self.context)
 
 
 if __name__ == "__main__":
