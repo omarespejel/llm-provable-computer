@@ -2,6 +2,7 @@ import copy
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from scripts import zkai_d128_attention_mlp_boundary_frontier_gate as gate
 
@@ -28,6 +29,10 @@ class D128AttentionMlpBoundaryFrontierGateTests(unittest.TestCase):
         self.assertEqual(summary["typed_ratio_vs_six_separate_mlp_plus_attention_fused"], 0.525378)
         self.assertEqual(summary["typed_gap_to_nanozk_reported_bytes"], 33_800)
         self.assertEqual(summary["typed_reduction_needed_to_nanozk_reported_share"], 0.830467)
+        route = payload["routes"]["attention_fused_softmax_table_plus_derived_mlp_fused_separate_proofs"]
+        self.assertEqual(route["six_separate_mlp_plus_attention_fused_json_proof_bytes"], 246_635)
+        self.assertEqual(route["json_saving_vs_six_separate_mlp_plus_attention_fused_bytes"], 130_377)
+        self.assertEqual(route["json_ratio_vs_six_separate_mlp_plus_attention_fused"], 0.471377)
 
     def test_routes_keep_handoff_and_single_proof_as_non_claims(self) -> None:
         routes = self.fresh_payload()["routes"]
@@ -52,7 +57,7 @@ class D128AttentionMlpBoundaryFrontierGateTests(unittest.TestCase):
         payload["routes"]["single_native_attention_plus_derived_mlp_fused"][
             "status"
         ] = "GO_NATIVE_ATTENTION_PLUS_MLP_PROOF_OBJECT_EXISTS"
-        gate._refresh_route_and_payload(payload)
+        gate.refresh_route_and_payload(payload)
         with self.assertRaisesRegex(gate.AttentionMlpBoundaryFrontierError, "route drift"):
             gate.validate_payload(payload, context=self.context)
 
@@ -61,7 +66,7 @@ class D128AttentionMlpBoundaryFrontierGateTests(unittest.TestCase):
         payload["routes"]["compressed_statement_handoff_plus_derived_mlp_fused"][
             "proof_size_claim_status"
         ] = "GO_HANDOFF_ARTIFACT_IS_PROOF_SIZE_COMPARABLE"
-        gate._refresh_route_and_payload(payload)
+        gate.refresh_route_and_payload(payload)
         with self.assertRaisesRegex(gate.AttentionMlpBoundaryFrontierError, "route drift"):
             gate.validate_payload(payload, context=self.context)
 
@@ -70,6 +75,16 @@ class D128AttentionMlpBoundaryFrontierGateTests(unittest.TestCase):
         payload["payload_commitment"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(gate.AttentionMlpBoundaryFrontierError, "payload commitment drift"):
             gate.validate_payload(payload, context=self.context)
+
+    def test_validate_sources_pins_mlp_json_saving(self) -> None:
+        payloads = copy.deepcopy(self.context["payloads"])
+        payloads["mlp_route"]["summary"]["json_saving_vs_available_separate_bytes"] = 130_376
+        with mock.patch.object(gate.mlp_route_gate, "validate_payload", return_value=None):
+            with self.assertRaisesRegex(
+                gate.AttentionMlpBoundaryFrontierError,
+                "MLP route summary drift: json_saving_vs_available_separate_bytes",
+            ):
+                gate.validate_sources(payloads)
 
     def test_to_tsv_validates_payload(self) -> None:
         tsv = gate.to_tsv(self.fresh_payload(), self.context)
