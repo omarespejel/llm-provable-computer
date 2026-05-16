@@ -125,6 +125,8 @@ mod lookup_component;
 #[cfg(feature = "stwo-backend")]
 mod lookup_prover;
 #[cfg(feature = "stwo-backend")]
+mod native_attention_mlp_single_proof;
+#[cfg(feature = "stwo-backend")]
 mod normalization_component;
 #[cfg(feature = "stwo-backend")]
 mod normalization_prover;
@@ -1532,6 +1534,28 @@ pub use lookup_prover::{
     STWO_LOOKUP_SEMANTIC_SCOPE_PHASE3, STWO_LOOKUP_STATEMENT_VERSION_PHASE3,
     STWO_SHARED_LOOKUP_PROOF_VERSION_PHASE10, STWO_SHARED_LOOKUP_SEMANTIC_SCOPE_PHASE10,
     STWO_SHARED_LOOKUP_STATEMENT_VERSION_PHASE10,
+};
+#[cfg(feature = "stwo-backend")]
+pub use native_attention_mlp_single_proof::{
+    build_zkai_native_attention_mlp_single_proof_input,
+    prove_zkai_native_attention_mlp_single_proof_envelope,
+    verify_zkai_native_attention_mlp_single_proof_envelope,
+    zkai_native_attention_mlp_single_proof_envelope_from_json_slice,
+    zkai_native_attention_mlp_single_proof_input_from_json_str,
+    ZkAiNativeAttentionMlpSingleProofEnvelope, ZkAiNativeAttentionMlpSingleProofInput,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_BACKEND_VERSION,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_DECISION,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_INPUT_DECISION,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_INPUT_SCHEMA,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_MAX_ENVELOPE_JSON_BYTES,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_MAX_INPUT_JSON_BYTES,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_MAX_PROOF_BYTES,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_PROOF_VERSION,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_ROUTE_ID,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_SEMANTIC_SCOPE,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_STATEMENT_VERSION,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_TARGET_ID,
+    ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_VERIFIER_DOMAIN,
 };
 #[cfg(feature = "stwo-backend")]
 pub use normalization_component::{
