@@ -76,6 +76,28 @@ class NativeAttentionMlpLiftingAblationGateTests(unittest.TestCase):
         self.assertIn("single accounting JSON", message)
         self.assertIn("boom", message)
 
+    def test_read_json_rejects_post_read_size_drift(self) -> None:
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
+            path = gate.pathlib.Path(temp_dir) / "drift.json"
+            path.write_text('{"ok": true}', encoding="utf-8")
+            real_fstat = gate.os.fstat
+            calls = 0
+
+            def drifting_fstat(fd: int) -> gate.os.stat_result:
+                nonlocal calls
+                calls += 1
+                result = real_fstat(fd)
+                if calls == 2:
+                    values = list(result)
+                    values[6] = result.st_size + 1
+                    return gate.os.stat_result(values)
+                return result
+
+            with mock.patch.object(gate.os, "fstat", side_effect=drifting_fstat):
+                with self.assertRaises(gate.LiftingAblationError) as cm:
+                    gate.read_json(path, 1024, "drifting JSON")
+        self.assertIn("changed while reading", str(cm.exception))
+
     def test_output_rejects_symlink(self) -> None:
         payload = gate.build_payload()
         with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:

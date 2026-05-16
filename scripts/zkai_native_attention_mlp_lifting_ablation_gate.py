@@ -311,6 +311,9 @@ def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple
             if total > max_bytes:
                 raise LiftingAblationError(f"{label} exceeds max size while reading")
         raw = b"".join(chunks)
+        after = os.fstat(fd)
+        if (post.st_dev, post.st_ino, post.st_size) != (after.st_dev, after.st_ino, after.st_size):
+            raise LiftingAblationError(f"{label} changed while reading: {path}")
     finally:
         if fd is not None:
             os.close(fd)
