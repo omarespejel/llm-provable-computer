@@ -87,6 +87,7 @@ class NativeAttentionMlpTranscriptStableComparisonGateTests(unittest.TestCase):
             current["query_inventory_fingerprint"],
             "4f1b230afc4f7fec71ce632faa2b0b9512276467aa9dd05f48cd1fba4ba581f4",
         )
+        self.assertRegex(current["query_inventory_fingerprint"], r"^[0-9a-f]{64}$")
         self.assertRegex(current["statement_commitment"], r"^blake2b-256:[0-9a-f]{64}$")
         self.assertRegex(current["public_instance_commitment"], r"^blake2b-256:[0-9a-f]{64}$")
         self.assertFalse(compact["artifact_backed"])
@@ -107,7 +108,6 @@ class NativeAttentionMlpTranscriptStableComparisonGateTests(unittest.TestCase):
         candidate = copy.deepcopy(variants["compact_base_legacy_label_microprobe"])
         candidate["artifact_backed"] = True
         candidate["query_inventory_status"] = "PINNED_RECORD_STREAM"
-        candidate["query_inventory_fingerprint"] = "blake2b-256:" + "11" * 32
         candidate["proof_backend_version"] = baseline["proof_backend_version"]
         candidate["statement_version"] = baseline["statement_version"]
 
@@ -123,6 +123,18 @@ class NativeAttentionMlpTranscriptStableComparisonGateTests(unittest.TestCase):
         )
 
         candidate["public_instance_commitment"] = "blake2b-256:" + "33" * 32
+        self.assertEqual(
+            gate.promotion_status(baseline, candidate),
+            "NO_GO_CANDIDATE_QUERY_INVENTORY_FINGERPRINT_MISSING",
+        )
+
+        candidate["query_inventory_fingerprint"] = "blake2b-256:" + "11" * 32
+        self.assertEqual(
+            gate.promotion_status(baseline, candidate),
+            "NO_GO_CANDIDATE_QUERY_INVENTORY_FINGERPRINT_MISSING",
+        )
+
+        candidate["query_inventory_fingerprint"] = "11" * 32
         self.assertEqual(gate.promotion_status(baseline, candidate), "GO_TRANSCRIPT_STABLE")
 
     def test_mutations_reject_overclaims_and_fake_inventory(self) -> None:
