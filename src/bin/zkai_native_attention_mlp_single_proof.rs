@@ -182,13 +182,18 @@ fn read_bounded_utf8(path: &Path, max_bytes: usize, label: &str) -> Result<Strin
 
 #[cfg(feature = "stwo-backend")]
 fn read_bounded_bytes(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>, String> {
-    let metadata = fs::symlink_metadata(path)
-        .map_err(|error| format!("failed to lstat {label} {}: {error}", path.display()))?;
-    if metadata.file_type().is_symlink() {
-        return Err(format!("{label} {} must not be a symlink", path.display()));
+    let mut open_options = fs::OpenOptions::new();
+    open_options.read(true);
+    #[cfg(unix)]
+    {
+        open_options.custom_flags(libc::O_NOFOLLOW);
     }
-    let metadata = fs::metadata(path)
-        .map_err(|error| format!("failed to stat {label} {}: {error}", path.display()))?;
+    let mut file = open_options
+        .open(path)
+        .map_err(|error| format!("failed to open {label} {}: {error}", path.display()))?;
+    let metadata = file
+        .metadata()
+        .map_err(|error| format!("failed to stat opened {label} {}: {error}", path.display()))?;
     if !metadata.is_file() {
         return Err(format!("{label} {} is not a regular file", path.display()));
     }
@@ -198,8 +203,6 @@ fn read_bounded_bytes(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<
             metadata.len()
         ));
     }
-    let mut file = fs::File::open(path)
-        .map_err(|error| format!("failed to open {label} {}: {error}", path.display()))?;
     let mut raw = Vec::new();
     std::io::Read::by_ref(&mut file)
         .take(max_bytes.saturating_add(1) as u64)

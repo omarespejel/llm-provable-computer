@@ -6,6 +6,19 @@ from pathlib import Path
 from scripts import zkai_native_attention_mlp_single_proof_gate as gate
 
 
+EXPECTED_MUTATION_REASONS = {
+    "single_typed_bytes_drift": "summary drift",
+    "two_proof_frontier_drift": "summary drift",
+    "proof_json_bytes_drift": "summary drift",
+    "adapter_promoted_to_native_air": "routes drift",
+    "pcs_lifting_log_size_drift": "summary drift",
+    "nanozk_win_promoted": "routes drift",
+    "route_commitment_drift": "route commitment drift",
+    "payload_commitment_drift": "payload commitment drift",
+    "missing_non_claim": "non-claims drift",
+}
+
+
 class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -53,7 +66,11 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
         cases = payload["mutation_result"]["cases"]
         self.assertEqual(payload["mutation_inventory"]["cases"], list(gate.MUTATION_NAMES))
         self.assertEqual(len(cases), len(gate.MUTATION_NAMES))
+        self.assertEqual([case["name"] for case in cases], list(gate.MUTATION_NAMES))
         self.assertTrue(all(case["rejected"] for case in cases))
+        self.assertEqual({case["reason"] for case in cases}, set(EXPECTED_MUTATION_REASONS.values()))
+        for case in cases:
+            self.assertEqual(case["reason"], EXPECTED_MUTATION_REASONS[case["name"]])
 
     def test_promoting_nanozk_win_rejects(self) -> None:
         payload = self.fresh_payload()

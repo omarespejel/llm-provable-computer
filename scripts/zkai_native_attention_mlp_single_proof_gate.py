@@ -198,6 +198,12 @@ def _int(value: Any, label: str) -> int:
     return value
 
 
+def _bytes(value: Any, label: str) -> bytes:
+    if not isinstance(value, bytes):
+        raise NativeAttentionMlpSingleProofGateError(f"{label} must be bytes")
+    return value
+
+
 def read_json(path: pathlib.Path, label: str) -> Any:
     try:
         payload, _raw = route_gate.read_json_and_raw_bytes(path, label)
@@ -207,13 +213,17 @@ def read_json(path: pathlib.Path, label: str) -> Any:
 
 
 def build_context() -> dict[str, Any]:
-    envelope = _dict(read_json(ENVELOPE_PATH, "single proof envelope"), "single proof envelope")
-    accounting = _dict(read_json(ACCOUNTING_PATH, "single proof accounting"), "single proof accounting")
-    route_budget = _dict(read_json(ROUTE_BUDGET_PATH, "route budget"), "route budget")
+    try:
+        envelope, envelope_raw = route_gate.read_json_and_raw_bytes(ENVELOPE_PATH, "single proof envelope")
+        accounting, _accounting_raw = route_gate.read_json_and_raw_bytes(ACCOUNTING_PATH, "single proof accounting")
+        route_budget, _route_budget_raw = route_gate.read_json_and_raw_bytes(ROUTE_BUDGET_PATH, "route budget")
+    except route_gate.NativeAttentionMlpSingleProofRouteError as err:
+        raise NativeAttentionMlpSingleProofGateError(str(err)) from err
     return {
-        "envelope": envelope,
-        "accounting": accounting,
-        "route_budget": route_budget,
+        "envelope": _dict(envelope, "single proof envelope"),
+        "envelope_raw_bytes": envelope_raw,
+        "accounting": _dict(accounting, "single proof accounting"),
+        "route_budget": _dict(route_budget, "route budget"),
     }
 
 
@@ -226,100 +236,14 @@ def accounting_row(accounting: dict[str, Any]) -> dict[str, Any]:
 
 def build_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
     context = build_context() if context is None else context
-    envelope = _dict(context["envelope"], "envelope")
-    input_payload = _dict(envelope.get("input"), "envelope input")
-    row = accounting_row(_dict(context["accounting"], "accounting"))
-    local = _dict(row.get("local_binary_accounting"), "local binary accounting")
-    metadata = _dict(row.get("envelope_metadata"), "envelope metadata")
-
-    single_typed = _int(local.get("typed_size_estimate_bytes"), "single typed bytes")
-    single_json = _int(row.get("proof_json_size_bytes"), "single JSON proof bytes")
-    two_typed = _int(input_payload.get("current_two_proof_frontier_typed_bytes"), "two proof typed bytes")
-    two_json = EXPECTED["two_proof_frontier_json_bytes"]
-    nanozk = _int(input_payload.get("nanozk_reported_d128_block_proof_bytes"), "NANOZK reported bytes")
-    typed_saving = two_typed - single_typed
-    json_saving = two_json - single_json
-    typed_gap_to_nanozk = single_typed - nanozk
-
-    routes = {
-        "native_single_proof_object": {
-            "status": "GO_VERIFIED_SINGLE_NATIVE_STWO_PROOF_OBJECT",
-            "proof_backend_version": metadata["proof_backend_version"],
-            "proof_schema_version": metadata["proof_schema_version"],
-            "statement_version": metadata["statement_version"],
-            "proof_json_size_bytes": single_json,
-            "typed_size_estimate_bytes": single_typed,
-            "pcs_lifting_log_size": input_payload["pcs_lifting_log_size"],
-        },
-        "two_proof_frontier_comparison": {
-            "status": "BARELY_GO_BEATS_CURRENT_TWO_PROOF_TYPED_TARGET",
-            "two_proof_frontier_typed_bytes": two_typed,
-            "typed_saving_bytes": typed_saving,
-            "typed_ratio": ratio(single_typed, two_typed),
-            "two_proof_frontier_json_bytes": two_json,
-            "json_saving_bytes": json_saving,
-            "json_ratio": ratio(single_json, two_json),
-        },
-        "adapter_boundary": {
-            "status": "NO_GO_NATIVE_ADAPTER_AIR_NOT_PROVEN",
-            "adapter_status": input_payload["adapter_status"],
-            "native_adapter_air_proven": False,
-        },
-        "nanozk_comparison_boundary": {
-            "status": "NO_GO_NOT_NANOZK_COMPARABLE",
-            "nanozk_reported_d128_block_proof_bytes": nanozk,
-            "typed_gap_to_nanozk_reported_bytes": typed_gap_to_nanozk,
-            "matched_workload_or_object_class": False,
-            "proof_size_win_claimed": False,
-        },
-    }
-    summary = {
-        "single_proof_typed_bytes": single_typed,
-        "two_proof_frontier_typed_bytes": two_typed,
-        "typed_saving_vs_two_proof_bytes": typed_saving,
-        "typed_ratio_vs_two_proof": ratio(single_typed, two_typed),
-        "single_proof_json_bytes": single_json,
-        "two_proof_frontier_json_bytes": two_json,
-        "json_saving_vs_two_proof_bytes": json_saving,
-        "json_ratio_vs_two_proof": ratio(single_json, two_json),
-        "single_envelope_bytes": EXPECTED["single_envelope_bytes"],
-        "pcs_lifting_log_size": input_payload["pcs_lifting_log_size"],
-        "attention_fused_typed_bytes": input_payload["current_attention_fused_typed_bytes"],
-        "derived_mlp_fused_typed_bytes": input_payload["current_derived_mlp_fused_typed_bytes"],
-        "adapter_status": input_payload["adapter_status"],
-        "native_adapter_air_proven": False,
-        "nanozk_reported_d128_block_proof_bytes": nanozk,
-        "typed_gap_to_nanozk_reported_bytes": typed_gap_to_nanozk,
-        "typed_reduction_needed_to_nanozk_reported_share": ratio(typed_gap_to_nanozk, single_typed),
-    }
-    payload = {
-        "schema": SCHEMA,
-        "decision": DECISION,
-        "result": RESULT,
-        "issue": ISSUE,
-        "claim_boundary": CLAIM_BOUNDARY,
-        "source_artifacts": source_artifacts(),
-        "routes": routes,
-        "summary": summary,
-        "mechanism": {
-            "single_proof_object_mechanism": (
-                "attention LogUp interaction trace and six d128 RMSNorm-MLP components are proved "
-                "under one Stwo proof object with shared PCS/Fri plumbing"
-            ),
-            "explicit_lifting_reason": (
-                "the attention interaction tree is much smaller than the MLP base tree, so the route "
-                "pins an explicit PCS lifting log size instead of relying on publication-v1 None"
-            ),
-            "research_signal": "the first verified one-proof object saves 32 typed bytes versus the two-proof frontier",
-        },
-        "non_claims": list(NON_CLAIMS),
-        "validation_commands": list(VALIDATION_COMMANDS),
-        "route_commitment": "",
-        "payload_commitment": "",
-    }
-    payload["mutation_result"] = mutation_result(payload, context)
+    payload = build_payload_no_mutations(context)
+    payload["mutation_result"] = mutation_result_placeholder()
     payload["mutation_inventory"] = {"cases": list(MUTATION_NAMES)}
     refresh_routes_and_payload(payload)
+    validate_payload(payload, context=context)
+    payload["mutation_result"] = mutation_result(payload, context)
+    refresh_routes_and_payload(payload)
+    validate_payload(payload, context=context)
     return payload
 
 
@@ -372,6 +296,8 @@ def validate_payload(payload: dict[str, Any], *, context: dict[str, Any] | None 
         raise NativeAttentionMlpSingleProofGateError("mutation inventory drift")
     if not all(case.get("rejected") is True for case in cases):
         raise NativeAttentionMlpSingleProofGateError("mutation rejection drift")
+    for case in cases:
+        _str(case.get("reason"), "mutation rejection reason")
     if payload.get("mutation_inventory") != {"cases": list(MUTATION_NAMES)}:
         raise NativeAttentionMlpSingleProofGateError("mutation inventory drift")
 
@@ -390,6 +316,7 @@ def build_payload_no_mutations(context: dict[str, Any]) -> dict[str, Any]:
     row = accounting_row(_dict(context["accounting"], "accounting"))
     local = _dict(row.get("local_binary_accounting"), "local binary accounting")
     metadata = _dict(row.get("envelope_metadata"), "envelope metadata")
+    envelope_bytes = len(_bytes(context.get("envelope_raw_bytes"), "single envelope raw bytes"))
     single_typed = _int(local.get("typed_size_estimate_bytes"), "single typed bytes")
     single_json = _int(row.get("proof_json_size_bytes"), "single JSON proof bytes")
     two_typed = _int(input_payload.get("current_two_proof_frontier_typed_bytes"), "two proof typed bytes")
@@ -444,7 +371,7 @@ def build_payload_no_mutations(context: dict[str, Any]) -> dict[str, Any]:
             "two_proof_frontier_json_bytes": two_json,
             "json_saving_vs_two_proof_bytes": two_json - single_json,
             "json_ratio_vs_two_proof": ratio(single_json, two_json),
-            "single_envelope_bytes": EXPECTED["single_envelope_bytes"],
+            "single_envelope_bytes": envelope_bytes,
             "pcs_lifting_log_size": input_payload["pcs_lifting_log_size"],
             "attention_fused_typed_bytes": input_payload["current_attention_fused_typed_bytes"],
             "derived_mlp_fused_typed_bytes": input_payload["current_derived_mlp_fused_typed_bytes"],
@@ -489,6 +416,7 @@ def validate_context(context: dict[str, Any]) -> None:
         "adapter_status": input_payload.get("adapter_status"),
         "pcs_lifting_log_size": input_payload.get("pcs_lifting_log_size"),
         "single_proof_json_bytes": len(_list(envelope.get("proof"), "proof byte array")),
+        "single_envelope_bytes": len(_bytes(context.get("envelope_raw_bytes"), "single envelope raw bytes")),
         "single_proof_typed_bytes": local.get("typed_size_estimate_bytes"),
         "attention_fused_typed_bytes": input_payload.get("current_attention_fused_typed_bytes"),
         "derived_mlp_fused_typed_bytes": input_payload.get("current_derived_mlp_fused_typed_bytes"),
@@ -496,7 +424,7 @@ def validate_context(context: dict[str, Any]) -> None:
         "nanozk_reported_d128_block_proof_bytes": input_payload.get("nanozk_reported_d128_block_proof_bytes"),
     }
     for key, expected in EXPECTED.items():
-        if key == "two_proof_frontier_json_bytes" or key == "single_envelope_bytes":
+        if key == "two_proof_frontier_json_bytes":
             continue
         if checks.get(key) != expected:
             raise NativeAttentionMlpSingleProofGateError(
@@ -510,6 +438,19 @@ def validate_context(context: dict[str, Any]) -> None:
         raise NativeAttentionMlpSingleProofGateError("typed accounting component sum drift")
     if EXPECTED["two_proof_frontier_typed_bytes"] - EXPECTED["single_proof_typed_bytes"] != 32:
         raise NativeAttentionMlpSingleProofGateError("expected 32-byte typed saving drift")
+
+
+def mutation_result_placeholder() -> dict[str, Any]:
+    return {
+        "cases": [
+            {
+                "name": name,
+                "rejected": True,
+                "reason": "valid baseline placeholder before mutation execution",
+            }
+            for name in MUTATION_NAMES
+        ]
+    }
 
 
 def mutation_result(payload: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
