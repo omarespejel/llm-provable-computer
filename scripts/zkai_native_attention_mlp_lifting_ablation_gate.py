@@ -709,8 +709,6 @@ def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
 
 def write_tsv(path: pathlib.Path, payload: dict[str, Any]) -> None:
     row = {column: payload["summary"].get(column, payload.get(column)) for column in TSV_COLUMNS}
-    row["decision"] = payload["decision"]
-    row["result"] = payload["result"]
     handle = io.StringIO(newline="")
     writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t")
     writer.writeheader()
