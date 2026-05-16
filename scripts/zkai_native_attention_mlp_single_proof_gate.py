@@ -132,12 +132,12 @@ MUTATION_NAMES = (
 )
 
 EXPECTED_MUTATION_REASONS = {
-    "single_typed_bytes_drift": "summary drift",
-    "two_proof_frontier_drift": "summary drift",
-    "proof_json_bytes_drift": "summary drift",
-    "adapter_promoted_to_native_air": "routes drift",
-    "pcs_lifting_log_size_drift": "summary drift",
-    "nanozk_win_promoted": "routes drift",
+    "single_typed_bytes_drift": "summary.single_proof_typed_bytes drift",
+    "two_proof_frontier_drift": "summary.two_proof_frontier_typed_bytes drift",
+    "proof_json_bytes_drift": "summary.single_proof_json_bytes drift",
+    "adapter_promoted_to_native_air": "routes.adapter_boundary.native_adapter_air_proven drift",
+    "pcs_lifting_log_size_drift": "summary.pcs_lifting_log_size drift",
+    "nanozk_win_promoted": "routes.nanozk_comparison_boundary.proof_size_win_claimed drift",
     "route_commitment_drift": "route commitment drift",
     "payload_commitment_drift": "payload commitment drift",
     "missing_non_claim": "non-claims drift",
@@ -183,6 +183,25 @@ def refresh_payload_commitment(payload: dict[str, Any]) -> None:
 def refresh_routes_and_payload(payload: dict[str, Any]) -> None:
     payload["route_commitment"] = route_commitment(payload["routes"])
     refresh_payload_commitment(payload)
+
+
+def assert_strict_equal(actual: Any, expected: Any, label: str) -> None:
+    if type(actual) is not type(expected):
+        raise NativeAttentionMlpSingleProofGateError(f"{label} drift")
+    if isinstance(expected, dict):
+        if set(actual) != set(expected):
+            raise NativeAttentionMlpSingleProofGateError(f"{label} drift")
+        for key in expected:
+            assert_strict_equal(actual[key], expected[key], f"{label}.{key}")
+        return
+    if isinstance(expected, list):
+        if len(actual) != len(expected):
+            raise NativeAttentionMlpSingleProofGateError(f"{label} drift")
+        for index, (actual_item, expected_item) in enumerate(zip(actual, expected, strict=True)):
+            assert_strict_equal(actual_item, expected_item, f"{label}[{index}]")
+        return
+    if actual != expected:
+        raise NativeAttentionMlpSingleProofGateError(f"{label} drift")
 
 
 def _dict(value: Any, label: str) -> dict[str, Any]:
@@ -277,7 +296,7 @@ def source_artifacts() -> list[dict[str, Any]]:
         artifacts.append(
             {
                 "id": artifact_id,
-                "path": str(path.relative_to(ROOT)),
+                "path": path.relative_to(ROOT).as_posix(),
                 "sha256": hashlib.sha256(raw).hexdigest(),
             }
         )
@@ -301,8 +320,7 @@ def validate_payload(payload: dict[str, Any], *, context: dict[str, Any] | None 
         raise NativeAttentionMlpSingleProofGateError("non-claims drift")
     expected_payload = build_payload_without_mutations(context)
     for key in ("source_artifacts", "routes", "summary", "mechanism", "validation_commands"):
-        if payload.get(key) != expected_payload[key]:
-            raise NativeAttentionMlpSingleProofGateError(f"{key} drift")
+        assert_strict_equal(payload.get(key), expected_payload[key], key)
     if payload.get("route_commitment") != route_commitment(payload["routes"]):
         raise NativeAttentionMlpSingleProofGateError("route commitment drift")
     if payload.get("payload_commitment") != payload_commitment(payload):
