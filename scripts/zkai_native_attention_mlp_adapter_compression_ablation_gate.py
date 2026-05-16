@@ -388,10 +388,13 @@ def validate_current_sources(sources: dict[str, Any]) -> None:
     routes = _dict(gate.get("routes"), "current single proof routes")
     adapter_route = _dict(routes.get("adapter_boundary"), "adapter route")
     native_route = _dict(routes.get("native_single_proof_object"), "native single proof route")
-    artifacts = {
-        _str(artifact.get("id"), "source artifact id"): artifact
-        for artifact in _list(sources.get("source_artifacts"), "source artifacts")
-    }
+    artifacts: dict[str, dict[str, Any]] = {}
+    for index, artifact_value in enumerate(_list(sources.get("source_artifacts"), "source artifacts")):
+        artifact = _dict(artifact_value, f"source artifact {index}")
+        artifact_id = _str(artifact.get("id"), "source artifact id")
+        if artifact_id in artifacts:
+            raise AdapterCompressionAblationError(f"duplicate source artifact id {artifact_id}")
+        artifacts[artifact_id] = artifact
     if set(artifacts) != set(EXPECTED_SOURCE_ARTIFACTS):
         raise AdapterCompressionAblationError("source artifact inventory drift")
     for artifact_id, expected_artifact in EXPECTED_SOURCE_ARTIFACTS.items():
