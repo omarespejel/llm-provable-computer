@@ -250,6 +250,10 @@ VALIDATION_COMMANDS = [
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_public_row_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_to_projection_bridge_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_to_projection_bridge_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_gate_value_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_activation_swiglu_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_down_projection_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_residual_add_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
     "python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv",
     "python3 -m py_compile scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_native_mlp_proof_route_gate.py",
@@ -1347,6 +1351,8 @@ def validate_payload(payload: Any, *, context: dict[str, Any] | None = None) -> 
         raise NativeMlpProofRouteError("matched six-separate baseline status drift")
     if data["comparison"]["derived_fused_typed_bytes"] >= data["comparison"]["available_separate_typed_bytes"]:
         raise NativeMlpProofRouteError("derived fused exact-baseline saving disappeared")
+    if data["comparison"]["derived_fused_proof_bytes"] >= data["comparison"]["available_separate_proof_bytes"]:
+        raise NativeMlpProofRouteError("derived fused exact-baseline proof-byte saving disappeared")
     if data["comparison"]["current_native_fused_proof_can_be_reused_for_derived_input"] is not False:
         raise NativeMlpProofRouteError("current proof reuse overclaim")
     for row in _list(data.get("required_derived_fused_artifacts"), "required derived fused artifacts"):
@@ -1473,6 +1479,13 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
         "exact_baseline_saving_smuggled",
         lambda p: p["comparison"].__setitem__(
             "derived_fused_typed_bytes", p["comparison"]["available_separate_typed_bytes"] + 1
+        ),
+        True,
+    ),
+    (
+        "exact_baseline_proof_byte_saving_smuggled",
+        lambda p: p["comparison"].__setitem__(
+            "derived_fused_proof_bytes", p["comparison"]["available_separate_proof_bytes"] + 1
         ),
         True,
     ),
