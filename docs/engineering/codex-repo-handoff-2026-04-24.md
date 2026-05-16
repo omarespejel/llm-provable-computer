@@ -208,6 +208,17 @@ frontier replacement; the next attack is a variant-invariant transcript policy
 or multi-transcript rerun with per-variant binary accounting. See
 `docs/engineering/zkai-native-attention-mlp-transcript-stable-comparison-2026-05-16.md`.
 
+Latest variant-invariant reprove preflight: issue `#636` is now source-pinned
+as a NO-GO for immediate compact-adapter reprove. The current Rust source still
+extends `adapter_trace(input)?` into both preprocessed and base traces, pins the
+duplicate `1,536` adapter trace cells in input validation, and has no
+duplicate-vs-compact adapter selector. Treat the `736` typed-byte compact
+signal as alive but blocked: only the `112` direct opened-value byte floor is
+defensible today, and the remaining `624` path-sensitive bytes require
+source-backed duplicate and compact proof artifacts with query-inventory
+fingerprints. See
+`docs/engineering/zkai-native-attention-mlp-variant-invariant-reprove-preflight-2026-05-16.md`.
+
 Reproducibility metadata:
 
 - Backend binary/version: `zkai_native_attention_mlp_single_proof` with

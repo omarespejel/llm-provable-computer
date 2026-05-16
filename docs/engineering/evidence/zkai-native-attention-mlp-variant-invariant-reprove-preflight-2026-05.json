@@ -1,0 +1,178 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 10,
+  "cases": [
+    {
+      "accepted": false,
+      "error": "result drift",
+      "name": "result_promoted",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "reprove support overclaim",
+      "name": "reprove_support_promoted",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "compact frontier overclaim",
+      "name": "compact_frontier_promoted",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "NANOZK overclaim",
+      "name": "nanozk_win_promoted",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "fake selector accepted",
+      "name": "fake_selector_present",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "stable floor drift",
+      "name": "stable_floor_inflated",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "path-sensitive reprove budget drift",
+      "name": "path_sensitive_budget_erased",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source_artifacts drift",
+      "name": "source_artifact_hash_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "non-claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload commitment drift",
+      "name": "payload_commitment_drift",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "SOURCE_PREFLIGHT_FOR_VARIANT_INVARIANT_OR_MULTI_TRANSCRIPT_COMPACT_ADAPTER_REPROVE_WITHOUT_PROMOTING_A_COMPACT_FRONTIER",
+  "decision": "NO_GO_SOURCE_BACKED_VARIANT_INVARIANT_REPROVE_NOT_AVAILABLE",
+  "interpretation": {
+    "human_result": "The compact-adapter idea is not dead, but the current backend cannot honestly run the issue #636 experiment yet. The source still duplicates the adapter in both trace trees and exposes no compact/duplicate selector.",
+    "recommendation": "Do not spend more comparison work on the current artifacts. Implement the source-backed selector next, then re-run the proof/accounting comparison.",
+    "research_meaning": "The only stable saving we can defend today is the 112-byte direct opened-value floor. The larger 736-byte signal remains a live lead, but it needs source-backed compact and duplicate proof artifacts."
+  },
+  "issue": "https://github.com/omarespejel/provable-transformer-vm/issues/636",
+  "mutation_inventory": [
+    "result_promoted",
+    "reprove_support_promoted",
+    "compact_frontier_promoted",
+    "nanozk_win_promoted",
+    "fake_selector_present",
+    "stable_floor_inflated",
+    "path_sensitive_budget_erased",
+    "source_artifact_hash_drift",
+    "non_claim_removed",
+    "payload_commitment_drift"
+  ],
+  "non_claims": [
+    "not a compact-adapter proof artifact",
+    "not a transcript-stable compact-adapter proof-size win",
+    "not a replacement for the current native attention+MLP frontier",
+    "not a NANOZK proof-size win",
+    "not a matched external zkML benchmark",
+    "not timing evidence",
+    "not a full transformer block proof",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "blake2b-256:0a97272a1bc4fb7099b4a1a7a1a33e4fd7f6e7994ee31054568cddd5942dd230",
+  "reprove_plan": {
+    "go_gate_after_backend_work": "compact variant verifies, keeps attention-output-to-d128-input value binding, emits source artifacts and query fingerprints, and stays smaller than the duplicate variant under the declared policy",
+    "minimum_backend_changes": [
+      "add explicit duplicate and compact adapter modes with versioned statement labels",
+      "make compact mode prove only the non-public adapter witness columns while referencing fixed columns",
+      "emit separate duplicate and compact proof envelopes",
+      "emit per-variant local binary accounting and record-stream fingerprints",
+      "compare either under a declared multi-transcript policy or a defensible variant-invariant transcript policy"
+    ],
+    "next_required_pr": "source-backed compact adapter selector",
+    "no_go_gate_after_backend_work": "compact variant fails verification, weakens value binding, or only wins through path-sensitive query churn"
+  },
+  "result": "NARROW_CLAIM_COMPACT_ADAPTER_REPROVE_REQUIRES_SOURCE_SELECTOR",
+  "schema": "zkai-native-attention-mlp-variant-invariant-reprove-preflight-gate-v1",
+  "source_artifacts": [
+    {
+      "id": "native_attention_mlp_single_proof_source",
+      "path": "src/stwo_backend/native_attention_mlp_single_proof.rs",
+      "sha256": "c131506de19e489ec4e3ba3273801db9e01d668439212f906b2d866a6e50c908"
+    },
+    {
+      "id": "transcript_stable_comparison_gate",
+      "path": "docs/engineering/evidence/zkai-native-attention-mlp-transcript-stable-comparison-2026-05.json",
+      "payload_sha256": "6d6e74837bf6c28afafd692de2494a96d2a91d7623ae790cd865d02b08aa503c",
+      "sha256": "0b129942254aa1800386de167ed741ab717658772e8a158bdea53de6e9db6de8"
+    }
+  ],
+  "source_preflight": {
+    "absent_tokens_checked": [
+      "adapter_variant",
+      "compact_adapter",
+      "variant_invariant",
+      "multi_transcript"
+    ],
+    "adapter_trace_cells_compile_time_constant": true,
+    "compact_adapter_backend_present": false,
+    "duplicate_adapter_in_base_trace": true,
+    "duplicate_adapter_in_preprocessed_trace": true,
+    "input_validation_pins_duplicate_adapter_trace_cells": true,
+    "multi_transcript_policy_present": false,
+    "source_comment_says_adapter_intentionally_duplicated": true,
+    "variant_invariant_policy_present": false,
+    "variant_selector_present": false
+  },
+  "stable_measurement": {
+    "compact_label_control_typed_bytes": 42492,
+    "current_frontier_typed_bytes": 41932,
+    "direct_opening_value_saving_bytes": 112,
+    "duplicate_label_control_typed_bytes": 43228,
+    "label_control_saving_bytes": 736,
+    "nanozk_reported_d128_block_proof_bytes": 6900,
+    "nanozk_win_claimed": false,
+    "path_sensitive_share": 0.847826,
+    "stable_promotable_comparison_count": 0,
+    "transcript_path_sensitive_saving_bytes": 624
+  },
+  "summary": {
+    "backend_blocker_count": 4,
+    "compact_frontier_promoted": false,
+    "compact_label_control_typed_bytes": 42492,
+    "current_frontier_typed_bytes": 41932,
+    "direct_opening_value_saving_bytes": 112,
+    "duplicate_label_control_typed_bytes": 43228,
+    "label_control_saving_bytes": 736,
+    "nanozk_reported_d128_block_proof_bytes": 6900,
+    "nanozk_win_claimed": false,
+    "path_sensitive_bytes_that_need_reprove": 624,
+    "stable_floor_bytes": 112,
+    "stable_reprove_supported_by_current_source": false,
+    "transcript_path_sensitive_saving_bytes": 624
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_native_attention_mlp_variant_invariant_reprove_preflight_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-variant-invariant-reprove-preflight-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-variant-invariant-reprove-preflight-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_native_attention_mlp_variant_invariant_reprove_preflight_gate.py scripts/tests/test_zkai_native_attention_mlp_variant_invariant_reprove_preflight_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_variant_invariant_reprove_preflight_gate",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
