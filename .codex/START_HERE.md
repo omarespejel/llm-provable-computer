@@ -105,12 +105,13 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 99. `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
 100. `docs/engineering/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05-16.md`
 101. `docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`
-102. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
-103. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
-104. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
-105. `docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`
-106. `docs/engineering/reproducibility.md`
-107. `git status --short --branch`
+102. `docs/engineering/zkai-native-attention-mlp-single-proof-route-2026-05-16.md`
+103. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
+104. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
+105. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
+106. `docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`
+107. `docs/engineering/reproducibility.md`
+108. `git status --short --branch`
 
 ## What this repository is now
 

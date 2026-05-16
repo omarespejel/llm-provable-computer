@@ -1,0 +1,196 @@
+{
+  "claim_boundary": "PINS_THE_NEXT_NATIVE_ATTENTION_PLUS_MLP_PROOF_OBJECT_TARGET_WITHOUT_CLAIMING_THE_OBJECT_EXISTS_OR_THAT_THE_ROUTE_IS_NANOZK_COMPARABLE",
+  "decision": "GO_ROUTE_BUDGET_FOR_NATIVE_ATTENTION_MLP_SINGLE_PROOF_OBJECT",
+  "issue": "https://github.com/omarespejel/provable-transformer-vm/issues/603",
+  "mechanism": {
+    "first_success_gate": "one native proof object verifies locally and beats 40,700 typed bytes",
+    "hard_external_comparison_gate": "after a native proof object exists, compare matched workload/object class against external systems",
+    "why_this_is_next": "the value-connected derived MLP route already verifies, but the attention proof and MLP proof are still two proof objects"
+  },
+  "mutation_inventory": {
+    "all_mutations_rejected": true,
+    "case_count": 11,
+    "cases": [
+      "decision_promoted",
+      "claim_boundary_overclaim",
+      "native_proof_existence_promoted",
+      "route_native_proof_existence_promoted",
+      "two_proof_target_reduced",
+      "nanozk_win_promoted",
+      "nanozk_object_class_promoted",
+      "row_ratio_drift",
+      "source_artifact_hash_drift",
+      "non_claim_removed",
+      "payload_commitment_drift"
+    ]
+  },
+  "mutation_result": {
+    "all_mutations_rejected": true,
+    "cases": [
+      {
+        "accepted": false,
+        "error": "decision drift",
+        "name": "decision_promoted",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "claim_boundary drift",
+        "name": "claim_boundary_overclaim",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "summary drift",
+        "name": "native_proof_existence_promoted",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "route drift",
+        "name": "route_native_proof_existence_promoted",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "summary drift",
+        "name": "two_proof_target_reduced",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "route drift",
+        "name": "nanozk_win_promoted",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "route drift",
+        "name": "nanozk_object_class_promoted",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "summary drift",
+        "name": "row_ratio_drift",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "source artifact drift",
+        "name": "source_artifact_hash_drift",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "non-claims drift",
+        "name": "non_claim_removed",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "payload commitment drift",
+        "name": "payload_commitment_drift",
+        "rejected": true
+      }
+    ]
+  },
+  "non_claims": [
+    "not a native attention plus MLP proof object",
+    "not proof that one native boundary will be 22,576 typed bytes",
+    "not a full transformer block proof",
+    "not a NANOZK proof-size win",
+    "not a matched NANOZK workload or benchmark",
+    "not timing evidence",
+    "not recursion or proof-carrying data",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "sha256:c51592004b13ba08b287d016bdf63b807c9af775bdd0c4e9e73dc4488f633795",
+  "result": "NARROW_CLAIM_IMPLEMENTATION_TARGET_PINNED_NO_NATIVE_PROOF_OBJECT_YET",
+  "route_commitment": "blake2b-256:09b186420a8d7dc73dbe8a164d183eac1846e7ffed5c79d620220c2af7ae3ea9",
+  "routes": {
+    "current_two_proof_frontier": {
+      "attention_fused_typed_bytes": 18124,
+      "current_two_proof_json_proof_bytes": 116258,
+      "current_two_proof_typed_bytes": 40700,
+      "derived_mlp_fused_typed_bytes": 22576,
+      "single_native_status": "NO_GO_NATIVE_ATTENTION_PLUS_MLP_PROOF_OBJECT_MISSING",
+      "status": "BASELINE_CURRENT_VALUE_CONNECTED_TWO_PROOF_TARGET"
+    },
+    "mechanism_prior": {
+      "compression_probe_result": "NO_GO_DROP_FRI_DECOMMITMENTS_WOULD_DROP_VERIFIER_OPENING_WITNESS",
+      "mlp_fusion_typed_saving_bytes": 36768,
+      "opening_plumbing_saved_bytes": 33280,
+      "opening_plumbing_saved_share": 0.905135,
+      "status": "EVIDENCE_POINTS_TO_SHARED_OPENING_PLUMBING_NOT_DROPPED_VERIFIER_WITNESS"
+    },
+    "nanozk_comparison_boundary": {
+      "matched_workload_or_object_class": false,
+      "nanozk_gap_after_mlp_surface_floor_bytes": 15676,
+      "nanozk_reduction_needed_after_mlp_surface_floor_share": 0.694366,
+      "nanozk_reported_d128_block_proof_bytes": 6900,
+      "status": "NO_GO_NOT_MATCHED_NANOZK_COMPARISON",
+      "two_proof_gap_to_nanozk_reported_bytes": 33800
+    },
+    "native_single_proof_route_budget": {
+      "attention_proof_typed_bytes_available_to_remove": 18124,
+      "mlp_fused_rows": 197504,
+      "mlp_surface_floor_ratio_vs_two_proof": 0.554693,
+      "mlp_surface_floor_typed_bytes": 22576,
+      "native_proof_success_threshold_typed_bytes": 40700,
+      "one_native_proof_exists": false,
+      "status": "GO_BUILD_ROUTE_BUT_NO_PROOF_OBJECT_EXISTS_YET",
+      "success_threshold": "native proof verifies locally and typed bytes are below the current two-proof target",
+      "typed_saving_if_mlp_surface_floor_holds_bytes": 18124,
+      "typed_saving_if_mlp_surface_floor_holds_share": 0.445307,
+      "value_connected_chain_extra_rows": 2049,
+      "value_connected_chain_rows": 199553,
+      "value_connected_chain_to_mlp_row_ratio": 1.010374
+    }
+  },
+  "schema": "zkai-native-attention-mlp-single-proof-route-gate-v1",
+  "source_artifacts": [
+    {
+      "id": "attention_mlp_boundary_frontier",
+      "path": "docs/engineering/evidence/zkai-d128-attention-mlp-boundary-frontier-2026-05.json",
+      "payload_sha256": "3cbb753120b255bf70f64d76c313e6fd4ab5a290fa719550c38baf8b60b8e700",
+      "sha256": "04db68f8005ed11a5d593b7ad39b8e602fa4ea2899191a0a438ac5f8b3080679"
+    },
+    {
+      "id": "attention_derived_native_mlp_route",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json",
+      "payload_sha256": "840326bdb65ccfdb63abb81b2897a37f8120ac89a5d46f968cf2f63f32556ed3",
+      "sha256": "ae4ec36f863e6429735ed0214476001588953800809409f2e05e2663f73d1cbb"
+    },
+    {
+      "id": "attention_derived_mlp_fusion_attribution",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05.json",
+      "payload_sha256": "b71390e3d12d7d3bd2fe2d5d669aafccaceca1eecee3392340adc386a2b194b4",
+      "sha256": "ffb8ac6c3487dff51b4b438ac620013e0d05f58e5d5481a1eabbb343c44ce1b1"
+    }
+  ],
+  "summary": {
+    "attention_proof_typed_bytes_available_to_remove": 18124,
+    "current_two_proof_typed_bytes": 40700,
+    "mlp_surface_floor_ratio_vs_two_proof": 0.554693,
+    "mlp_surface_floor_typed_bytes": 22576,
+    "nanozk_gap_after_mlp_surface_floor_bytes": 15676,
+    "nanozk_reduction_needed_after_mlp_surface_floor_share": 0.694366,
+    "native_proof_success_threshold_typed_bytes": 40700,
+    "one_native_proof_exists": false,
+    "typed_saving_if_mlp_surface_floor_holds_bytes": 18124,
+    "typed_saving_if_mlp_surface_floor_holds_share": 0.445307,
+    "value_connected_chain_extra_rows": 2049,
+    "value_connected_chain_to_mlp_row_ratio": 1.010374
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_native_attention_mlp_single_proof_route_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-single-proof-route-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_native_attention_mlp_single_proof_route_gate.py scripts/tests/test_zkai_native_attention_mlp_single_proof_route_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_single_proof_route_gate",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}
