@@ -36,6 +36,7 @@ CLAIM_BOUNDARY = (
     "WITHOUT_REGENERATING_A_STWO_PROOF_OR_CLAIMING_PROOF_SIZE_IMPROVEMENT"
 )
 PAYLOAD_DOMAIN = "ptvm:zkai:native-attention-mlp-adapter-air-frontier:v1"
+DERIVED_INPUT_DOMAIN = "ptvm:zkai:d128-input-activation:v1"
 
 WIDTH = 128
 ATTENTION_FLAT_CELLS = 64
@@ -224,6 +225,27 @@ def _str(value: Any, label: str) -> str:
     return value
 
 
+def blake2b_commitment(value: Any, domain: str) -> str:
+    digest = hashlib.blake2b(digest_size=32)
+    digest.update(domain.encode("utf-8"))
+    digest.update(b"\0")
+    digest.update(canonical_json_bytes(value))
+    return "blake2b-256:" + digest.hexdigest()
+
+
+def sequence_commitment(values: list[int]) -> str:
+    values_json = json.dumps(values, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    values_sha256 = hashlib.sha256(values_json).hexdigest()
+    return blake2b_commitment(
+        {
+            "encoding": "signed_integer_sequence_v1",
+            "shape": [WIDTH],
+            "values_sha256": values_sha256,
+        },
+        DERIVED_INPUT_DOMAIN,
+    )
+
+
 def read_json(path: pathlib.Path, label: str) -> tuple[dict[str, Any], bytes]:
     resolved = path.resolve()
     evidence_root = EVIDENCE_DIR.resolve()
@@ -298,6 +320,7 @@ def validate_expected_sources(sources: dict[str, Any]) -> None:
         actual = sources["derived"].get(key) if key in {"schema", "decision", "result"} else derived_summary.get(key)
         if actual != expected:
             raise AdapterAirFrontierError(f"derived input {key} drift")
+    validate_derived_input_commitment(sources["derived"])
     single_summary = _dict(sources["single"].get("summary"), "single proof summary")
     for key, expected in EXPECTED_SINGLE.items():
         actual = sources["single"].get(key) if key in {"schema", "decision", "result"} else single_summary.get(key)
@@ -308,6 +331,20 @@ def validate_expected_sources(sources: dict[str, Any]) -> None:
         actual = sources["lifting"].get(key) if key in {"schema", "decision", "result"} else lifting_summary.get(key)
         if actual != expected:
             raise AdapterAirFrontierError(f"lifting {key} drift")
+
+
+def validate_derived_input_commitment(derived: dict[str, Any]) -> None:
+    derived_input = _dict(derived.get("derived_input"), "derived input")
+    if _str(derived_input.get("input_activation_domain"), "derived input activation domain") != DERIVED_INPUT_DOMAIN:
+        raise AdapterAirFrontierError("derived input activation domain drift")
+    declared = _str(derived_input.get("input_activation_commitment"), "derived input activation commitment")
+    if declared != EXPECTED_DERIVED_INPUT["derived_input_activation_commitment"]:
+        raise AdapterAirFrontierError("derived input activation commitment drift")
+    values = [_int(value, f"derived value {index}") for index, value in enumerate(_list(derived_input.get("values_q8"), "derived values"))]
+    if len(values) != WIDTH:
+        raise AdapterAirFrontierError("derived value count drift")
+    if declared != sequence_commitment(values):
+        raise AdapterAirFrontierError("derived input activation commitment mismatch")
 
 
 def projection_rows(derived: dict[str, Any]) -> list[dict[str, Any]]:
@@ -332,6 +369,7 @@ def validate_projection_rows(derived: dict[str, Any]) -> dict[str, Any]:
         bias = _int(row.get("bias_q8"), f"row {index} bias")
         numerator = _int(row.get("numerator_q8"), f"row {index} numerator")
         output = _int(row.get("output_q8"), f"row {index} output")
+        floor_remainder = _int(row.get("floor_remainder_q8"), f"row {index} floor remainder")
         denominator = _int(row.get("denominator"), f"row {index} denominator")
         if primary_source != index % ATTENTION_FLAT_CELLS:
             raise AdapterAirFrontierError("primary source policy drift")
@@ -346,6 +384,8 @@ def validate_projection_rows(derived: dict[str, Any]) -> dict[str, Any]:
         if numerator != PRIMARY_COEFF * primary + MIX_COEFF * mix + bias:
             raise AdapterAirFrontierError("adapter numerator relation drift")
         remainder = numerator - denominator * output
+        if floor_remainder != remainder:
+            raise AdapterAirFrontierError("adapter floor remainder drift")
         if not 0 <= remainder < denominator:
             raise AdapterAirFrontierError("adapter floor remainder outside denominator range")
         min_remainder = remainder if min_remainder is None else min(min_remainder, remainder)
