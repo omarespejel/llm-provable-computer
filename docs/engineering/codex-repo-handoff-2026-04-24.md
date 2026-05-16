@@ -95,12 +95,11 @@ RMSNorm-MLP fused proof object. The checked fused proof covers `197,504` rows,
 has `68,560` proof bytes, `22,576` local typed bytes, a `717,049` byte
 envelope, and verifies true. It consumes the attention-derived input commitment
 `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
-not the older synthetic MLP input commitment. Against the four available
-derived separate envelopes it saves `23,632` typed bytes (`0.488573x` ratio),
-while also covering RMSNorm public rows and the RMSNorm-to-projection bridge.
-This is partial-baseline proof-size evidence, not a complete matched
-six-separate baseline, not attention plus MLP in one native proof object, and
-not a NANOZK benchmark win. See
+not the older synthetic MLP input commitment. Against the exact six-envelope
+derived separate baseline it saves `36,768` typed bytes (`0.380426x` ratio) and
+`130,377` JSON proof bytes (`0.344632x` ratio). This is matched derived
+MLP-side proof-size evidence, not attention plus MLP in one native proof object,
+not a full transformer block proof, and not a NANOZK benchmark win. See
 `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`.
 
 ### 1. Publication/default lane
@@ -1226,11 +1225,10 @@ down-projection, and residual-add. The derived fused proof consumes the
 attention-derived input commitment
 `blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
 has `68,560` proof bytes, `22,576` local typed bytes, and a `717,049` byte
-envelope. Against the four available derived separate envelopes it saves
-`23,632` typed bytes (`0.488573x` ratio), while the matched six-separate
-derived baseline remains incomplete because separate RMSNorm-row and bridge
-envelopes are still missing. This is not attention plus MLP in one native proof
-object and not a NANOZK benchmark win.
+envelope. Against the exact six-envelope derived separate baseline it saves
+`36,768` typed bytes (`0.380426x` ratio) and `130,377` JSON proof bytes
+(`0.344632x` ratio). This is not attention plus MLP in one native proof object,
+not a full transformer block proof, and not a NANOZK benchmark win.
 Evidence:
 `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
 and
@@ -1247,10 +1245,10 @@ Validate with
    separate RMSNorm, bridge, gate/value, activation, down-projection, and
    residual-add proof objects on the exact synthetic baseline. The
    attention-derived fused proof is now regenerated and verified at `22,576`
-   typed bytes, with partial-baseline savings versus the four available derived
-   separate envelopes. The current blocker is no longer MLP-side regeneration;
-   it is attention arithmetic inside the same native proof object and complete
-   matched derived separate accounting.
+   typed bytes, with exact six-envelope savings versus the derived MLP-side
+   separate baseline. The current blocker is no longer MLP-side regeneration or
+   matched derived separate accounting; it is attention arithmetic inside the
+   same native proof object.
 2. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte

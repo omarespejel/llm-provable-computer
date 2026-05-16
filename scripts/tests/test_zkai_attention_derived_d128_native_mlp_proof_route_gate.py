@@ -38,10 +38,17 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.assertEqual(summary["derived_fused_proof_bytes"], 68_560)
         self.assertEqual(summary["derived_fused_envelope_bytes"], 717_049)
         self.assertEqual(summary["derived_fused_typed_bytes"], 22_576)
-        self.assertEqual(summary["available_separate_component_count"], 4)
-        self.assertEqual(summary["available_separate_typed_bytes"], 46_208)
-        self.assertEqual(summary["typed_saving_vs_available_separate_bytes"], 23_632)
-        self.assertEqual(summary["typed_ratio_vs_available_separate"], 0.488573)
+        self.assertEqual(summary["available_separate_component_count"], 6)
+        self.assertEqual(summary["available_separate_proof_bytes"], 198_937)
+        self.assertEqual(summary["available_separate_typed_bytes"], 59_344)
+        self.assertEqual(summary["typed_saving_vs_available_separate_bytes"], 36_768)
+        self.assertEqual(summary["typed_ratio_vs_available_separate"], 0.380426)
+        self.assertEqual(summary["json_saving_vs_available_separate_bytes"], 130_377)
+        self.assertEqual(summary["json_ratio_vs_available_separate"], 0.344632)
+        self.assertEqual(
+            summary["matched_six_separate_derived_baseline_status"],
+            "COMPLETE_EXACT_SIX_DERIVED_SEPARATE_ENVELOPES",
+        )
 
     def test_keeps_derived_and_current_input_commitments_separate(self) -> None:
         summary = self.payload["summary"]
@@ -79,6 +86,27 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.assertEqual(rows["residual_add"]["native_component_input_status"], "COMPATIBLE_WITH_CURRENT_NATIVE_INPUT_SHAPE")
         self.assertEqual(self.payload["summary"]["native_compatible_components"], 6)
         self.assertEqual(self.payload["summary"]["native_incompatible_components"], 0)
+
+    def test_binds_derived_native_rmsnorm_bridge_and_gate_value_envelopes(self) -> None:
+        summary = self.payload["summary"]
+        self.assertEqual(summary["derived_native_rmsnorm_proof_bytes"], 21_632)
+        self.assertEqual(summary["derived_native_rmsnorm_envelope_bytes"], 210_079)
+        self.assertEqual(
+            summary["derived_native_rmsnorm_output_row_commitment"],
+            "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9",
+        )
+        self.assertEqual(summary["derived_native_bridge_proof_bytes"], 14_006)
+        self.assertEqual(summary["derived_native_bridge_envelope_bytes"], 130_319)
+        self.assertEqual(
+            summary["derived_native_bridge_projection_input_row_commitment"],
+            "blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba",
+        )
+        self.assertEqual(summary["derived_native_gate_value_proof_bytes"], 64_651)
+        self.assertEqual(summary["derived_native_gate_value_envelope_bytes"], 537_646)
+        self.assertEqual(
+            summary["derived_native_gate_value_output_commitment"],
+            "blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2",
+        )
 
     def test_binds_derived_native_activation_proof_envelope(self) -> None:
         summary = self.payload["summary"]
@@ -229,7 +257,7 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
             ):
                 GATE.build_context()
 
-    def test_pins_required_fused_artifacts_and_missing_matched_baseline(self) -> None:
+    def test_pins_required_fused_artifacts_and_exact_matched_baseline(self) -> None:
         required = self.payload["required_derived_fused_artifacts"]
         self.assertEqual(len(required), 3)
         for artifact in required:
@@ -240,11 +268,9 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
                 "PRESENT_REQUIRED_NATIVE_ATTENTION_DERIVED_FUSED_PROOF_ARTIFACT",
             )
         missing = self.payload["missing_matched_separate_envelopes"]
-        self.assertEqual(len(missing), 2)
-        for artifact in missing:
-            self.assertTrue(artifact["required_for_complete_six_separate_baseline"])
-            self.assertFalse(artifact["exists"])
-            self.assertEqual(artifact["status"], "MISSING_MATCHED_DERIVED_SEPARATE_COMPONENT_ENVELOPE")
+        self.assertEqual(missing, [])
+        self.assertEqual(self.payload["summary"]["missing_matched_separate_envelopes"], 0)
+        self.assertEqual(self.payload["summary"]["available_separate_component_count"], 6)
 
     def test_rejects_zero_current_mlp_rows_before_ratio(self) -> None:
         context = copy.deepcopy(self.context)
@@ -272,22 +298,33 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "native route status drift"):
             GATE.validate_payload(payload, context=self.context)
 
-    def test_rejects_required_artifact_and_matched_baseline_relabeling(self) -> None:
+    def test_rejects_required_artifact_and_matched_baseline_drift(self) -> None:
         payload = copy.deepcopy(self.payload)
         payload["required_derived_fused_artifacts"][0]["exists"] = False
         GATE.refresh_payload_commitment(payload)
         with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "payload content drift|required derived fused artifact"):
             GATE.validate_payload(payload, context=self.context)
         payload = copy.deepcopy(self.payload)
-        payload["missing_matched_separate_envelopes"][0]["exists"] = True
+        payload["comparison"][
+            "matched_six_separate_derived_baseline_status"
+        ] = "PARTIAL_ONLY_MISSING_RMSNORM_AND_BRIDGE_SEPARATE_ENVELOPES"
         GATE.refresh_payload_commitment(payload)
-        with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "payload content drift|matched separate envelope"):
+        with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "payload content drift|matched six-separate"):
+            GATE.validate_payload(payload, context=self.context)
+        payload = copy.deepcopy(self.payload)
+        payload["summary"]["available_separate_component_count"] = 5
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.NativeMlpProofRouteError, "payload content drift|matched six-separate"):
             GATE.validate_payload(payload, context=self.context)
 
     def test_tsv_output(self) -> None:
         tsv = GATE.to_tsv(self.payload, context=self.context)
         self.assertIn("native_incompatible_components", tsv.splitlines()[0])
-        self.assertTrue(tsv.splitlines()[1].endswith("\t6\t0\t24455\t227031\t58151\t480346\t16042\t155655"))
+        self.assertTrue(
+            tsv.splitlines()[1].endswith(
+                "\t6\t0\t21632\t210079\t14006\t130319\t64651\t537646\t24455\t227031\t58151\t480346\t16042\t155655"
+            )
+        )
 
     def test_written_payload_round_trip(self) -> None:
         tmp_root = ROOT / "docs" / "engineering" / "evidence"
