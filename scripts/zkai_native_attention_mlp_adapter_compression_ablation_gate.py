@@ -429,7 +429,7 @@ def validate_current_sources(sources: dict[str, Any]) -> None:
     row = _dict(rows[0], "current accounting row")
     local = _dict(row.get("local_binary_accounting"), "current local accounting")
     grouped = _dict(local.get("grouped_reconstruction"), "current grouped accounting")
-    current = VARIANTS[0]
+    current = variant_by_id(list(VARIANTS), "current_duplicate_adapter_v1_frontier")
     if row.get("proof_json_size_bytes") != current["proof_json_bytes"]:
         raise AdapterCompressionAblationError("current accounting proof JSON drift")
     if local.get("component_sum_bytes") != current["typed_bytes"]:
@@ -438,9 +438,17 @@ def validate_current_sources(sources: dict[str, Any]) -> None:
         raise AdapterCompressionAblationError("current grouped accounting drift")
 
 
+def variant_by_id(variants: list[dict[str, Any]], variant_id: str) -> dict[str, Any]:
+    for variant in variants:
+        if variant["id"] == variant_id:
+            return variant
+    raise AdapterCompressionAblationError(f"missing variant {variant_id}")
+
+
 def enrich_variants() -> list[dict[str, Any]]:
-    current_typed = VARIANTS[0]["typed_bytes"]
-    label_control_typed = VARIANTS[2]["typed_bytes"]
+    base_variants = list(VARIANTS)
+    current_typed = variant_by_id(base_variants, "current_duplicate_adapter_v1_frontier")["typed_bytes"]
+    label_control_typed = variant_by_id(base_variants, "duplicate_adapter_v2_label_control")["typed_bytes"]
     result = []
     for variant in VARIANTS:
         grouped = _dict(variant["grouped"], f"{variant['id']} grouped")
@@ -458,13 +466,6 @@ def enrich_variants() -> list[dict[str, Any]]:
     return result
 
 
-def variant_by_id(variants: list[dict[str, Any]], variant_id: str) -> dict[str, Any]:
-    for variant in variants:
-        if variant["id"] == variant_id:
-            return variant
-    raise AdapterCompressionAblationError(f"missing variant {variant_id}")
-
-
 def build_payload() -> dict[str, Any]:
     sources = load_sources()
     validate_current_sources(sources)
@@ -475,12 +476,17 @@ def build_payload() -> dict[str, Any]:
     compact_v2 = variant_by_id(variants, "compact_base_v2_referenced_fixed_columns")
     weak_v2 = variant_by_id(variants, "compact_base_v2_unconstrained_fixed_columns")
 
+    legacy_typed_saving = current["typed_bytes"] - legacy["typed_bytes"]
+    current_overhead = current["typed_bytes"] - TWO_PROOF_TYPED_BYTES
+    if current_overhead == 0:
+        raise AdapterCompressionAblationError("current frontier overhead denominator is zero")
+
     deltas = {
-        "legacy_microprobe_typed_saving_vs_current_bytes": current["typed_bytes"] - legacy["typed_bytes"],
+        "legacy_microprobe_typed_saving_vs_current_bytes": legacy_typed_saving,
         "legacy_microprobe_json_saving_vs_current_bytes": current["proof_json_bytes"] - legacy["proof_json_bytes"],
         "legacy_microprobe_recovered_current_overhead_share": round(
-            (current["typed_bytes"] - legacy["typed_bytes"])
-            / (current["typed_bytes"] - TWO_PROOF_TYPED_BYTES),
+            legacy_typed_saving
+            / current_overhead,
             6,
         ),
         "legacy_microprobe_remaining_gap_to_two_proof_bytes": legacy["typed_bytes"] - TWO_PROOF_TYPED_BYTES,
@@ -617,6 +623,15 @@ def _payload_commitment_drift(payload: dict[str, Any]) -> None:
     payload["payload_commitment"] = "blake2b-256:" + "11" * 32
 
 
+def _source_artifact_hash_drift(payload: dict[str, Any]) -> None:
+    for artifact_value in _list(payload.get("source_artifacts"), "source artifacts"):
+        artifact = _dict(artifact_value, "source artifact")
+        if artifact.get("id") == "current_single_proof_gate":
+            artifact["sha256"] = "22" * 32
+            return
+    raise AdapterCompressionAblationError("missing current_single_proof_gate source artifact")
+
+
 MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ("result_promoted_to_frontier", lambda p: p.__setitem__("result", "GO_NEW_FRONTIER"), True),
     (
@@ -649,7 +664,7 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
         lambda p: p.__setitem__("variants", [variant for variant in p["variants"] if variant["id"] != "duplicate_adapter_v2_label_control"]),
         True,
     ),
-    ("source_artifact_hash_drift", lambda p: p["source_artifacts"][0].__setitem__("sha256", "22" * 32), True),
+    ("source_artifact_hash_drift", _source_artifact_hash_drift, True),
     ("non_claim_removed", lambda p: p.__setitem__("non_claims", p["non_claims"][1:]), True),
     ("payload_commitment_drift", _payload_commitment_drift, False),
 )
@@ -730,8 +745,10 @@ def write_text_atomic(path: pathlib.Path, text: str) -> None:
         finally:
             os.close(parent_fd)
     finally:
-        if temp_path.exists():
+        try:
             temp_path.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
