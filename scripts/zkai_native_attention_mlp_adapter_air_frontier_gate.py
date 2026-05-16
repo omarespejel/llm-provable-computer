@@ -127,6 +127,11 @@ VALIDATION_COMMANDS = (
     "just gate-fast",
 )
 
+
+def expected_bias_q8(index: int) -> int:
+    return ((7 * index + 3) % 9) - 4
+
+
 CORE_KEYS = {
     "schema",
     "decision",
@@ -332,6 +337,8 @@ def validate_projection_rows(derived: dict[str, Any]) -> dict[str, Any]:
             raise AdapterAirFrontierError("primary source policy drift")
         if mix_source != (17 * index + 11) % ATTENTION_FLAT_CELLS:
             raise AdapterAirFrontierError("mix source policy drift")
+        if bias != expected_bias_q8(index):
+            raise AdapterAirFrontierError("bias policy drift")
         if row.get("primary_coeff") != PRIMARY_COEFF or row.get("mix_coeff") != MIX_COEFF:
             raise AdapterAirFrontierError("adapter coefficient drift")
         if denominator != DENOMINATOR:
