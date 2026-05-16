@@ -4,7 +4,7 @@ This is the tracked GitHub-safe mirror of the local `.codex` handoff notes.
 If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 `.codex/HANDOFF.md` first. This file is the durable shared resume surface.
 
-**Mainline tip at last refresh:** `554814bc` (matches
+**Mainline tip at last refresh:** `02870097` (matches
 `.codex/HANDOFF.md` “Mainline reference at refresh”; update both together).
 
 ## Read order for a fresh agent
@@ -72,11 +72,13 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 61. `docs/engineering/zkai-d128-attention-rmsnorm-mlp-boundary-2026-05-15.md`
 62. `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`
 63. `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
-64. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
-65. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
-66. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
-67. `docs/engineering/reproducibility.md`
-68. `git status --short --branch`
+64. `docs/engineering/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05-16.md`
+65. `docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`
+66. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
+67. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
+68. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
+69. `docs/engineering/reproducibility.md`
+70. `git status --short --branch`
 
 ## Current lane split
 
@@ -113,6 +115,21 @@ claim: the next real compression frontier is a larger native boundary,
 especially attention plus RMSNorm-MLP, not squeezing the current MLP fused proof
 by removing verifier-required opening data. See
 `docs/engineering/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05-16.md`.
+
+Latest attention-plus-MLP frontier: the current value-connected route is now
+pinned as a two-proof target, not one native transformer-block proof. The d8
+fused attention proof is `18,124` local typed bytes / `47,698` JSON proof bytes;
+the derived d128 RMSNorm-MLP fused proof is `22,576` local typed bytes /
+`68,560` JSON proof bytes; together they form a `40,700` typed-byte /
+`116,258` JSON proof-byte frontier. This still saves `36,768` typed bytes
+versus the same attention proof plus six separate derived MLP-side proof
+objects (`77,468` typed bytes, `0.525378x` ratio), but it is not one native
+attention-plus-MLP proof object and not a NANOZK benchmark. Matching NANOZK's
+paper-reported `6,900` byte d128 row from this current target would require
+removing `33,800` typed bytes (`83.0467%`), and the workload/object class is
+not matched. The compressed statement-chain handoff remains useful at `2,559`
+bytes (`0.174986x` source artifact ratio), but it is not a proof object. See
+`docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`.
 
 ### 1. Publication/default lane
 

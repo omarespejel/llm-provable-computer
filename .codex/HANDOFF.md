@@ -2,7 +2,7 @@
 
 Last refreshed: 2026-05-16
 Repository: `/Users/espejelomar/StarkNet/provable-transformer-vm`
-Mainline reference at refresh: `554814bc`
+Mainline reference at refresh: `02870097`
 
 ## Immediate orientation
 
@@ -45,6 +45,21 @@ claim: the next real compression frontier is a larger native boundary,
 especially attention plus RMSNorm-MLP, not squeezing the current MLP fused proof
 by removing verifier-required opening data. See
 `docs/engineering/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05-16.md`.
+
+Recent attention-plus-MLP boundary frontier: the current value-connected route
+is now pinned as a two-proof target, not one native transformer-block proof. The
+d8 fused attention proof is `18,124` local typed bytes / `47,698` JSON proof
+bytes. The derived d128 RMSNorm-MLP fused proof is `22,576` local typed bytes /
+`68,560` JSON proof bytes. Together they form a `40,700` typed-byte /
+`116,258` JSON proof-byte frontier. This still saves `36,768` typed bytes
+versus the same attention proof plus six separate derived MLP-side proof
+objects (`77,468` typed bytes, `0.525378x` ratio), but it is not one native
+attention-plus-MLP proof object and not a NANOZK benchmark. Against NANOZK's
+paper-reported `6,900` byte d128 row, the current two-proof target would need
+to remove `33,800` typed bytes (`83.0467%`), and the workload/object class is
+not matched. The compressed statement-chain handoff remains useful at `2,559`
+bytes (`0.174986x` source artifact ratio), but it is not a proof object. See
+`docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`.
 
 Reproducibility metadata:
 
