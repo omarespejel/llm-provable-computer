@@ -80,7 +80,7 @@
     "not timing evidence",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:ab2f8807ef13ff3c752cba7cefabc5ef1ffb3346fadb1dc31e80b867930cd2fa",
+  "payload_commitment": "sha256:fb48bfde6147202dc70c20e800c828c44d4d1d7de075638ece45443119f338c0",
   "result": "NARROW_CLAIM_SINGLE_PROOF_OBJECT_BARELY_BEATS_TWO_PROOF_FRONTIER",
   "route_commitment": "blake2b-256:6adb099b3cafb4f1eff4131f767d46bf6d694bf5f5033ffc1ba8963f9fcd60d9",
   "routes": {
@@ -158,7 +158,6 @@
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- verify docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json",
     "python3 scripts/zkai_native_attention_mlp_single_proof_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.tsv",
-    "python3 -m py_compile scripts/zkai_native_attention_mlp_single_proof_gate.py scripts/tests/test_zkai_native_attention_mlp_single_proof_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_single_proof_gate",
     "cargo +nightly-2025-07-14 test --locked --features stwo-backend native_attention_mlp_single_proof --lib",
     "git diff --check",

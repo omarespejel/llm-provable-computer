@@ -48,6 +48,17 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
         )
         self.assertIs(routes["nanozk_comparison_boundary"]["proof_size_win_claimed"], False)
 
+    def test_validation_commands_are_bound_to_proved_input(self) -> None:
+        payload = self.fresh_payload()
+        input_payload = self.context["envelope"]["input"]
+        self.assertEqual(payload["validation_commands"], input_payload["validation_commands"])
+        self.assertNotIn("py_compile", "\n".join(payload["validation_commands"]))
+        payload["validation_commands"] = list(payload["validation_commands"])
+        payload["validation_commands"].append("python3 -m py_compile scripts/zkai_native_attention_mlp_single_proof_gate.py")
+        gate.refresh_routes_and_payload(payload)
+        with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "validation_commands drift"):
+            gate.validate_payload(payload, context=self.context)
+
     def test_all_mutations_reject(self) -> None:
         payload = self.fresh_payload()
         cases = payload["mutation_result"]["cases"]
