@@ -20,22 +20,27 @@ before opening or executing frontier issues. The north star is STARK-native
 proof architecture as the backbone for production zkML later; issues are
 hypotheses with explicit GO/NO-GO gates, required artifacts, and non-claims.
 
-Recent attention-derived d128 native residual-add result: the derived d128
-input plus the derived native down-projection proof now feeds a native
-residual-add proof input and proof object. The checked derived residual-add
-proof has `128` rows, `16,042` proof bytes, a `155,655` byte envelope, and
-verifies true. The route frontier moves to `6 / 6` native-compatible
-components: RMSNorm public rows, RMSNorm-to-projection bridge, gate/value
-projection, activation/SwiGLU, down-projection, and residual-add. This is not a
-regenerated attention-derived RMSNorm-MLP fused proof and not a NANOZK benchmark
-win; the first blocker is now producing the missing fused proof input,
-envelope, and binary accounting artifacts over the derived input commitment.
+Recent attention-derived d128 native RMSNorm-MLP fused result: the derived d128
+input plus the six derived native component inputs now feed a regenerated native
+RMSNorm-MLP fused proof object. The checked fused proof covers `197,504` rows,
+has `68,560` JSON proof bytes, `22,576` local typed bytes, a `716,944` byte
+envelope, and verifies true. It consumes the attention-derived input commitment
+`blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
+not the older synthetic MLP input commitment. Against the four available
+derived separate envelopes, the fused proof saves `23,632` typed bytes
+(`0.488573x` ratio), while also covering RMSNorm public rows and the
+RMSNorm-to-projection bridge. This is partial-baseline proof-size evidence, not
+a complete matched six-separate baseline, not attention plus MLP in one native
+proof object, and not a NANOZK benchmark win. The first blocker is now putting
+attention arithmetic into the same native proof object and/or generating the
+missing separate RMSNorm-row and bridge envelopes for exact derived baseline
+accounting.
 
 Reproducibility metadata:
 
 - Backend binary/version:
-  `zkai_d128_residual_add_proof` with
-  `stwo-d128-residual-add-air-proof-v1`.
+  `zkai_d128_rmsnorm_mlp_fused_proof` with
+  `stwo-d128-rmsnorm-mlp-fused-air-proof-v1`.
 - Timing mode: proof-size/count and verifier-result evidence only, no timing
   claim.
 - Evidence paths:
@@ -51,15 +56,18 @@ Reproducibility metadata:
   `docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json`,
   `docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv`,
   `docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json`,
   `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json`,
   and
   `docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv`.
 - Reproduce command:
-  `python3 scripts/zkai_d128_residual_add_proof_input.py --rmsnorm-source-json docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json --down-source-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv`.
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- build-input docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json`.
 - Prove/verify commands:
-  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_residual_add_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json`
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json`
   and
-  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_residual_add_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json`.
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json`.
 
 Recent d128 compact-preprocessed result: the selected public RMSNorm row and
 projection-bridge relations now have a smaller native Stwo reprove object. The
@@ -1198,19 +1206,19 @@ Validate with
 `python3 scripts/zkai_d128_value_adapter_policy_frontier_gate.py --write-json docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-value-adapter-policy-frontier-2026-05.tsv`.
 
 Current attention-derived native MLP proof-route result: the value-connected
-attention-derived d128 statement chain remains a GO at `199,553` rows, but the
-regenerated native RMSNorm-MLP fused proof is still a checked NO-GO. Only
-`5 / 6` derived slice payloads currently have the native component input shape:
-RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection, and
-activation/SwiGLU, and down-projection. Residual-add is still a statement-chain
-payload that must be parameterized or regenerated as a native component proof
-input. The derived native down-projection proof is `58,151` proof bytes with a
-`480,346` byte envelope and residual-delta commitment
-`blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec`.
-The existing MLP fused proof consumes the older synthetic input commitment
-`blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78`,
-not the value-derived commitment
-`blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`.
+attention-derived d128 statement chain remains a GO at `199,553` rows, and the
+regenerated native RMSNorm-MLP fused proof is now a checked GO. All `6 / 6`
+derived slice payloads have the native component input shape: RMSNorm public
+rows, RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
+down-projection, and residual-add. The derived fused proof consumes the
+attention-derived input commitment
+`blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
+has `68,560` proof bytes, `22,576` local typed bytes, and a `716,944` byte
+envelope. Against the four available derived separate envelopes it saves
+`23,632` typed bytes (`0.488573x` ratio), while the matched six-separate
+derived baseline remains incomplete because separate RMSNorm-row and bridge
+envelopes are still missing. This is not attention plus MLP in one native proof
+object and not a NANOZK benchmark win.
 Evidence:
 `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
 and
@@ -1225,11 +1233,12 @@ Validate with
 1. Treat `rmsnorm_mlp_fused` as the current positive MLP-side fusion result:
    the native fused proof saves `32,144` local typed bytes (`56.4167%`) versus
    separate RMSNorm, bridge, gate/value, activation, down-projection, and
-   residual-add proof objects. The current attention-to-RMSNorm boundary gate
-   value-adapter policy frontier, and native MLP proof-route gate prove the
-   immediate single-proof route is blocked by value handoff/native input
-   parameterization, not row count: regenerate downstream derived slice payloads
-   as native component proof inputs before claiming attention plus MLP.
+   residual-add proof objects on the exact synthetic baseline. The
+   attention-derived fused proof is now regenerated and verified at `22,576`
+   typed bytes, with partial-baseline savings versus the four available derived
+   separate envelopes. The current blocker is no longer MLP-side regeneration;
+   it is attention arithmetic inside the same native proof object and complete
+   matched derived separate accounting.
 2. Treat `compact_preprocessed_component_native_reprove` for the selected
    public d128 two-slice target as the current positive GO: the native proof
    object is `6,264` typed bytes versus the prior `9,056` typed-byte

@@ -1,23 +1,23 @@
 {
   "all_mutations_rejected": true,
-  "case_count": 13,
+  "case_count": 16,
   "cases": [
     {
       "accepted": false,
       "error": "decision drift",
-      "name": "decision_promoted_to_go",
+      "name": "decision_downgraded_to_no_go",
       "rejected": true
     },
     {
       "accepted": false,
       "error": "result drift",
-      "name": "result_promoted_to_proof",
+      "name": "result_overclaims_full_block",
       "rejected": true
     },
     {
       "accepted": false,
       "error": "native route status drift",
-      "name": "native_route_status_promoted",
+      "name": "native_route_status_overclaims_attention",
       "rejected": true
     },
     {
@@ -53,13 +53,31 @@
     {
       "accepted": false,
       "error": "payload content drift",
-      "name": "missing_native_artifact_marked_existing",
+      "name": "required_fused_artifact_marked_missing",
       "rejected": true
     },
     {
       "accepted": false,
       "error": "payload content drift",
-      "name": "missing_native_artifact_not_required",
+      "name": "required_fused_artifact_not_required",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload content drift",
+      "name": "matched_separate_envelope_marked_existing",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload content drift",
+      "name": "matched_separate_baseline_requirement_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload content drift",
+      "name": "partial_baseline_saving_smuggled",
       "rejected": true
     },
     {
@@ -82,6 +100,9 @@
     }
   ],
   "comparison": {
+    "available_separate_component_count": 4,
+    "available_separate_proof_bytes": 163299,
+    "available_separate_typed_bytes": 46208,
     "current_mlp_fused_envelope_input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
     "current_mlp_fused_rows": 197504,
     "current_mlp_fused_typed_bytes": 24832,
@@ -91,6 +112,13 @@
     "current_mlp_typed_saving_ratio_vs_separate": 0.564167,
     "current_mlp_typed_saving_vs_separate_bytes": 32144,
     "current_native_fused_proof_can_be_reused_for_derived_input": false,
+    "derived_fused_envelope_bytes": 716944,
+    "derived_fused_input_bytes": 151596,
+    "derived_fused_proof_backend_version": "stwo-d128-rmsnorm-mlp-fused-air-proof-v1",
+    "derived_fused_proof_bytes": 68560,
+    "derived_fused_public_instance_commitment": "blake2b-256:281440678289f1a5ab4ca85cf07aaf831ae6e4f881c00f33500dd67e535f2bee",
+    "derived_fused_statement_commitment": "blake2b-256:ed6524cc9f5da4b614e14b6e6c32b9e5170e089ee2ea50872b8ff90f2748ffe3",
+    "derived_fused_typed_bytes": 22576,
     "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
     "derived_native_activation_envelope_bytes": 227031,
     "derived_native_activation_hidden_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
@@ -113,7 +141,20 @@
     "derived_native_residual_public_instance_commitment": "blake2b-256:35d93e7086d773fdba30b455374533df6271b1d98d6b35418f1af0d250be8ee8",
     "derived_native_residual_statement_commitment": "blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d",
     "extra_rows_vs_current_mlp_fused": 2049,
+    "grouped_typed_delta_vs_available_separate": {
+      "fixed_overhead": -144,
+      "fri_decommitments": -17088,
+      "fri_samples": -1536,
+      "oods_samples": 2432,
+      "queries_values": 1824,
+      "trace_decommitments": -9120
+    },
+    "json_ratio_vs_available_separate": 0.419843,
+    "json_saving_vs_available_separate_bytes": 94739,
+    "matched_six_separate_derived_baseline_status": "PARTIAL_ONLY_MISSING_RMSNORM_AND_BRIDGE_SEPARATE_ENVELOPES",
     "row_ratio": 1.010374,
+    "typed_ratio_vs_available_separate": 0.488573,
+    "typed_saving_vs_available_separate_bytes": 23632,
     "value_connected_chain_rows": 199553
   },
   "component_input_frontier": [
@@ -262,56 +303,73 @@
       "source_path": "docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json"
     }
   ],
-  "decision": "NO_GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_NOT_REGENERATED",
-  "first_blocker": "all six attention-derived RMSNorm-MLP component inputs now have native proof shape, but the fused RMSNorm-MLP proof artifact has not been regenerated on the derived input commitment",
-  "missing_native_artifacts": [
+  "decision": "GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_REGENERATED",
+  "first_blocker": "the attention-derived RMSNorm-MLP fused proof now exists, but attention arithmetic is not yet inside the same native proof object and the matched six-separate derived baseline still lacks separate RMSNorm-row and bridge envelopes",
+  "missing_matched_separate_envelopes": [
     {
       "exists": false,
-      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
-      "required_for_go": true,
-      "status": "MISSING_REQUIRED_NATIVE_ATTENTION_DERIVED_PROOF_ARTIFACT"
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json",
+      "required_for_complete_six_separate_baseline": true,
+      "status": "MISSING_MATCHED_DERIVED_SEPARATE_COMPONENT_ENVELOPE"
     },
     {
       "exists": false,
-      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
-      "required_for_go": true,
-      "status": "MISSING_REQUIRED_NATIVE_ATTENTION_DERIVED_PROOF_ARTIFACT"
-    },
-    {
-      "exists": false,
-      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
-      "required_for_go": true,
-      "status": "MISSING_REQUIRED_NATIVE_ATTENTION_DERIVED_PROOF_ARTIFACT"
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json",
+      "required_for_complete_six_separate_baseline": true,
+      "status": "MISSING_MATCHED_DERIVED_SEPARATE_COMPONENT_ENVELOPE"
     }
   ],
   "mutation_inventory": [
-    "decision_promoted_to_go",
-    "result_promoted_to_proof",
-    "native_route_status_promoted",
+    "decision_downgraded_to_no_go",
+    "result_overclaims_full_block",
+    "native_route_status_overclaims_attention",
     "first_blocker_removed",
     "derived_input_relabels_current_mlp_input",
     "current_proof_reuse_overclaim",
     "native_compatible_component_count_drift",
     "residual_component_source_relabels_statement_chain",
-    "missing_native_artifact_marked_existing",
-    "missing_native_artifact_not_required",
+    "required_fused_artifact_marked_missing",
+    "required_fused_artifact_not_required",
+    "matched_separate_envelope_marked_existing",
+    "matched_separate_baseline_requirement_removed",
+    "partial_baseline_saving_smuggled",
     "non_claim_removed",
     "validation_command_removed",
     "payload_commitment_drift"
   ],
-  "native_route_status": "GO_DERIVED_COMPONENT_INPUTS_NATIVE_SHAPE_NO_GO_FUSED_ARTIFACTS",
+  "native_route_status": "GO_DERIVED_COMPONENT_INPUTS_NATIVE_SHAPE_AND_FUSED_PROOF_REGENERATED",
   "non_claims": [
-    "not a regenerated attention-derived native RMSNorm-MLP fused proof",
     "not attention plus MLP in one native proof object",
+    "not matched six-separate derived baseline accounting",
     "not a full transformer block proof",
     "not a NANOZK benchmark win",
-    "not proof-size evidence for the attention-derived route",
+    "not a matched external zkML benchmark",
     "not timing evidence",
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:9a18d3d38517fc92ad1ecba35f41c590bc5e8e670150acf56757e82ffd4640fd",
-  "result": "BOUNDED_NO_GO_NATIVE_FUSED_ARTIFACTS_NOT_REGENERATED",
+  "payload_commitment": "sha256:bfb4f42c6aef04492507c7b6637d8cad463f43db70145d91d6a8722394a45f10",
+  "required_derived_fused_artifacts": [
+    {
+      "exists": true,
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
+      "required_for_go": true,
+      "status": "PRESENT_REQUIRED_NATIVE_ATTENTION_DERIVED_FUSED_PROOF_ARTIFACT"
+    },
+    {
+      "exists": true,
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+      "required_for_go": true,
+      "status": "PRESENT_REQUIRED_NATIVE_ATTENTION_DERIVED_FUSED_PROOF_ARTIFACT"
+    },
+    {
+      "exists": true,
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
+      "required_for_go": true,
+      "status": "PRESENT_REQUIRED_NATIVE_ATTENTION_DERIVED_FUSED_PROOF_ARTIFACT"
+    }
+  ],
+  "result": "GO_DERIVED_NATIVE_RMSNORM_MLP_FUSED_PROOF_EXISTS_WITH_PARTIAL_BASELINE_SAVING",
   "schema": "zkai-attention-derived-d128-native-mlp-proof-route-gate-v1",
   "source_artifacts": [
     {
@@ -381,6 +439,24 @@
       "sha256": "32f0a9282e77fe0ade60fb51911b3e204e6b6a747227f29a62a9f452e8f0a074"
     },
     {
+      "id": "zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
+      "payload_sha256": "fb9d8469e4a6cc386564a303b23d4a389f1f43fb41a1896370a7e6042b4d0279",
+      "sha256": "c52931f9b6cf8576232925d31f98802f876f0ed67d74ab98b9818d88ac884120"
+    },
+    {
+      "id": "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+      "payload_sha256": "e1011bac558466e0fbd24dac186dad3d33bfa7c5e995350e84f1967c655d0426",
+      "sha256": "80bb63f93366ea2415b5539bc7711b992debf18bfece4e52f25e9c823b51c3cc"
+    },
+    {
+      "id": "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
+      "payload_sha256": "042757fb128078e938bfd29c24aa494ac16ca886a411cb3a25c039faa0e75b6b",
+      "sha256": "d4f0f78c87576bc650ddf8e75cd3ed7b84de7cae9523ba677e5473e58ef81043"
+    },
+    {
       "id": "zkai-attention-derived-d128-rmsnorm-public-row-2026-05",
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json",
       "payload_sha256": "c0b09938489f76aaa19a7907b8a66cb707b1bd4c65555626893624061a27ce81",
@@ -406,11 +482,21 @@
     }
   ],
   "summary": {
+    "available_separate_component_count": 4,
+    "available_separate_proof_bytes": 163299,
+    "available_separate_typed_bytes": 46208,
     "current_mlp_fused_rows": 197504,
     "current_mlp_fused_typed_bytes": 24832,
     "current_mlp_input_activation_commitment": "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78",
     "current_mlp_typed_saving_ratio_vs_separate": 0.564167,
     "current_mlp_typed_saving_vs_separate_bytes": 32144,
+    "derived_fused_envelope_bytes": 716944,
+    "derived_fused_input_bytes": 151596,
+    "derived_fused_proof_backend_version": "stwo-d128-rmsnorm-mlp-fused-air-proof-v1",
+    "derived_fused_proof_bytes": 68560,
+    "derived_fused_public_instance_commitment": "blake2b-256:281440678289f1a5ab4ca85cf07aaf831ae6e4f881c00f33500dd67e535f2bee",
+    "derived_fused_statement_commitment": "blake2b-256:ed6524cc9f5da4b614e14b6e6c32b9e5170e089ee2ea50872b8ff90f2748ffe3",
+    "derived_fused_typed_bytes": 22576,
     "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
     "derived_native_activation_envelope_bytes": 227031,
     "derived_native_activation_hidden_commitment": "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
@@ -433,15 +519,26 @@
     "derived_native_residual_public_instance_commitment": "blake2b-256:35d93e7086d773fdba30b455374533df6271b1d98d6b35418f1af0d250be8ee8",
     "derived_native_residual_statement_commitment": "blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d",
     "go_result": "GO for a value-connected attention-derived d128 statement chain",
-    "missing_native_artifacts": 3,
+    "json_ratio_vs_available_separate": 0.419843,
+    "json_saving_vs_available_separate_bytes": 94739,
+    "matched_six_separate_derived_baseline_status": "PARTIAL_ONLY_MISSING_RMSNORM_AND_BRIDGE_SEPARATE_ENVELOPES",
+    "missing_matched_separate_envelopes": 2,
     "native_compatible_components": 6,
     "native_incompatible_components": 0,
-    "no_go_result": "NO-GO for a regenerated attention-derived native RMSNorm-MLP fused proof today",
-    "route_commitment": "blake2b-256:ab790a39e572bd8ad43ec385844774bd13046115303da58c4eaf40f10d16d221",
+    "proof_result": "GO for a regenerated attention-derived native RMSNorm-MLP fused proof",
+    "remaining_no_go_result": "NO-GO for attention plus MLP in one native proof object or matched external benchmark",
+    "required_derived_fused_artifacts_present": 3,
+    "route_commitment": "blake2b-256:57e12ec27870697bbc8a513c4927697f8ae8e972a371ba627baa7fbd9612b87b",
     "row_ratio": 1.010374,
+    "typed_ratio_vs_available_separate": 0.488573,
+    "typed_saving_vs_available_separate_bytes": 23632,
     "value_connected_chain_rows": 199553
   },
   "validation_commands": [
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- build-input docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json",
     "python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv",
     "python3 -m py_compile scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_native_mlp_proof_route_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate",

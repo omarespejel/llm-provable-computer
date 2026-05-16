@@ -125,14 +125,20 @@ This repository currently has three live lanes.
 
 3. Verifiable-AI statement-bound transformer lane
    - The `d=64` native route has a six-slice proof-backed receipt chain.
-   - The current strongest `d=128` native fusion result is
+   - The current strongest `d=128` native MLP-side fusion result is
      `rmsnorm_mlp_fused`: one Stwo proof fuses RMSNorm public rows,
      RMSNorm-to-projection bridge, gate/value projection, activation/SwiGLU,
-     down-projection, and residual-add (`197,504` rows). It is `24,832` typed
-     bytes versus `56,976` typed bytes for six separate native proof objects,
-     saving `32,144` typed bytes (`56.4167%`). It is not attention plus MLP,
-     not a full transformer block, and not a NANOZK benchmark win; see
-     `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md`.
+     down-projection, and residual-add (`197,504` rows). The exact synthetic
+     baseline is `24,832` typed bytes versus `56,976` typed bytes for six
+     separate native proof objects, saving `32,144` typed bytes (`56.4167%`).
+     The attention-derived regenerated fused proof now consumes the derived
+     input commitment and is `68,560` JSON proof bytes / `22,576` typed bytes;
+     it saves `23,632` typed bytes versus the four available derived separate
+     envelopes, but that is not a complete six-separate baseline. It is not
+     attention plus MLP, not a full transformer block, and not a NANOZK
+     benchmark win; see
+     `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md` and
+     `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`.
    - The current attention-to-RMSNorm/MLP boundary is a checked NO-GO for one
      value-connected native proof object: the attention-derived d128 statement
      chain has `199,553` accounted rows (`1.010374x` the MLP fused surface),
@@ -146,14 +152,13 @@ This repository currently has three live lanes.
      absolute error `49.796875`. The next honest experiment is to regenerate a
      d128 RMSNorm input from attention-derived values; see
      `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`.
-   - The attention-derived native MLP proof-route gate now narrows that next
-     experiment: the value-connected d128 statement chain is a GO at `199,553`
-     rows, and `6 / 6` derived slice payloads currently have the native
-     component input shape accepted by the downstream native verifiers. The
-     remaining first blocker is a regenerated fused RMSNorm-MLP proof artifact
-     over the derived input commitment, because the existing fused proof
-     consumes the older synthetic input commitment and must not be relabeled
-     as attention-derived. See
+   - The attention-derived native MLP proof-route gate now closes the previous
+     regeneration blocker: the value-connected d128 statement chain is a GO at
+     `199,553` rows, `6 / 6` derived slice payloads have native component input
+     shape, and the regenerated derived RMSNorm-MLP fused proof verifies true.
+     The remaining first blocker is attention plus MLP in one native proof
+     object, plus exact six-separate derived baseline accounting once the
+     missing RMSNorm-row and bridge separate envelopes exist. See
      `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
      and
      `docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`.

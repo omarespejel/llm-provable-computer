@@ -70,7 +70,7 @@ fn run() -> Result<String, String> {
             let down_path = PathBuf::from(&args[4]);
             let residual_path = PathBuf::from(&args[5]);
             let input_path = PathBuf::from(&args[6]);
-            let rmsnorm = zkai_d128_rmsnorm_public_row_input_from_json_str(&read_bounded_utf8(
+            let rmsnorm = rmsnorm_public_row_input_from_json_str(&read_bounded_utf8(
                 &rmsnorm_path,
                 ZKAI_D128_RMSNORM_PUBLIC_ROW_MAX_JSON_BYTES,
                 "RMSNorm input JSON",
@@ -185,6 +185,36 @@ fn run() -> Result<String, String> {
             .to_string())
         }
         _ => Err(format!("unknown mode: {mode}")),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn rmsnorm_public_row_input_from_json_str(
+    raw_json: &str,
+) -> Result<llm_provable_computer::stwo_backend::ZkAiD128RmsnormPublicRowProofInput, String> {
+    match zkai_d128_rmsnorm_public_row_input_from_json_str(raw_json) {
+        Ok(input) => return Ok(input),
+        Err(direct_error) => {
+            let wrapper: serde_json::Value =
+                serde_json::from_str(raw_json).map_err(|_| direct_error.to_string())?;
+            let Some(nested) = wrapper.get("rmsnorm_public_row_payload") else {
+                return Err(direct_error.to_string());
+            };
+            if wrapper.get("schema").and_then(serde_json::Value::as_str)
+                != Some("zkai-attention-derived-d128-rmsnorm-public-row-gate-v1")
+            {
+                return Err("RMSNorm wrapper schema is not approved for fused input".to_string());
+            }
+            if wrapper.get("decision").and_then(serde_json::Value::as_str)
+                != Some("GO_ATTENTION_DERIVED_D128_RMSNORM_PUBLIC_ROW_INPUT")
+            {
+                return Err("RMSNorm wrapper decision is not approved for fused input".to_string());
+            }
+            let nested_raw = serde_json::to_string(nested)
+                .map_err(|error| format!("failed to serialize nested RMSNorm payload: {error}"))?;
+            zkai_d128_rmsnorm_public_row_input_from_json_str(&nested_raw)
+                .map_err(|error| error.to_string())
+        }
     }
 }
 

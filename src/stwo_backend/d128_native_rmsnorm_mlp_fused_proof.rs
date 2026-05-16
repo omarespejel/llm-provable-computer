@@ -28,14 +28,25 @@ use super::d128_native_activation_swiglu_proof::{
     zkai_d128_activation_swiglu_preprocessed_column_ids, zkai_d128_activation_swiglu_trace,
     ZkAiD128ActivationSwiGluProofInput, ZKAI_D128_ACTIVATION_SWIGLU_PROOF_VERSION,
     ZKAI_D128_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
-    ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT, ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
+    ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_GATE_PROJECTION_OUTPUT_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+    ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
 };
 use super::d128_native_down_projection_proof::{
     zkai_d128_down_projection_component_with_allocator,
     zkai_d128_down_projection_input_from_json_str,
     zkai_d128_down_projection_preprocessed_column_ids, zkai_d128_down_projection_trace,
-    ZkAiD128DownProjectionProofInput, ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION,
-    ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+    ZkAiD128DownProjectionProofInput,
+    ZKAI_D128_ATTENTION_DERIVED_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_HIDDEN_ACTIVATION_COMMITMENT,
+    ZKAI_D128_DOWN_PROJECTION_PROOF_VERSION, ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
     ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT, ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
 };
 use super::d128_native_gate_value_projection_proof::{
@@ -43,8 +54,11 @@ use super::d128_native_gate_value_projection_proof::{
     zkai_d128_gate_value_projection_input_from_json_str,
     zkai_d128_gate_value_projection_preprocessed_column_ids, zkai_d128_gate_value_projection_rows,
     zkai_d128_gate_value_projection_trace, D128GateValueProjectionMulRow,
-    ZkAiD128GateValueProjectionProofInput, ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT,
-    ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+    ZkAiD128GateValueProjectionProofInput,
+    ZKAI_D128_ATTENTION_DERIVED_PROJECTION_INPUT_ROW_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
+    ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT, ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
     ZKAI_D128_GATE_VALUE_PROJECTION_PROOF_VERSION,
     ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
     ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
@@ -53,7 +67,14 @@ use super::d128_native_gate_value_projection_proof::{
 use super::d128_native_residual_add_proof::{
     zkai_d128_residual_add_component_with_allocator, zkai_d128_residual_add_input_from_json_str,
     zkai_d128_residual_add_preprocessed_column_ids, zkai_d128_residual_add_trace,
-    ZkAiD128ResidualAddProofInput, ZKAI_D128_INPUT_ACTIVATION_COMMITMENT,
+    ZkAiD128ResidualAddProofInput, ZKAI_D128_ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_INPUT_PROOF_VERSION,
+    ZKAI_D128_ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_ROW_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_STATEMENT_COMMITMENT,
+    ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT, ZKAI_D128_INPUT_ACTIVATION_COMMITMENT,
     ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT, ZKAI_D128_RESIDUAL_ADD_PROOF_VERSION,
     ZKAI_D128_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT, ZKAI_D128_RESIDUAL_ADD_ROW_COMMITMENT,
     ZKAI_D128_RESIDUAL_ADD_STATEMENT_COMMITMENT,
@@ -70,7 +91,7 @@ use super::d128_native_rmsnorm_to_projection_bridge_proof::{
     zkai_d128_rmsnorm_to_projection_bridge_input_from_json_str,
     zkai_d128_rmsnorm_to_projection_bridge_preprocessed_column_ids,
     zkai_d128_rmsnorm_to_projection_bridge_trace, ZkAiD128RmsnormToProjectionBridgeInput,
-    ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT,
+    ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT, ZKAI_D128_RMSNORM_OUTPUT_ROW_COMMITMENT,
     ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PROOF_VERSION,
     ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
     ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
@@ -157,6 +178,55 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "just gate-fast",
     "just gate",
 ];
+
+const EXPECTED_ATTENTION_DERIVED_VALIDATION_COMMANDS: &[&str] = &[
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- build-input docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json",
+    "python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv",
+    "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate",
+    "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_rmsnorm_mlp_fused_proof --lib",
+    "git diff --check",
+    "just gate-fast",
+    "just gate",
+];
+
+const ZKAI_D128_ATTENTION_DERIVED_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT: &str =
+    "blake2b-256:5abd10e4a7bb9ed3eea14b6ea2beb22caac45c8cb6f6b10928585001d57ad57d";
+const ZKAI_D128_ATTENTION_DERIVED_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT: &str =
+    "blake2b-256:21316dfa0e32f91879bf13b85f99e16db0aa4c6e5f91c0dfc106f300c0c50fff";
+const ZKAI_D128_ATTENTION_DERIVED_RMSNORM_OUTPUT_ROW_COMMITMENT: &str =
+    "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9";
+
+#[derive(Clone, Copy)]
+struct FusedSourceProfile {
+    residual_source_proof_version: &'static str,
+    residual_source_statement_commitment: &'static str,
+    rmsnorm_statement_commitment: &'static str,
+    rmsnorm_public_instance_commitment: &'static str,
+    input_activation_commitment: &'static str,
+    rmsnorm_output_row_commitment: &'static str,
+    projection_bridge_statement_commitment: &'static str,
+    projection_bridge_public_instance_commitment: &'static str,
+    projection_input_row_commitment: &'static str,
+    gate_value_statement_commitment: &'static str,
+    gate_value_public_instance_commitment: &'static str,
+    gate_projection_output_commitment: &'static str,
+    value_projection_output_commitment: &'static str,
+    gate_value_projection_output_commitment: &'static str,
+    activation_statement_commitment: &'static str,
+    activation_public_instance_commitment: &'static str,
+    hidden_activation_commitment: &'static str,
+    down_projection_statement_commitment: &'static str,
+    down_projection_public_instance_commitment: &'static str,
+    residual_delta_commitment: &'static str,
+    residual_add_statement_commitment: &'static str,
+    residual_add_public_instance_commitment: &'static str,
+    output_activation_commitment: &'static str,
+    residual_add_row_commitment: &'static str,
+    validation_commands: &'static [&'static str],
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -281,12 +351,20 @@ pub fn build_zkai_d128_rmsnorm_mlp_fused_input(
     validate_nested_activation_input(&activation_input)?;
     validate_nested_down_projection_input(&down_projection_input)?;
     validate_nested_residual_add_input(&residual_add_input)?;
+    let source_profile = approved_fused_source_profile_from_components(
+        &rmsnorm_input,
+        &projection_bridge_input,
+        &gate_value_input,
+        &activation_input,
+        &down_projection_input,
+        &residual_add_input,
+    )?;
     validate_rmsnorm_bridge_handoff(&rmsnorm_input, &projection_bridge_input)?;
     validate_bridge_gate_handoff(&projection_bridge_input, &gate_value_input)?;
     validate_gate_activation_handoff(&gate_value_input, &activation_input)?;
     validate_activation_down_handoff(&activation_input, &down_projection_input)?;
     validate_down_residual_handoff(&down_projection_input, &residual_add_input)?;
-    validate_rmsnorm_residual_handoff(&rmsnorm_input, &residual_add_input)?;
+    validate_rmsnorm_residual_handoff(&rmsnorm_input, &residual_add_input, source_profile)?;
 
     let mut input = ZkAiD128RmsnormMlpFusedInput {
         schema: ZKAI_D128_RMSNORM_MLP_FUSED_INPUT_SCHEMA.to_string(),
@@ -370,6 +448,11 @@ pub fn build_zkai_d128_rmsnorm_mlp_fused_input(
             .map(|value| value.to_string())
             .collect(),
     };
+    input.validation_commands = source_profile
+        .validation_commands
+        .iter()
+        .map(|value| value.to_string())
+        .collect();
     input.statement_commitment = statement_commitment(&input)?;
     input.public_instance_commitment = public_instance_commitment(&input.statement_commitment)?;
     input.proof_native_parameter_commitment =
@@ -443,6 +526,241 @@ fn validate_fused_envelope(envelope: &ZkAiD128RmsnormMlpFusedEnvelope) -> Result
         )));
     }
     validate_fused_input(&envelope.input)
+}
+
+fn fused_source_profiles() -> [FusedSourceProfile; 2] {
+    [
+        FusedSourceProfile {
+            residual_source_proof_version: ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION,
+            residual_source_statement_commitment: ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
+            rmsnorm_statement_commitment: ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
+            rmsnorm_public_instance_commitment:
+                "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+            input_activation_commitment: ZKAI_D128_INPUT_ACTIVATION_COMMITMENT,
+            rmsnorm_output_row_commitment: ZKAI_D128_RMSNORM_OUTPUT_ROW_COMMITMENT,
+            projection_bridge_statement_commitment:
+                ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
+            projection_bridge_public_instance_commitment:
+                ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+            projection_input_row_commitment: ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT,
+            gate_value_statement_commitment: ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
+            gate_value_public_instance_commitment:
+                ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            gate_projection_output_commitment: ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT,
+            value_projection_output_commitment: ZKAI_D128_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+            gate_value_projection_output_commitment:
+                ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+            activation_statement_commitment: ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+            activation_public_instance_commitment:
+                ZKAI_D128_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+            hidden_activation_commitment: ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
+            down_projection_statement_commitment: ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+            down_projection_public_instance_commitment:
+                ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            residual_delta_commitment: ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
+            residual_add_statement_commitment: ZKAI_D128_RESIDUAL_ADD_STATEMENT_COMMITMENT,
+            residual_add_public_instance_commitment:
+                ZKAI_D128_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT,
+            output_activation_commitment: ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT,
+            residual_add_row_commitment: ZKAI_D128_RESIDUAL_ADD_ROW_COMMITMENT,
+            validation_commands: EXPECTED_VALIDATION_COMMANDS,
+        },
+        FusedSourceProfile {
+            residual_source_proof_version: ZKAI_D128_ATTENTION_DERIVED_INPUT_PROOF_VERSION,
+            residual_source_statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_INPUT_STATEMENT_COMMITMENT,
+            rmsnorm_statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
+            rmsnorm_public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT,
+            input_activation_commitment: ZKAI_D128_ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT,
+            rmsnorm_output_row_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RMSNORM_OUTPUT_ROW_COMMITMENT,
+            projection_bridge_statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
+            projection_bridge_public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+            projection_input_row_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_PROJECTION_INPUT_ROW_COMMITMENT,
+            gate_value_statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
+            gate_value_public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            gate_projection_output_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_GATE_PROJECTION_OUTPUT_COMMITMENT,
+            value_projection_output_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+            gate_value_projection_output_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+            activation_statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+            activation_public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+            hidden_activation_commitment: ZKAI_D128_ATTENTION_DERIVED_HIDDEN_ACTIVATION_COMMITMENT,
+            down_projection_statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+            down_projection_public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+            residual_delta_commitment: ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_DELTA_COMMITMENT,
+            residual_add_statement_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_STATEMENT_COMMITMENT,
+            residual_add_public_instance_commitment:
+                ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT,
+            output_activation_commitment: ZKAI_D128_ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT,
+            residual_add_row_commitment: ZKAI_D128_ATTENTION_DERIVED_RESIDUAL_ADD_ROW_COMMITMENT,
+            validation_commands: EXPECTED_ATTENTION_DERIVED_VALIDATION_COMMANDS,
+        },
+    ]
+}
+
+fn approved_fused_source_profile(
+    input: &ZkAiD128RmsnormMlpFusedInput,
+) -> Result<FusedSourceProfile> {
+    approved_fused_source_profile_fields(FusedSourceProfileFields {
+        residual_source_proof_version: &input.residual_add_input.source_rmsnorm_proof_version,
+        residual_source_statement_commitment: &input
+            .residual_add_input
+            .source_rmsnorm_statement_commitment,
+        rmsnorm_statement_commitment: &input.rmsnorm_statement_commitment,
+        rmsnorm_public_instance_commitment: &input.rmsnorm_public_instance_commitment,
+        input_activation_commitment: &input.input_activation_commitment,
+        rmsnorm_output_row_commitment: &input.rmsnorm_output_row_commitment,
+        projection_bridge_statement_commitment: &input.projection_bridge_statement_commitment,
+        projection_bridge_public_instance_commitment: &input
+            .projection_bridge_public_instance_commitment,
+        projection_input_row_commitment: &input.projection_input_row_commitment,
+        gate_value_statement_commitment: &input.gate_value_statement_commitment,
+        gate_value_public_instance_commitment: &input.gate_value_public_instance_commitment,
+        gate_projection_output_commitment: &input.gate_projection_output_commitment,
+        value_projection_output_commitment: &input.value_projection_output_commitment,
+        gate_value_projection_output_commitment: &input.gate_value_projection_output_commitment,
+        activation_statement_commitment: &input.activation_statement_commitment,
+        activation_public_instance_commitment: &input.activation_public_instance_commitment,
+        hidden_activation_commitment: &input.hidden_activation_commitment,
+        down_projection_statement_commitment: &input.down_projection_statement_commitment,
+        down_projection_public_instance_commitment: &input
+            .down_projection_public_instance_commitment,
+        residual_delta_commitment: &input.residual_delta_commitment,
+        residual_add_statement_commitment: &input.residual_add_statement_commitment,
+        residual_add_public_instance_commitment: &input.residual_add_public_instance_commitment,
+        output_activation_commitment: &input.output_activation_commitment,
+        residual_add_row_commitment: &input.residual_add_row_commitment,
+    })
+}
+
+fn approved_fused_source_profile_from_components(
+    rmsnorm_input: &ZkAiD128RmsnormPublicRowProofInput,
+    projection_bridge_input: &ZkAiD128RmsnormToProjectionBridgeInput,
+    gate_value_input: &ZkAiD128GateValueProjectionProofInput,
+    activation_input: &ZkAiD128ActivationSwiGluProofInput,
+    down_projection_input: &ZkAiD128DownProjectionProofInput,
+    residual_add_input: &ZkAiD128ResidualAddProofInput,
+) -> Result<FusedSourceProfile> {
+    approved_fused_source_profile_fields(FusedSourceProfileFields {
+        residual_source_proof_version: &residual_add_input.source_rmsnorm_proof_version,
+        residual_source_statement_commitment: &residual_add_input
+            .source_rmsnorm_statement_commitment,
+        rmsnorm_statement_commitment: &rmsnorm_input.statement_commitment,
+        rmsnorm_public_instance_commitment: &rmsnorm_input.public_instance_commitment,
+        input_activation_commitment: &rmsnorm_input.input_activation_commitment,
+        rmsnorm_output_row_commitment: &rmsnorm_input.rmsnorm_output_row_commitment,
+        projection_bridge_statement_commitment: &projection_bridge_input.statement_commitment,
+        projection_bridge_public_instance_commitment: &projection_bridge_input
+            .public_instance_commitment,
+        projection_input_row_commitment: &projection_bridge_input.projection_input_row_commitment,
+        gate_value_statement_commitment: &gate_value_input.statement_commitment,
+        gate_value_public_instance_commitment: &gate_value_input.public_instance_commitment,
+        gate_projection_output_commitment: &gate_value_input.gate_projection_output_commitment,
+        value_projection_output_commitment: &gate_value_input.value_projection_output_commitment,
+        gate_value_projection_output_commitment: &gate_value_input
+            .gate_value_projection_output_commitment,
+        activation_statement_commitment: &activation_input.statement_commitment,
+        activation_public_instance_commitment: &activation_input.public_instance_commitment,
+        hidden_activation_commitment: &activation_input.hidden_activation_commitment,
+        down_projection_statement_commitment: &down_projection_input.statement_commitment,
+        down_projection_public_instance_commitment: &down_projection_input
+            .public_instance_commitment,
+        residual_delta_commitment: &down_projection_input.residual_delta_commitment,
+        residual_add_statement_commitment: &residual_add_input.statement_commitment,
+        residual_add_public_instance_commitment: &residual_add_input.public_instance_commitment,
+        output_activation_commitment: &residual_add_input.output_activation_commitment,
+        residual_add_row_commitment: &residual_add_input.residual_add_row_commitment,
+    })
+}
+
+struct FusedSourceProfileFields<'a> {
+    residual_source_proof_version: &'a str,
+    residual_source_statement_commitment: &'a str,
+    rmsnorm_statement_commitment: &'a str,
+    rmsnorm_public_instance_commitment: &'a str,
+    input_activation_commitment: &'a str,
+    rmsnorm_output_row_commitment: &'a str,
+    projection_bridge_statement_commitment: &'a str,
+    projection_bridge_public_instance_commitment: &'a str,
+    projection_input_row_commitment: &'a str,
+    gate_value_statement_commitment: &'a str,
+    gate_value_public_instance_commitment: &'a str,
+    gate_projection_output_commitment: &'a str,
+    value_projection_output_commitment: &'a str,
+    gate_value_projection_output_commitment: &'a str,
+    activation_statement_commitment: &'a str,
+    activation_public_instance_commitment: &'a str,
+    hidden_activation_commitment: &'a str,
+    down_projection_statement_commitment: &'a str,
+    down_projection_public_instance_commitment: &'a str,
+    residual_delta_commitment: &'a str,
+    residual_add_statement_commitment: &'a str,
+    residual_add_public_instance_commitment: &'a str,
+    output_activation_commitment: &'a str,
+    residual_add_row_commitment: &'a str,
+}
+
+fn approved_fused_source_profile_fields(
+    fields: FusedSourceProfileFields<'_>,
+) -> Result<FusedSourceProfile> {
+    for profile in fused_source_profiles() {
+        if fields.residual_source_proof_version == profile.residual_source_proof_version
+            && fields.residual_source_statement_commitment
+                == profile.residual_source_statement_commitment
+            && fields.rmsnorm_statement_commitment == profile.rmsnorm_statement_commitment
+            && fields.rmsnorm_public_instance_commitment
+                == profile.rmsnorm_public_instance_commitment
+            && fields.input_activation_commitment == profile.input_activation_commitment
+            && fields.rmsnorm_output_row_commitment == profile.rmsnorm_output_row_commitment
+            && fields.projection_bridge_statement_commitment
+                == profile.projection_bridge_statement_commitment
+            && fields.projection_bridge_public_instance_commitment
+                == profile.projection_bridge_public_instance_commitment
+            && fields.projection_input_row_commitment == profile.projection_input_row_commitment
+            && fields.gate_value_statement_commitment == profile.gate_value_statement_commitment
+            && fields.gate_value_public_instance_commitment
+                == profile.gate_value_public_instance_commitment
+            && fields.gate_projection_output_commitment == profile.gate_projection_output_commitment
+            && fields.value_projection_output_commitment
+                == profile.value_projection_output_commitment
+            && fields.gate_value_projection_output_commitment
+                == profile.gate_value_projection_output_commitment
+            && fields.activation_statement_commitment == profile.activation_statement_commitment
+            && fields.activation_public_instance_commitment
+                == profile.activation_public_instance_commitment
+            && fields.hidden_activation_commitment == profile.hidden_activation_commitment
+            && fields.down_projection_statement_commitment
+                == profile.down_projection_statement_commitment
+            && fields.down_projection_public_instance_commitment
+                == profile.down_projection_public_instance_commitment
+            && fields.residual_delta_commitment == profile.residual_delta_commitment
+            && fields.residual_add_statement_commitment == profile.residual_add_statement_commitment
+            && fields.residual_add_public_instance_commitment
+                == profile.residual_add_public_instance_commitment
+            && fields.output_activation_commitment == profile.output_activation_commitment
+            && fields.residual_add_row_commitment == profile.residual_add_row_commitment
+        {
+            return Ok(profile);
+        }
+    }
+    Err(fused_error(
+        "fused source profile is not approved: expected synthetic or attention_derived component anchors",
+    ))
 }
 
 fn validate_fused_input(input: &ZkAiD128RmsnormMlpFusedInput) -> Result<()> {
@@ -534,104 +852,115 @@ fn validate_fused_input(input: &ZkAiD128RmsnormMlpFusedInput) -> Result<()> {
         ZKAI_D128_RESIDUAL_ADD_PROOF_VERSION,
         "residual-add proof version",
     )?;
+    let source_profile = approved_fused_source_profile(input)?;
     expect_eq(
         &input.rmsnorm_statement_commitment,
-        ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
+        source_profile.rmsnorm_statement_commitment,
         "RMSNorm statement commitment",
     )?;
     expect_eq(
+        &input.rmsnorm_public_instance_commitment,
+        source_profile.rmsnorm_public_instance_commitment,
+        "RMSNorm public instance commitment",
+    )?;
+    expect_eq(
         &input.projection_bridge_statement_commitment,
-        ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_STATEMENT_COMMITMENT,
+        source_profile.projection_bridge_statement_commitment,
         "projection bridge statement commitment",
     )?;
     expect_eq(
         &input.projection_bridge_public_instance_commitment,
-        ZKAI_D128_RMSNORM_TO_PROJECTION_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+        source_profile.projection_bridge_public_instance_commitment,
         "projection bridge public instance commitment",
     )?;
     expect_eq(
         &input.gate_value_statement_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_STATEMENT_COMMITMENT,
+        source_profile.gate_value_statement_commitment,
         "gate/value statement commitment",
     )?;
     expect_eq(
         &input.gate_value_public_instance_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+        source_profile.gate_value_public_instance_commitment,
         "gate/value public instance commitment",
     )?;
     expect_eq(
         &input.activation_statement_commitment,
-        ZKAI_D128_ACTIVATION_SWIGLU_STATEMENT_COMMITMENT,
+        source_profile.activation_statement_commitment,
         "activation statement commitment",
     )?;
     expect_eq(
         &input.activation_public_instance_commitment,
-        ZKAI_D128_ACTIVATION_SWIGLU_PUBLIC_INSTANCE_COMMITMENT,
+        source_profile.activation_public_instance_commitment,
         "activation public instance commitment",
     )?;
     expect_eq(
         &input.down_projection_statement_commitment,
-        ZKAI_D128_DOWN_PROJECTION_STATEMENT_COMMITMENT,
+        source_profile.down_projection_statement_commitment,
         "down-projection statement commitment",
     )?;
     expect_eq(
         &input.down_projection_public_instance_commitment,
-        ZKAI_D128_DOWN_PROJECTION_PUBLIC_INSTANCE_COMMITMENT,
+        source_profile.down_projection_public_instance_commitment,
         "down-projection public instance commitment",
     )?;
     expect_eq(
         &input.residual_add_statement_commitment,
-        ZKAI_D128_RESIDUAL_ADD_STATEMENT_COMMITMENT,
+        source_profile.residual_add_statement_commitment,
         "residual-add statement commitment",
     )?;
     expect_eq(
         &input.residual_add_public_instance_commitment,
-        ZKAI_D128_RESIDUAL_ADD_PUBLIC_INSTANCE_COMMITMENT,
+        source_profile.residual_add_public_instance_commitment,
         "residual-add public instance commitment",
     )?;
     expect_eq(
         &input.input_activation_commitment,
-        ZKAI_D128_INPUT_ACTIVATION_COMMITMENT,
+        source_profile.input_activation_commitment,
         "input activation commitment",
     )?;
     expect_eq(
+        &input.rmsnorm_output_row_commitment,
+        source_profile.rmsnorm_output_row_commitment,
+        "RMSNorm output row commitment",
+    )?;
+    expect_eq(
         &input.projection_input_row_commitment,
-        ZKAI_D128_PROJECTION_INPUT_ROW_COMMITMENT,
+        source_profile.projection_input_row_commitment,
         "projection input row commitment",
     )?;
     expect_eq(
         &input.gate_projection_output_commitment,
-        ZKAI_D128_GATE_PROJECTION_OUTPUT_COMMITMENT,
+        source_profile.gate_projection_output_commitment,
         "gate projection output commitment",
     )?;
     expect_eq(
         &input.value_projection_output_commitment,
-        ZKAI_D128_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        source_profile.value_projection_output_commitment,
         "value projection output commitment",
     )?;
     expect_eq(
         &input.gate_value_projection_output_commitment,
-        ZKAI_D128_GATE_VALUE_PROJECTION_OUTPUT_COMMITMENT,
+        source_profile.gate_value_projection_output_commitment,
         "gate/value projection output commitment",
     )?;
     expect_eq(
         &input.hidden_activation_commitment,
-        ZKAI_D128_HIDDEN_ACTIVATION_COMMITMENT,
+        source_profile.hidden_activation_commitment,
         "hidden activation commitment",
     )?;
     expect_eq(
         &input.residual_delta_commitment,
-        ZKAI_D128_RESIDUAL_DELTA_COMMITMENT,
+        source_profile.residual_delta_commitment,
         "residual delta commitment",
     )?;
     expect_eq(
         &input.output_activation_commitment,
-        ZKAI_D128_OUTPUT_ACTIVATION_COMMITMENT,
+        source_profile.output_activation_commitment,
         "output activation commitment",
     )?;
     expect_eq(
         &input.residual_add_row_commitment,
-        ZKAI_D128_RESIDUAL_ADD_ROW_COMMITMENT,
+        source_profile.residual_add_row_commitment,
         "residual-add row commitment",
     )?;
     expect_vec_eq(&input.non_claims, EXPECTED_NON_CLAIMS, "non-claims")?;
@@ -642,7 +971,7 @@ fn validate_fused_input(input: &ZkAiD128RmsnormMlpFusedInput) -> Result<()> {
     )?;
     expect_vec_eq(
         &input.validation_commands,
-        EXPECTED_VALIDATION_COMMANDS,
+        source_profile.validation_commands,
         "validation commands",
     )?;
     validate_nested_rmsnorm_input(&input.rmsnorm_input)?;
@@ -677,7 +1006,11 @@ fn validate_fused_input(input: &ZkAiD128RmsnormMlpFusedInput) -> Result<()> {
     validate_gate_activation_handoff(&input.gate_value_input, &input.activation_input)?;
     validate_activation_down_handoff(&input.activation_input, &input.down_projection_input)?;
     validate_down_residual_handoff(&input.down_projection_input, &input.residual_add_input)?;
-    validate_rmsnorm_residual_handoff(&input.rmsnorm_input, &input.residual_add_input)?;
+    validate_rmsnorm_residual_handoff(
+        &input.rmsnorm_input,
+        &input.residual_add_input,
+        source_profile,
+    )?;
     expect_eq(
         &input.statement_commitment,
         &statement_commitment(input)?,
@@ -1049,16 +1382,17 @@ fn validate_down_residual_handoff(
 fn validate_rmsnorm_residual_handoff(
     rmsnorm_input: &ZkAiD128RmsnormPublicRowProofInput,
     residual_add_input: &ZkAiD128ResidualAddProofInput,
+    source_profile: FusedSourceProfile,
 ) -> Result<()> {
     expect_eq(
         &residual_add_input.source_rmsnorm_proof_version,
-        ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION,
-        "residual-add source RMSNorm proof version",
+        source_profile.residual_source_proof_version,
+        "residual-add source input proof version",
     )?;
     expect_eq(
         &residual_add_input.source_rmsnorm_statement_commitment,
-        &rmsnorm_input.statement_commitment,
-        "residual-add source RMSNorm statement commitment",
+        source_profile.residual_source_statement_commitment,
+        "residual-add source input statement commitment",
     )?;
     expect_eq(
         &residual_add_input.input_activation_commitment,
@@ -1529,6 +1863,43 @@ mod tests {
             .expect("fused input")
     }
 
+    fn derived_fixture_input() -> ZkAiD128RmsnormMlpFusedInput {
+        let rmsnorm_wrapper: serde_json::Value = serde_json::from_str(include_str!(
+            "../../docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json"
+        ))
+        .expect("derived rmsnorm wrapper");
+        let rmsnorm_raw = serde_json::to_string(
+            rmsnorm_wrapper
+                .get("rmsnorm_public_row_payload")
+                .expect("derived rmsnorm payload"),
+        )
+        .expect("derived rmsnorm payload JSON");
+        let rmsnorm = zkai_d128_rmsnorm_public_row_input_from_json_str(&rmsnorm_raw)
+            .expect("rmsnorm fixture");
+        let bridge = zkai_d128_rmsnorm_to_projection_bridge_input_from_json_str(include_str!(
+            "../../docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json"
+        ))
+        .expect("bridge fixture");
+        let gate = zkai_d128_gate_value_projection_input_from_json_str(include_str!(
+            "../../docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json"
+        ))
+        .expect("gate/value fixture");
+        let activation = zkai_d128_activation_swiglu_input_from_json_str(include_str!(
+            "../../docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json"
+        ))
+        .expect("activation fixture");
+        let down = zkai_d128_down_projection_input_from_json_str(include_str!(
+            "../../docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json"
+        ))
+        .expect("down fixture");
+        let residual = zkai_d128_residual_add_input_from_json_str(include_str!(
+            "../../docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json"
+        ))
+        .expect("residual fixture");
+        build_zkai_d128_rmsnorm_mlp_fused_input(rmsnorm, bridge, gate, activation, down, residual)
+            .expect("derived fused input")
+    }
+
     fn fixture_envelope() -> ZkAiD128RmsnormMlpFusedEnvelope {
         zkai_d128_rmsnorm_mlp_fused_envelope_from_json_slice(include_bytes!(
             "../../docs/engineering/evidence/zkai-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json"
@@ -1552,6 +1923,37 @@ mod tests {
                 .source_projection_input_row_commitment
         );
         validate_fused_input(&input).expect("input validates");
+    }
+
+    #[test]
+    fn fused_input_accepts_attention_derived_component_chain() {
+        let input = derived_fixture_input();
+        assert_eq!(
+            input.input_activation_commitment,
+            ZKAI_D128_ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT
+        );
+        assert_eq!(
+            input.residual_add_input.source_rmsnorm_proof_version,
+            ZKAI_D128_ATTENTION_DERIVED_INPUT_PROOF_VERSION
+        );
+        assert_eq!(
+            input.validation_commands,
+            EXPECTED_ATTENTION_DERIVED_VALIDATION_COMMANDS
+        );
+        validate_fused_input(&input).expect("derived input validates");
+    }
+
+    #[test]
+    fn fused_input_rejects_mixed_attention_derived_source_profile() {
+        let mut input = derived_fixture_input();
+        input.residual_add_input.source_rmsnorm_statement_commitment =
+            ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT.to_string();
+        input.statement_commitment = statement_commitment(&input).expect("statement commitment");
+        input.public_instance_commitment =
+            public_instance_commitment(&input.statement_commitment).expect("public instance");
+        input.proof_native_parameter_commitment =
+            proof_native_parameter_commitment(&input.statement_commitment).expect("proof params");
+        assert!(validate_fused_input(&input).is_err());
     }
 
     #[test]
