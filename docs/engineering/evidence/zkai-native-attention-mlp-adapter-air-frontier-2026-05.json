@@ -159,7 +159,7 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "blake2b-256:d8aaae43123a37f16224c181c499edca48219b74ca41c4f0367f4cea4ed2affe",
+  "payload_commitment": "blake2b-256:eae8424d2ad8b79be2b0a5726c3d28f62204d6bafb5bedc82b2118371f25d638",
   "result": "GO_NATIVE_ADAPTER_AIR_PROVEN_NO_GO_SIZE_BREAKTHROUGH",
   "route_id": "native_attention_mlp_adapter_air_frontier_v1",
   "schema": "zkai-native-attention-mlp-adapter-air-frontier-gate-v1",
@@ -179,8 +179,8 @@
     {
       "id": "native_attention_mlp_lifting_ablation_gate",
       "path": "docs/engineering/evidence/zkai-native-attention-mlp-lifting-ablation-2026-05.json",
-      "payload_sha256": "e231457ff3f2ed51a1b8d699076eb8c7dda32730e4aa08dbccaf61a49f161aeb",
-      "sha256": "5a393c836053d06bfc3be4fc3fe1259bdd3908af934fed7cc482de74b8f66267"
+      "payload_sha256": "f5b13250e55dad3e2026921a5c6633cdb9f443c917b9fc77f2bac28babeba2af",
+      "sha256": "a3755ef2d8dadd0650f925be43774bb04038390ddadf294b135f51b61e722c3b"
     }
   ],
   "summary": {

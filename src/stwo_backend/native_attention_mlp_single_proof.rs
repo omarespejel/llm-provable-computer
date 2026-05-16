@@ -1074,6 +1074,10 @@ fn combined_base_trace(
     input: &ZkAiNativeAttentionMlpSingleProofInput,
     mut attention_base: ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
 ) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    // The adapter is intentionally present in both traces: the base trace is
+    // the proved witness, and the preprocessed copy is the verifier-recomputed
+    // public projection that binds that witness to the source attention output
+    // and d128 RMSNorm input artifacts. Compressing this boundary is issue #631.
     attention_base.extend(adapter_trace(input)?);
     attention_base.extend(mlp_trace(input)?);
     Ok(attention_base)
