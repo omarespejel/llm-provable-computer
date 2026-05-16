@@ -108,6 +108,26 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
             "blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d",
         )
 
+    def test_rejects_coordinated_residual_statement_drift(self) -> None:
+        original_load_json = GATE._load_json
+        drifted_statement = "blake2b-256:" + "22" * 32
+
+        def load_with_coordinated_drift(path: pathlib.Path, label: str):
+            payload, raw = original_load_json(path, label)
+            payload = copy.deepcopy(payload)
+            if path == GATE.DERIVED_NATIVE_RESIDUAL:
+                payload["statement_commitment"] = drifted_statement
+            if path == GATE.DERIVED_NATIVE_RESIDUAL_ENVELOPE:
+                payload["input"]["statement_commitment"] = drifted_statement
+            return payload, raw
+
+        with mock.patch.object(GATE, "_load_json", side_effect=load_with_coordinated_drift):
+            with self.assertRaisesRegex(
+                GATE.NativeMlpProofRouteError,
+                "derived native residual statement_commitment drift",
+            ):
+                GATE.build_context()
+
     def test_rejects_coordinated_activation_down_statement_drift(self) -> None:
         original_load_json = GATE._load_json
         drifted_statement = "blake2b-256:" + "11" * 32
