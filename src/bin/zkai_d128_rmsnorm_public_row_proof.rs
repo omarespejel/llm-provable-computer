@@ -265,7 +265,7 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
 fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), String> {
     match fs::rename(tmp_path, path) {
         Ok(()) => Ok(()),
-        Err(first_error) if path.exists() => {
+        Err(first_error) if first_error.kind() == std::io::ErrorKind::AlreadyExists => {
             if let Err(remove_error) = fs::remove_file(path) {
                 let _ = fs::remove_file(tmp_path);
                 return Err(format!(
