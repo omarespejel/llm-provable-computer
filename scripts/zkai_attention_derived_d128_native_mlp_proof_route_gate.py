@@ -21,11 +21,20 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVIDENCE_DIR = ROOT / "docs" / "engineering" / "evidence"
 
 DERIVED_RMSNORM = EVIDENCE_DIR / "zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json"
+DERIVED_NATIVE_RMSNORM_ENVELOPE = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json"
+)
 DERIVED_NATIVE_BRIDGE = (
     EVIDENCE_DIR / "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json"
 )
+DERIVED_NATIVE_BRIDGE_ENVELOPE = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json"
+)
 DERIVED_NATIVE_GATE_VALUE = (
     EVIDENCE_DIR / "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json"
+)
+DERIVED_NATIVE_GATE_VALUE_ENVELOPE = (
+    EVIDENCE_DIR / "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json"
 )
 DERIVED_NATIVE_ACTIVATION = (
     EVIDENCE_DIR / "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json"
@@ -65,13 +74,12 @@ TSV_OUT = EVIDENCE_DIR / "zkai-attention-derived-d128-native-mlp-proof-route-202
 
 SCHEMA = "zkai-attention-derived-d128-native-mlp-proof-route-gate-v1"
 DECISION = "GO_ATTENTION_DERIVED_D128_NATIVE_MLP_FUSED_PROOF_REGENERATED"
-RESULT = "GO_DERIVED_NATIVE_RMSNORM_MLP_FUSED_PROOF_EXISTS_WITH_PARTIAL_BASELINE_SAVING"
+RESULT = "GO_DERIVED_NATIVE_RMSNORM_MLP_FUSED_PROOF_EXISTS_WITH_EXACT_SIX_BASELINE_SAVING"
 VALUE_CHAIN_STATUS = "GO_ATTENTION_DERIVED_D128_VALUE_CONNECTED_STATEMENT_CHAIN"
 NATIVE_ROUTE_STATUS = "GO_DERIVED_COMPONENT_INPUTS_NATIVE_SHAPE_AND_FUSED_PROOF_REGENERATED"
 FIRST_BLOCKER = (
     "the attention-derived RMSNorm-MLP fused proof now exists, but attention arithmetic is not yet "
-    "inside the same native proof object and the matched six-separate derived baseline still lacks "
-    "separate RMSNorm-row and bridge envelopes"
+    "inside the same native proof object"
 )
 PAYLOAD_DOMAIN = "ptvm:zkai:attention-derived-d128:native-mlp-proof-route:v1"
 EXPECTED_DERIVED_INPUT_COMMITMENT = (
@@ -82,6 +90,42 @@ EXPECTED_CURRENT_INPUT_COMMITMENT = (
 )
 EXPECTED_NATIVE_ACTIVATION_STATEMENT_COMMITMENT = (
     "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738"
+)
+EXPECTED_NATIVE_RMSNORM_STATEMENT_COMMITMENT = (
+    "blake2b-256:5abd10e4a7bb9ed3eea14b6ea2beb22caac45c8cb6f6b10928585001d57ad57d"
+)
+EXPECTED_NATIVE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT = (
+    "blake2b-256:21316dfa0e32f91879bf13b85f99e16db0aa4c6e5f91c0dfc106f300c0c50fff"
+)
+EXPECTED_NATIVE_RMSNORM_OUTPUT_ROW_COMMITMENT = (
+    "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9"
+)
+EXPECTED_NATIVE_BRIDGE_STATEMENT_COMMITMENT = (
+    "blake2b-256:85a4f027ea7570b388a585fb53cb9c66a7358e2431730e044e39f4bdea859abf"
+)
+EXPECTED_NATIVE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT = (
+    "blake2b-256:7939a60307f2b0f078e55430faf45cde8598158dd2090c5d65bf4fd72e436f4b"
+)
+EXPECTED_NATIVE_BRIDGE_PROJECTION_INPUT_ROW_COMMITMENT = (
+    "blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba"
+)
+EXPECTED_NATIVE_GATE_VALUE_STATEMENT_COMMITMENT = (
+    "blake2b-256:e6dca036c80385d2d47c3953cb4aca15ed058b2a0ac3fc2596767a0658b30d6c"
+)
+EXPECTED_NATIVE_GATE_VALUE_PUBLIC_INSTANCE_COMMITMENT = (
+    "blake2b-256:a24402af117710fca3b0100bc8480ba03e73e4cb86914ba64f45bc785791d51e"
+)
+EXPECTED_NATIVE_GATE_VALUE_MUL_ROW_COMMITMENT = (
+    "blake2b-256:f8811ca51b98f6661e59c9f0fbbed1a6a96a6cba35f39cbca4ee443a87c89d90"
+)
+EXPECTED_NATIVE_GATE_OUTPUT_COMMITMENT = (
+    "blake2b-256:d0d681a8db0c32b7c47e24425cda29b93512d40e46d6b9b9aafdb7cddd2880d8"
+)
+EXPECTED_NATIVE_VALUE_OUTPUT_COMMITMENT = (
+    "blake2b-256:b63e4d4fd6f1c3ba867f4cce7c332deafa67f003d2208bbbe1013b075b7b4781"
+)
+EXPECTED_NATIVE_GATE_VALUE_OUTPUT_COMMITMENT = (
+    "blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2"
 )
 EXPECTED_NATIVE_ACTIVATION_PUBLIC_INSTANCE_COMMITMENT = (
     "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb"
@@ -126,11 +170,11 @@ REQUIRED_DERIVED_FUSED_ARTIFACTS = (
     "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
 )
 MISSING_MATCHED_SEPARATE_ENVELOPES = (
-    "docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json",
-    "docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json",
 )
 EXPECTED_ACCOUNTING_PATHS = (
     "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
+    "zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json",
+    "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json",
     "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json",
     "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json",
     "zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json",
@@ -190,7 +234,6 @@ COMPONENT_SPECS = (
 
 NON_CLAIMS = [
     "not attention plus MLP in one native proof object",
-    "not matched six-separate derived baseline accounting",
     "not a full transformer block proof",
     "not a NANOZK benchmark win",
     "not a matched external zkML benchmark",
@@ -203,7 +246,11 @@ VALIDATION_COMMANDS = [
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- build-input docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_public_row_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_public_row_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_to_projection_bridge_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_to_projection_bridge_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
     "python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv",
     "python3 -m py_compile scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py scripts/tests/test_zkai_attention_derived_d128_native_mlp_proof_route_gate.py",
     "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate",
@@ -255,6 +302,12 @@ TSV_COLUMNS = (
     "typed_ratio_vs_available_separate",
     "native_compatible_components",
     "native_incompatible_components",
+    "derived_native_rmsnorm_proof_bytes",
+    "derived_native_rmsnorm_envelope_bytes",
+    "derived_native_bridge_proof_bytes",
+    "derived_native_bridge_envelope_bytes",
+    "derived_native_gate_value_proof_bytes",
+    "derived_native_gate_value_envelope_bytes",
     "derived_native_activation_proof_bytes",
     "derived_native_activation_envelope_bytes",
     "derived_native_down_proof_bytes",
@@ -419,8 +472,11 @@ def accounting_group(row: dict[str, Any], label: str) -> dict[str, int]:
 def build_context() -> dict[str, Any]:
     paths = {
         DERIVED_RMSNORM,
+        DERIVED_NATIVE_RMSNORM_ENVELOPE,
         DERIVED_NATIVE_BRIDGE,
+        DERIVED_NATIVE_BRIDGE_ENVELOPE,
         DERIVED_NATIVE_GATE_VALUE,
+        DERIVED_NATIVE_GATE_VALUE_ENVELOPE,
         DERIVED_NATIVE_ACTIVATION,
         DERIVED_NATIVE_ACTIVATION_ENVELOPE,
         DERIVED_NATIVE_DOWN,
@@ -450,6 +506,16 @@ def build_context() -> dict[str, Any]:
     current_aggregate = _dict(loaded[CURRENT_MLP_FUSED_GATE].get("aggregate"), "current MLP aggregate")
     current_input = loaded[CURRENT_MLP_FUSED_INPUT]
     current_envelope = loaded[CURRENT_MLP_FUSED_ENVELOPE]
+    native_rmsnorm_wrapper = loaded[DERIVED_RMSNORM]
+    native_rmsnorm = _dict(
+        native_rmsnorm_wrapper.get("rmsnorm_public_row_payload"),
+        "derived native rmsnorm public-row payload",
+    )
+    native_rmsnorm_envelope = loaded[DERIVED_NATIVE_RMSNORM_ENVELOPE]
+    native_bridge = loaded[DERIVED_NATIVE_BRIDGE]
+    native_bridge_envelope = loaded[DERIVED_NATIVE_BRIDGE_ENVELOPE]
+    native_gate_value = loaded[DERIVED_NATIVE_GATE_VALUE]
+    native_gate_value_envelope = loaded[DERIVED_NATIVE_GATE_VALUE_ENVELOPE]
     native_activation = loaded[DERIVED_NATIVE_ACTIVATION]
     native_activation_envelope = loaded[DERIVED_NATIVE_ACTIVATION_ENVELOPE]
     native_down = loaded[DERIVED_NATIVE_DOWN]
@@ -498,6 +564,30 @@ def build_context() -> dict[str, Any]:
         raise NativeMlpProofRouteError("derived fused public instance commitment drift")
     if derived_fused_input.get("input_activation_commitment") == current_input_commitment:
         raise NativeMlpProofRouteError("derived fused input relabeled as current MLP input")
+    if _dict(native_rmsnorm_envelope.get("input"), "derived native RMSNorm envelope input") != native_rmsnorm:
+        raise NativeMlpProofRouteError("derived native RMSNorm envelope/input mismatch")
+    if native_rmsnorm_envelope.get("proof_backend_version") != "stwo-d128-rmsnorm-public-row-air-proof-v3":
+        raise NativeMlpProofRouteError("derived native RMSNorm proof backend version drift")
+    if native_rmsnorm_envelope.get("statement_version") != "zkai-d128-rmsnorm-public-row-statement-v2":
+        raise NativeMlpProofRouteError("derived native RMSNorm statement version drift")
+    if native_rmsnorm_envelope.get("decision") != "GO_PUBLIC_ROW_D128_RMSNORM_AIR_PROOF":
+        raise NativeMlpProofRouteError("derived native RMSNorm proof decision drift")
+    if _dict(native_bridge_envelope.get("input"), "derived native bridge envelope input") != native_bridge:
+        raise NativeMlpProofRouteError("derived native bridge envelope/input mismatch")
+    if native_bridge_envelope.get("proof_backend_version") != "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1":
+        raise NativeMlpProofRouteError("derived native bridge proof backend version drift")
+    if native_bridge_envelope.get("statement_version") != "zkai-d128-rmsnorm-to-projection-bridge-statement-v1":
+        raise NativeMlpProofRouteError("derived native bridge statement version drift")
+    if native_bridge_envelope.get("decision") != "GO_D128_RMSNORM_TO_PROJECTION_INPUT_BRIDGE_AIR_PROOF":
+        raise NativeMlpProofRouteError("derived native bridge proof decision drift")
+    if _dict(native_gate_value_envelope.get("input"), "derived native gate/value envelope input") != native_gate_value:
+        raise NativeMlpProofRouteError("derived native gate/value envelope/input mismatch")
+    if native_gate_value_envelope.get("proof_backend_version") != "stwo-d128-gate-value-projection-air-proof-v1":
+        raise NativeMlpProofRouteError("derived native gate/value proof backend version drift")
+    if native_gate_value_envelope.get("statement_version") != "zkai-d128-gate-value-projection-statement-v1":
+        raise NativeMlpProofRouteError("derived native gate/value statement version drift")
+    if native_gate_value_envelope.get("decision") != "GO_D128_GATE_VALUE_PROJECTION_AIR_PROOF":
+        raise NativeMlpProofRouteError("derived native gate/value proof decision drift")
     if _dict(native_activation_envelope.get("input"), "derived native activation envelope input") != native_activation:
         raise NativeMlpProofRouteError("derived native activation envelope/input mismatch")
     if native_activation_envelope.get("proof_backend_version") != "stwo-d128-activation-swiglu-air-proof-v1":
@@ -518,6 +608,101 @@ def build_context() -> dict[str, Any]:
         raise NativeMlpProofRouteError("derived native residual proof decision drift")
     expected_commitments = (
         (
+            native_rmsnorm.get("statement_commitment"),
+            EXPECTED_NATIVE_RMSNORM_STATEMENT_COMMITMENT,
+            "derived native RMSNorm statement_commitment",
+        ),
+        (
+            native_rmsnorm.get("public_instance_commitment"),
+            EXPECTED_NATIVE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
+            "derived native RMSNorm public_instance_commitment",
+        ),
+        (
+            native_rmsnorm.get("input_activation_commitment"),
+            EXPECTED_DERIVED_INPUT_COMMITMENT,
+            "derived native RMSNorm input_activation_commitment",
+        ),
+        (
+            native_rmsnorm.get("rmsnorm_output_row_commitment"),
+            EXPECTED_NATIVE_RMSNORM_OUTPUT_ROW_COMMITMENT,
+            "derived native RMSNorm rmsnorm_output_row_commitment",
+        ),
+        (
+            native_bridge.get("statement_commitment"),
+            EXPECTED_NATIVE_BRIDGE_STATEMENT_COMMITMENT,
+            "derived native bridge statement_commitment",
+        ),
+        (
+            native_bridge.get("public_instance_commitment"),
+            EXPECTED_NATIVE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+            "derived native bridge public_instance_commitment",
+        ),
+        (
+            native_bridge.get("source_rmsnorm_statement_commitment"),
+            EXPECTED_NATIVE_RMSNORM_STATEMENT_COMMITMENT,
+            "derived native bridge source_rmsnorm_statement_commitment",
+        ),
+        (
+            native_bridge.get("source_rmsnorm_public_instance_commitment"),
+            EXPECTED_NATIVE_RMSNORM_PUBLIC_INSTANCE_COMMITMENT,
+            "derived native bridge source_rmsnorm_public_instance_commitment",
+        ),
+        (
+            native_bridge.get("source_rmsnorm_output_row_commitment"),
+            EXPECTED_NATIVE_RMSNORM_OUTPUT_ROW_COMMITMENT,
+            "derived native bridge source_rmsnorm_output_row_commitment",
+        ),
+        (
+            native_bridge.get("projection_input_row_commitment"),
+            EXPECTED_NATIVE_BRIDGE_PROJECTION_INPUT_ROW_COMMITMENT,
+            "derived native bridge projection_input_row_commitment",
+        ),
+        (
+            native_gate_value.get("statement_commitment"),
+            EXPECTED_NATIVE_GATE_VALUE_STATEMENT_COMMITMENT,
+            "derived native gate/value statement_commitment",
+        ),
+        (
+            native_gate_value.get("public_instance_commitment"),
+            EXPECTED_NATIVE_GATE_VALUE_PUBLIC_INSTANCE_COMMITMENT,
+            "derived native gate/value public_instance_commitment",
+        ),
+        (
+            native_gate_value.get("source_bridge_statement_commitment"),
+            EXPECTED_NATIVE_BRIDGE_STATEMENT_COMMITMENT,
+            "derived native gate/value source_bridge_statement_commitment",
+        ),
+        (
+            native_gate_value.get("source_bridge_public_instance_commitment"),
+            EXPECTED_NATIVE_BRIDGE_PUBLIC_INSTANCE_COMMITMENT,
+            "derived native gate/value source_bridge_public_instance_commitment",
+        ),
+        (
+            native_gate_value.get("source_projection_input_row_commitment"),
+            EXPECTED_NATIVE_BRIDGE_PROJECTION_INPUT_ROW_COMMITMENT,
+            "derived native gate/value source_projection_input_row_commitment",
+        ),
+        (
+            native_gate_value.get("gate_value_projection_mul_row_commitment"),
+            EXPECTED_NATIVE_GATE_VALUE_MUL_ROW_COMMITMENT,
+            "derived native gate/value gate_value_projection_mul_row_commitment",
+        ),
+        (
+            native_gate_value.get("gate_projection_output_commitment"),
+            EXPECTED_NATIVE_GATE_OUTPUT_COMMITMENT,
+            "derived native gate/value gate_projection_output_commitment",
+        ),
+        (
+            native_gate_value.get("value_projection_output_commitment"),
+            EXPECTED_NATIVE_VALUE_OUTPUT_COMMITMENT,
+            "derived native gate/value value_projection_output_commitment",
+        ),
+        (
+            native_gate_value.get("gate_value_projection_output_commitment"),
+            EXPECTED_NATIVE_GATE_VALUE_OUTPUT_COMMITMENT,
+            "derived native gate/value gate_value_projection_output_commitment",
+        ),
+        (
             native_activation.get("statement_commitment"),
             EXPECTED_NATIVE_ACTIVATION_STATEMENT_COMMITMENT,
             "derived native activation statement_commitment",
@@ -531,6 +716,31 @@ def build_context() -> dict[str, Any]:
             native_activation.get("hidden_activation_commitment"),
             EXPECTED_NATIVE_ACTIVATION_HIDDEN_COMMITMENT,
             "derived native activation hidden_activation_commitment",
+        ),
+        (
+            native_activation.get("source_gate_value_projection_statement_commitment"),
+            EXPECTED_NATIVE_GATE_VALUE_STATEMENT_COMMITMENT,
+            "derived native activation source_gate_value_projection_statement_commitment",
+        ),
+        (
+            native_activation.get("source_gate_value_projection_public_instance_commitment"),
+            EXPECTED_NATIVE_GATE_VALUE_PUBLIC_INSTANCE_COMMITMENT,
+            "derived native activation source_gate_value_projection_public_instance_commitment",
+        ),
+        (
+            native_activation.get("source_gate_value_projection_output_commitment"),
+            EXPECTED_NATIVE_GATE_VALUE_OUTPUT_COMMITMENT,
+            "derived native activation source_gate_value_projection_output_commitment",
+        ),
+        (
+            native_activation.get("source_gate_projection_output_commitment"),
+            EXPECTED_NATIVE_GATE_OUTPUT_COMMITMENT,
+            "derived native activation source_gate_projection_output_commitment",
+        ),
+        (
+            native_activation.get("source_value_projection_output_commitment"),
+            EXPECTED_NATIVE_VALUE_OUTPUT_COMMITMENT,
+            "derived native activation source_value_projection_output_commitment",
         ),
         (
             native_down.get("statement_commitment"),
@@ -611,6 +821,33 @@ def build_context() -> dict[str, Any]:
     for actual, expected, label in expected_commitments:
         if actual != expected:
             raise NativeMlpProofRouteError(f"{label} drift")
+    if native_bridge.get("source_rmsnorm_statement_commitment") != native_rmsnorm.get("statement_commitment"):
+        raise NativeMlpProofRouteError("derived native RMSNorm/bridge statement commitment mismatch")
+    if native_bridge.get("source_rmsnorm_public_instance_commitment") != native_rmsnorm.get("public_instance_commitment"):
+        raise NativeMlpProofRouteError("derived native RMSNorm/bridge public instance commitment mismatch")
+    if native_bridge.get("source_rmsnorm_output_row_commitment") != native_rmsnorm.get("rmsnorm_output_row_commitment"):
+        raise NativeMlpProofRouteError("derived native RMSNorm/bridge output row commitment mismatch")
+    if native_gate_value.get("source_bridge_statement_commitment") != native_bridge.get("statement_commitment"):
+        raise NativeMlpProofRouteError("derived native bridge/gate-value statement commitment mismatch")
+    if native_gate_value.get("source_bridge_public_instance_commitment") != native_bridge.get("public_instance_commitment"):
+        raise NativeMlpProofRouteError("derived native bridge/gate-value public instance commitment mismatch")
+    if native_gate_value.get("source_projection_input_row_commitment") != native_bridge.get("projection_input_row_commitment"):
+        raise NativeMlpProofRouteError("derived native bridge/gate-value projection input commitment mismatch")
+    if (
+        native_activation.get("source_gate_value_projection_statement_commitment")
+        != native_gate_value.get("statement_commitment")
+    ):
+        raise NativeMlpProofRouteError("derived native gate-value/activation statement commitment mismatch")
+    if (
+        native_activation.get("source_gate_value_projection_public_instance_commitment")
+        != native_gate_value.get("public_instance_commitment")
+    ):
+        raise NativeMlpProofRouteError("derived native gate-value/activation public instance commitment mismatch")
+    if (
+        native_activation.get("source_gate_value_projection_output_commitment")
+        != native_gate_value.get("gate_value_projection_output_commitment")
+    ):
+        raise NativeMlpProofRouteError("derived native gate-value/activation output commitment mismatch")
     if native_down.get("source_hidden_activation_commitment") != native_activation.get("hidden_activation_commitment"):
         raise NativeMlpProofRouteError("derived native activation/down hidden commitment mismatch")
     if native_down.get("source_activation_swiglu_statement_commitment") != native_activation.get("statement_commitment"):
@@ -626,6 +863,9 @@ def build_context() -> dict[str, Any]:
         raise NativeMlpProofRouteError("derived native down/residual public instance commitment mismatch")
     if native_residual.get("residual_delta_commitment") != native_down.get("residual_delta_commitment"):
         raise NativeMlpProofRouteError("derived native down/residual delta commitment mismatch")
+    rmsnorm_proof = _list(native_rmsnorm_envelope.get("proof"), "derived native RMSNorm proof bytes")
+    bridge_proof = _list(native_bridge_envelope.get("proof"), "derived native bridge proof bytes")
+    gate_value_proof = _list(native_gate_value_envelope.get("proof"), "derived native gate/value proof bytes")
     activation_proof = _list(native_activation_envelope.get("proof"), "derived native activation proof bytes")
     down_proof = _list(native_down_envelope.get("proof"), "derived native down proof bytes")
     residual_proof = _list(native_residual_envelope.get("proof"), "derived native residual proof bytes")
@@ -717,7 +957,7 @@ def build_context() -> dict[str, Any]:
             "typed_saving_vs_available_separate_bytes": available_separate_typed_bytes - derived_fused_typed_bytes,
             "typed_ratio_vs_available_separate": round(derived_fused_typed_bytes / available_separate_typed_bytes, 6),
             "grouped_typed_delta_vs_available_separate": grouped_delta,
-            "matched_six_separate_derived_baseline_status": "PARTIAL_ONLY_MISSING_RMSNORM_AND_BRIDGE_SEPARATE_ENVELOPES",
+            "matched_six_separate_derived_baseline_status": "COMPLETE_EXACT_SIX_DERIVED_SEPARATE_ENVELOPES",
             "value_connected_chain_rows": rows,
             "current_mlp_fused_rows": mlp_rows,
             "row_ratio": round(rows / mlp_rows, 6),
@@ -737,6 +977,60 @@ def build_context() -> dict[str, Any]:
             "current_mlp_typed_saving_ratio_vs_separate": current_aggregate.get(
                 "typed_saving_ratio_vs_separate"
             ),
+            "derived_native_rmsnorm_statement_commitment": _commitment(
+                native_rmsnorm.get("statement_commitment"),
+                "derived native RMSNorm statement commitment",
+            ),
+            "derived_native_rmsnorm_public_instance_commitment": _commitment(
+                native_rmsnorm.get("public_instance_commitment"),
+                "derived native RMSNorm public instance commitment",
+            ),
+            "derived_native_rmsnorm_output_row_commitment": _commitment(
+                native_rmsnorm.get("rmsnorm_output_row_commitment"),
+                "derived native RMSNorm output row commitment",
+            ),
+            "derived_native_rmsnorm_proof_backend_version": _str(
+                native_rmsnorm_envelope.get("proof_backend_version"),
+                "derived native RMSNorm proof backend version",
+            ),
+            "derived_native_rmsnorm_proof_bytes": len(rmsnorm_proof),
+            "derived_native_rmsnorm_envelope_bytes": len(raw_by_path[DERIVED_NATIVE_RMSNORM_ENVELOPE]),
+            "derived_native_bridge_statement_commitment": _commitment(
+                native_bridge.get("statement_commitment"),
+                "derived native bridge statement commitment",
+            ),
+            "derived_native_bridge_public_instance_commitment": _commitment(
+                native_bridge.get("public_instance_commitment"),
+                "derived native bridge public instance commitment",
+            ),
+            "derived_native_bridge_projection_input_row_commitment": _commitment(
+                native_bridge.get("projection_input_row_commitment"),
+                "derived native bridge projection input row commitment",
+            ),
+            "derived_native_bridge_proof_backend_version": _str(
+                native_bridge_envelope.get("proof_backend_version"),
+                "derived native bridge proof backend version",
+            ),
+            "derived_native_bridge_proof_bytes": len(bridge_proof),
+            "derived_native_bridge_envelope_bytes": len(raw_by_path[DERIVED_NATIVE_BRIDGE_ENVELOPE]),
+            "derived_native_gate_value_statement_commitment": _commitment(
+                native_gate_value.get("statement_commitment"),
+                "derived native gate/value statement commitment",
+            ),
+            "derived_native_gate_value_public_instance_commitment": _commitment(
+                native_gate_value.get("public_instance_commitment"),
+                "derived native gate/value public instance commitment",
+            ),
+            "derived_native_gate_value_output_commitment": _commitment(
+                native_gate_value.get("gate_value_projection_output_commitment"),
+                "derived native gate/value output commitment",
+            ),
+            "derived_native_gate_value_proof_backend_version": _str(
+                native_gate_value_envelope.get("proof_backend_version"),
+                "derived native gate/value proof backend version",
+            ),
+            "derived_native_gate_value_proof_bytes": len(gate_value_proof),
+            "derived_native_gate_value_envelope_bytes": len(raw_by_path[DERIVED_NATIVE_GATE_VALUE_ENVELOPE]),
             "derived_native_activation_statement_commitment": _commitment(
                 native_activation.get("statement_commitment"),
                 "derived native activation statement commitment",
@@ -873,6 +1167,56 @@ def build_core_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
             "current_mlp_typed_saving_ratio_vs_separate": comparison[
                 "current_mlp_typed_saving_ratio_vs_separate"
             ],
+            "derived_native_rmsnorm_statement_commitment": comparison[
+                "derived_native_rmsnorm_statement_commitment"
+            ],
+            "derived_native_rmsnorm_public_instance_commitment": comparison[
+                "derived_native_rmsnorm_public_instance_commitment"
+            ],
+            "derived_native_rmsnorm_output_row_commitment": comparison[
+                "derived_native_rmsnorm_output_row_commitment"
+            ],
+            "derived_native_rmsnorm_proof_backend_version": comparison[
+                "derived_native_rmsnorm_proof_backend_version"
+            ],
+            "derived_native_rmsnorm_proof_bytes": comparison["derived_native_rmsnorm_proof_bytes"],
+            "derived_native_rmsnorm_envelope_bytes": comparison[
+                "derived_native_rmsnorm_envelope_bytes"
+            ],
+            "derived_native_bridge_statement_commitment": comparison[
+                "derived_native_bridge_statement_commitment"
+            ],
+            "derived_native_bridge_public_instance_commitment": comparison[
+                "derived_native_bridge_public_instance_commitment"
+            ],
+            "derived_native_bridge_projection_input_row_commitment": comparison[
+                "derived_native_bridge_projection_input_row_commitment"
+            ],
+            "derived_native_bridge_proof_backend_version": comparison[
+                "derived_native_bridge_proof_backend_version"
+            ],
+            "derived_native_bridge_proof_bytes": comparison["derived_native_bridge_proof_bytes"],
+            "derived_native_bridge_envelope_bytes": comparison[
+                "derived_native_bridge_envelope_bytes"
+            ],
+            "derived_native_gate_value_statement_commitment": comparison[
+                "derived_native_gate_value_statement_commitment"
+            ],
+            "derived_native_gate_value_public_instance_commitment": comparison[
+                "derived_native_gate_value_public_instance_commitment"
+            ],
+            "derived_native_gate_value_output_commitment": comparison[
+                "derived_native_gate_value_output_commitment"
+            ],
+            "derived_native_gate_value_proof_backend_version": comparison[
+                "derived_native_gate_value_proof_backend_version"
+            ],
+            "derived_native_gate_value_proof_bytes": comparison[
+                "derived_native_gate_value_proof_bytes"
+            ],
+            "derived_native_gate_value_envelope_bytes": comparison[
+                "derived_native_gate_value_envelope_bytes"
+            ],
             "derived_native_activation_statement_commitment": comparison[
                 "derived_native_activation_statement_commitment"
             ],
@@ -984,6 +1328,10 @@ def validate_payload(payload: Any, *, context: dict[str, Any] | None = None) -> 
         raise NativeMlpProofRouteError("native component frontier drift")
     if _int(summary.get("native_incompatible_components"), "native incompatible components") != 0:
         raise NativeMlpProofRouteError("native component frontier drift")
+    if _int(summary.get("available_separate_component_count"), "available separate component count") != len(
+        COMPONENT_SPECS
+    ):
+        raise NativeMlpProofRouteError("matched six-separate baseline component count drift")
     if _int(summary.get("required_derived_fused_artifacts_present"), "required derived fused artifacts") != len(
         REQUIRED_DERIVED_FUSED_ARTIFACTS
     ):
@@ -992,8 +1340,13 @@ def validate_payload(payload: Any, *, context: dict[str, Any] | None = None) -> 
         MISSING_MATCHED_SEPARATE_ENVELOPES
     ):
         raise NativeMlpProofRouteError("matched separate baseline boundary drift")
+    if (
+        data["comparison"].get("matched_six_separate_derived_baseline_status")
+        != "COMPLETE_EXACT_SIX_DERIVED_SEPARATE_ENVELOPES"
+    ):
+        raise NativeMlpProofRouteError("matched six-separate baseline status drift")
     if data["comparison"]["derived_fused_typed_bytes"] >= data["comparison"]["available_separate_typed_bytes"]:
-        raise NativeMlpProofRouteError("derived fused partial-baseline saving disappeared")
+        raise NativeMlpProofRouteError("derived fused exact-baseline saving disappeared")
     if data["comparison"]["current_native_fused_proof_can_be_reused_for_derived_input"] is not False:
         raise NativeMlpProofRouteError("current proof reuse overclaim")
     for row in _list(data.get("required_derived_fused_artifacts"), "required derived fused artifacts"):
@@ -1104,19 +1457,20 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
         True,
     ),
     (
-        "matched_separate_envelope_marked_existing",
-        lambda p: p["missing_matched_separate_envelopes"][0].__setitem__("exists", True),
-        True,
-    ),
-    (
-        "matched_separate_baseline_requirement_removed",
-        lambda p: p["missing_matched_separate_envelopes"][0].__setitem__(
-            "required_for_complete_six_separate_baseline", False
+        "matched_six_separate_baseline_status_downgraded",
+        lambda p: p["comparison"].__setitem__(
+            "matched_six_separate_derived_baseline_status",
+            "PARTIAL_ONLY_MISSING_RMSNORM_AND_BRIDGE_SEPARATE_ENVELOPES",
         ),
         True,
     ),
     (
-        "partial_baseline_saving_smuggled",
+        "matched_six_separate_component_count_drift",
+        lambda p: p["summary"].__setitem__("available_separate_component_count", 5),
+        True,
+    ),
+    (
+        "exact_baseline_saving_smuggled",
         lambda p: p["comparison"].__setitem__(
             "derived_fused_typed_bytes", p["comparison"]["available_separate_typed_bytes"] + 1
         ),
@@ -1192,6 +1546,14 @@ def to_tsv(payload: dict[str, Any], *, context: dict[str, Any] | None = None) ->
             "typed_ratio_vs_available_separate": summary["typed_ratio_vs_available_separate"],
             "native_compatible_components": summary["native_compatible_components"],
             "native_incompatible_components": summary["native_incompatible_components"],
+            "derived_native_rmsnorm_proof_bytes": summary["derived_native_rmsnorm_proof_bytes"],
+            "derived_native_rmsnorm_envelope_bytes": summary["derived_native_rmsnorm_envelope_bytes"],
+            "derived_native_bridge_proof_bytes": summary["derived_native_bridge_proof_bytes"],
+            "derived_native_bridge_envelope_bytes": summary["derived_native_bridge_envelope_bytes"],
+            "derived_native_gate_value_proof_bytes": summary["derived_native_gate_value_proof_bytes"],
+            "derived_native_gate_value_envelope_bytes": summary[
+                "derived_native_gate_value_envelope_bytes"
+            ],
             "derived_native_activation_proof_bytes": summary["derived_native_activation_proof_bytes"],
             "derived_native_activation_envelope_bytes": summary["derived_native_activation_envelope_bytes"],
             "derived_native_down_proof_bytes": summary["derived_native_down_proof_bytes"],
