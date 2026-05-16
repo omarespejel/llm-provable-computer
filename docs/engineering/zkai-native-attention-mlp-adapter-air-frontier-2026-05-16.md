@@ -2,9 +2,10 @@
 
 ## Result
 
-This gate pins the next correctness-first attack for the native
-attention-plus-MLP route: prove the attention-output-to-d128-input adapter as a
-native AIR component.
+This gate does not implement the native adapter. It pins the exact
+correctness-first attack for the native attention-plus-MLP route: the next proof
+object must prove the attention-output-to-d128-input adapter as a native AIR
+component.
 
 The result is a narrow GO/NO-GO:
 
@@ -13,9 +14,14 @@ The result is a narrow GO/NO-GO:
 - GO: the adapter rows are value-connected to the attention output commitment
   and the d128 RMSNorm input commitment;
 - NO-GO: this is not yet a regenerated Stwo proof with the adapter component
-  included;
+  included, and this PR must not be treated as closing the native AIR
+  implementation tracked in issue #629;
 - NO-GO: this cannot be called a size breakthrough because the current one-proof
-  object only has `32` typed bytes of slack versus the two-proof frontier.
+  object only has `32` typed bytes of slack versus the two-proof frontier;
+- NO-GO: adding the adapter to the actual proof requires a Rust/Stwo component
+  change plus regenerated one-proof verification evidence. Treating the
+  externally checked projection rows as proof-internal constraints would weaken
+  verifier binding.
 
 Bounded NO-GO for this PR: implementing the adapter as native AIR requires
 changing the Rust/Stwo single-proof component and regenerating a verifier-checked
