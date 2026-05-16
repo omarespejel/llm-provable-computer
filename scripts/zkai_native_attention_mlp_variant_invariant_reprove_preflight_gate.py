@@ -533,7 +533,10 @@ def to_tsv(payload: dict[str, Any]) -> str:
     return output.getvalue()
 
 
-PINNED_OUTPUTS_CASEFOLD = {JSON_OUT.name.casefold(), TSV_OUT.name.casefold()}
+PINNED_OUTPUTS_BY_CASEFOLD = {
+    JSON_OUT.name.casefold(): JSON_OUT.name,
+    TSV_OUT.name.casefold(): TSV_OUT.name,
+}
 
 
 def evidence_leaf_name(path: pathlib.Path, label: str) -> str:
@@ -554,8 +557,11 @@ def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path 
     leaf_name = evidence_leaf_name(path, "output")
     if pathlib.Path(leaf_name).suffix != suffix:
         raise VariantInvariantReprovePreflightError(f"output path must end with {suffix}")
-    if leaf_name.casefold() not in PINNED_OUTPUTS_CASEFOLD:
+    canonical_leaf_name = PINNED_OUTPUTS_BY_CASEFOLD.get(leaf_name.casefold())
+    if canonical_leaf_name is None:
         raise VariantInvariantReprovePreflightError("output path must be the pinned preflight evidence path")
+    if leaf_name != canonical_leaf_name:
+        raise VariantInvariantReprovePreflightError("output path must use the exact pinned preflight filename")
     return EVIDENCE_DIR.resolve() / leaf_name
 
 

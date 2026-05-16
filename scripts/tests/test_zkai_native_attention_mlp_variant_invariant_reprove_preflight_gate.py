@@ -125,6 +125,11 @@ class NativeAttentionMlpVariantInvariantReprovePreflightGateTests(unittest.TestC
         with self.assertRaisesRegex(gate.VariantInvariantReprovePreflightError, "pinned preflight evidence"):
             gate.require_output_path(wrong, ".json")
 
+        case_variant = gate.EVIDENCE_DIR / f"Z{gate.JSON_OUT.name[1:]}"
+        self.assertEqual(case_variant.name.casefold(), gate.JSON_OUT.name.casefold())
+        with self.assertRaisesRegex(gate.VariantInvariantReprovePreflightError, "exact pinned"):
+            gate.require_output_path(case_variant, ".json")
+
     def test_write_outputs_rejects_symlink(self) -> None:
         payload = self.fresh_payload()
         if not hasattr(gate.os, "symlink"):
