@@ -256,6 +256,20 @@ def _str(value: Any, label: str) -> str:
     return value
 
 
+def _is_sha256_hex(value: Any) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(char in "0123456789abcdef" for char in value)
+
+
+def _is_blake2b_commitment(value: Any) -> bool:
+    prefix = "blake2b-256:"
+    return (
+        isinstance(value, str)
+        and value.startswith(prefix)
+        and len(value) == len(prefix) + 64
+        and all(char in "0123456789abcdef" for char in value[len(prefix) :])
+    )
+
+
 def read_json(path: pathlib.Path, label: str) -> tuple[dict[str, Any], bytes]:
     resolved = path.resolve()
     evidence_root = EVIDENCE_DIR.resolve()
@@ -484,9 +498,12 @@ def promotion_status(left: dict[str, Any], right: dict[str, Any]) -> str:
     if left["query_inventory_status"] != "PINNED_RECORD_STREAM" or right["query_inventory_status"] != "PINNED_RECORD_STREAM":
         return "NO_GO_QUERY_INVENTORY_NOT_PINNED"
     for side, variant in (("baseline", left), ("candidate", right)):
-        for key in ("statement_commitment", "public_instance_commitment", "query_inventory_fingerprint"):
-            if not isinstance(variant.get(key), str) or not variant[key]:
-                return f"NO_GO_{side.upper()}_{key.upper()}_MISSING"
+        if not _is_blake2b_commitment(variant.get("statement_commitment")):
+            return f"NO_GO_{side.upper()}_STATEMENT_COMMITMENT_MISSING"
+        if not _is_blake2b_commitment(variant.get("public_instance_commitment")):
+            return f"NO_GO_{side.upper()}_PUBLIC_INSTANCE_COMMITMENT_MISSING"
+        if not _is_sha256_hex(variant.get("query_inventory_fingerprint")):
+            return f"NO_GO_{side.upper()}_QUERY_INVENTORY_FINGERPRINT_MISSING"
     return "GO_TRANSCRIPT_STABLE"
 
 
