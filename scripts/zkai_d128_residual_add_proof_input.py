@@ -66,8 +66,8 @@ ATTENTION_DERIVED_RESIDUAL_DELTA_REMAINDER_SHA256 = "745d0cc14f1f5c595db32b81dd4
 ATTENTION_DERIVED_OUTPUT_ACTIVATION_COMMITMENT = "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9"
 ATTENTION_DERIVED_RESIDUAL_ADD_ROW_COMMITMENT = "blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf"
 ATTENTION_DERIVED_PROOF_NATIVE_PARAMETER_COMMITMENT = "blake2b-256:2d54c2e4ac69af9a4a149f791bb62ed05b903f495783a9c607314d5fc04e5b42"
-ATTENTION_DERIVED_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:0f5f90a32b53ea1274eac93e60665d2595cafde5ec53e57e3598fedbe6d2f195"
-ATTENTION_DERIVED_STATEMENT_COMMITMENT = "blake2b-256:0916313384f68227850286254909473f9efa232bdca3c1c5ee0e3c4f666644ab"
+ATTENTION_DERIVED_PUBLIC_INSTANCE_COMMITMENT = "blake2b-256:35d93e7086d773fdba30b455374533df6271b1d98d6b35418f1af0d250be8ee8"
+ATTENTION_DERIVED_STATEMENT_COMMITMENT = "blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d"
 TARGET_COMMITMENT = "blake2b-256:d6a6ce9312fa7afa87899bea33f060336d79e215de95a64af4b7c9161df0ec18"
 INPUT_ACTIVATION_COMMITMENT = "blake2b-256:8bd784430741750949e86957a574b4b4db3e30a6f731232b74e3f3256e9fea78"
 RESIDUAL_DELTA_COMMITMENT = "blake2b-256:d04770d7ab488a3e2366265ed45b039e590d1e03604c7954ac379ce0c37de2b2"
@@ -255,10 +255,10 @@ def statement_commitment(payload: dict[str, Any]) -> str:
             "residual_delta_remainder_sha256": payload["residual_delta_remainder_sha256"],
             "residual_delta_scale_divisor": payload["residual_delta_scale_divisor"],
             "row_count": payload["row_count"],
-            "source_down_projection_proof_version": SOURCE_DOWN_PROJECTION_PROOF_VERSION,
+            "source_down_projection_proof_version": payload["source_down_projection_proof_version"],
             "source_down_projection_public_instance_commitment": payload["source_down_projection_public_instance_commitment"],
             "source_down_projection_statement_commitment": payload["source_down_projection_statement_commitment"],
-            "source_rmsnorm_proof_version": SOURCE_RMSNORM_PROOF_VERSION,
+            "source_rmsnorm_proof_version": payload["source_rmsnorm_proof_version"],
             "source_rmsnorm_statement_commitment": payload["source_rmsnorm_statement_commitment"],
             "target_commitment": TARGET_COMMITMENT,
             "target_id": TARGET_ID,

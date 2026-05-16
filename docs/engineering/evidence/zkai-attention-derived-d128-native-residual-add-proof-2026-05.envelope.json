@@ -27,8 +27,8 @@
     "output_activation_commitment": "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
     "residual_add_row_commitment": "blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf",
     "proof_native_parameter_commitment": "blake2b-256:2d54c2e4ac69af9a4a149f791bb62ed05b903f495783a9c607314d5fc04e5b42",
-    "public_instance_commitment": "blake2b-256:0f5f90a32b53ea1274eac93e60665d2595cafde5ec53e57e3598fedbe6d2f195",
-    "statement_commitment": "blake2b-256:0916313384f68227850286254909473f9efa232bdca3c1c5ee0e3c4f666644ab",
+    "public_instance_commitment": "blake2b-256:35d93e7086d773fdba30b455374533df6271b1d98d6b35418f1af0d250be8ee8",
+    "statement_commitment": "blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d",
     "input_q8": [
       1,
       1,

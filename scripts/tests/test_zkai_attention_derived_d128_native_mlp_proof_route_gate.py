@@ -105,7 +105,7 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         )
         self.assertEqual(
             summary["derived_native_residual_statement_commitment"],
-            "blake2b-256:0916313384f68227850286254909473f9efa232bdca3c1c5ee0e3c4f666644ab",
+            "blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d",
         )
 
     def test_rejects_coordinated_activation_down_statement_drift(self) -> None:
