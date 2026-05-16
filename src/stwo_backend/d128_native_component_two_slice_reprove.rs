@@ -32,8 +32,10 @@ use super::d128_native_rmsnorm_public_row_proof::{
     zkai_d128_rmsnorm_public_row_remainder_bit_column_id,
     zkai_d128_rmsnorm_public_row_scalar_bit_column_id, zkai_d128_rmsnorm_public_row_trace,
     ZkAiD128RmsnormPublicRowProofInput, ZKAI_D128_RMSNORM_AVERAGE_SQUARE_FLOOR_COLUMN_ID,
-    ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS, ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
-    ZKAI_D128_RMSNORM_SQRT_HIGH_GAP_COLUMN_ID, ZKAI_D128_RMSNORM_SQRT_LOW_DELTA_COLUMN_ID,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_COLUMN_IDS,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT, ZKAI_D128_RMSNORM_SQRT_HIGH_GAP_COLUMN_ID,
+    ZKAI_D128_RMSNORM_SQRT_LOW_DELTA_COLUMN_ID,
 };
 use super::d128_native_rmsnorm_to_projection_bridge_proof::{
     zkai_d128_rmsnorm_to_projection_bridge_component_with_allocator,
@@ -48,7 +50,6 @@ use super::d128_native_rmsnorm_to_projection_bridge_proof::{
 };
 use super::d128_native_two_slice_outer_statement_proof::{
     ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_NATIVE_PARAMETER_COMMITMENT,
-    ZKAI_D128_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT,
     ZKAI_D128_TWO_SLICE_ACCUMULATOR_COMMITMENT,
     ZKAI_D128_TWO_SLICE_OUTER_STATEMENT_REQUIRED_BACKEND_VERSION,
     ZKAI_D128_TWO_SLICE_OUTER_STATEMENT_TARGET_ID,
