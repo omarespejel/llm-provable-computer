@@ -160,7 +160,7 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "blake2b-256:1ed780078d95025c2d0a791dd55bd4b83f0dbc6ddeac4d6a335097367666cfbf",
+  "payload_commitment": "blake2b-256:26e788e05f9d045cec1ac3c147852a8f1dfe28fe4e2c09ff73b9d7b8119f4c58",
   "result": "GO_CONSTRAINT_SURFACE_READY_NO_GO_SIZE_BREAKTHROUGH",
   "route_id": "native_attention_mlp_adapter_air_frontier_v1",
   "schema": "zkai-native-attention-mlp-adapter-air-frontier-gate-v1",
@@ -209,6 +209,7 @@
     "python3 scripts/research_issue_lint.py --repo-root .",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
     "git diff --check",
-    "just gate-fast"
+    "just gate-fast",
+    "just gate"
   ]
 }

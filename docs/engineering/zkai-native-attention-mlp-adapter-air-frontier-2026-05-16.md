@@ -115,4 +115,5 @@ python3 scripts/research_issue_lint.py --repo-root .
 python3 scripts/paper/paper_preflight.py --repo-root .
 git diff --check
 just gate-fast
+just gate
 ```
