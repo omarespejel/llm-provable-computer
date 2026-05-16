@@ -334,8 +334,6 @@ def read_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
 
 def sha256_file(path: pathlib.Path, max_bytes: int, label: str) -> tuple[str, int]:
     _payload, size, raw = read_json_with_size(path, max_bytes, label)
-    if len(raw) != size:
-        raise LiftingAblationError(f"{label} changed while hashing")
     return hashlib.sha256(raw).hexdigest(), size
 
 
