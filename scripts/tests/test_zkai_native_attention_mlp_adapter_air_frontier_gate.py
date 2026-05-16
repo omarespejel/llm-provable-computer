@@ -21,8 +21,8 @@ class NativeAttentionMlpAdapterAirFrontierGateTests(unittest.TestCase):
         self.assertEqual(payload["schema"], gate.SCHEMA)
         self.assertEqual(payload["decision"], gate.DECISION)
         self.assertEqual(payload["result"], gate.RESULT)
-        self.assertEqual(summary["native_adapter_air_status"], "READY_FOR_NATIVE_AIR_IMPLEMENTATION")
-        self.assertFalse(summary["native_adapter_air_proven_in_current_artifact"])
+        self.assertEqual(summary["native_adapter_air_status"], "IMPLEMENTED_IN_SINGLE_STWO_PROOF_OBJECT")
+        self.assertTrue(summary["native_adapter_air_proven_in_current_artifact"])
         self.assertEqual(summary["adapter_rows"], 128)
         self.assertEqual(summary["adapter_columns"], 9)
         self.assertEqual(summary["adapter_trace_cells"], 1536)
@@ -30,15 +30,15 @@ class NativeAttentionMlpAdapterAirFrontierGateTests(unittest.TestCase):
         self.assertTrue(summary["adapter_outputs_match_d128_input_commitment"])
         self.assertTrue(summary["all_remainders_fit_three_bits"])
 
-    def test_budget_records_only_32_typed_bytes_of_size_slack(self) -> None:
+    def test_budget_records_native_adapter_typed_size_cost(self) -> None:
         payload = self.fresh_payload()
         summary = payload["summary"]
-        self.assertEqual(summary["single_proof_typed_bytes"], 40_668)
+        self.assertEqual(summary["single_proof_typed_bytes"], 41_932)
         self.assertEqual(summary["two_proof_frontier_typed_bytes"], 40_700)
-        self.assertEqual(summary["typed_slack_vs_two_proof_bytes"], 32)
-        self.assertEqual(summary["max_adapter_overhead_for_size_win_bytes"], 32)
+        self.assertEqual(summary["typed_slack_vs_two_proof_bytes"], -1_232)
+        self.assertEqual(summary["max_adapter_overhead_for_size_win_bytes"], -1_232)
         self.assertEqual(summary["native_adapter_air_size_breakthrough_status"], "NO_GO")
-        self.assertEqual(summary["current_gap_to_nanozk_reported_bytes"], 33_768)
+        self.assertEqual(summary["current_gap_to_nanozk_reported_bytes"], 35_032)
 
     def test_projection_rows_satisfy_native_air_candidate_relations(self) -> None:
         sources = gate.load_sources()
@@ -93,9 +93,9 @@ class NativeAttentionMlpAdapterAirFrontierGateTests(unittest.TestCase):
         self.assertEqual([case["name"] for case in payload["cases"]], list(gate.MUTATION_NAMES))
 
         mutated = self.fresh_payload()
-        mutated["summary"]["native_adapter_air_proven_in_current_artifact"] = True
+        mutated["summary"]["native_adapter_air_proven_in_current_artifact"] = False
         gate.refresh_payload_commitment(mutated)
-        with self.assertRaisesRegex(gate.AdapterAirFrontierError, "native adapter AIR overclaim"):
+        with self.assertRaisesRegex(gate.AdapterAirFrontierError, "native adapter AIR proof drift"):
             gate.validate_payload(mutated)
 
         mutated = self.fresh_payload()
@@ -123,9 +123,9 @@ class NativeAttentionMlpAdapterAirFrontierGateTests(unittest.TestCase):
     def test_tsv_round_trips_from_validated_payload(self) -> None:
         payload = self.fresh_payload()
         tsv = gate.to_tsv(payload)
-        self.assertIn("READY_FOR_NATIVE_AIR_IMPLEMENTATION", tsv)
-        self.assertIn("\t32\t", tsv)
-        self.assertIn("implement the adapter component", tsv)
+        self.assertIn("IMPLEMENTED_IN_SINGLE_STWO_PROOF_OBJECT", tsv)
+        self.assertIn("\t-1232\t", tsv)
+        self.assertIn("compress the adapter AIR", tsv)
 
     def test_read_json_rejects_non_finite_constants(self) -> None:
         with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:

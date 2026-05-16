@@ -26,7 +26,7 @@
       "output_q8_commitment_equals_d128_rmsnorm_input_activation_commitment"
     ],
     "log_size": 7,
-    "native_adapter_air_proven_in_current_artifact": false,
+    "native_adapter_air_proven_in_current_artifact": true,
     "output_d128_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
     "policy_id": "fixed_public_two_source_q8_projection_v1",
     "projection_row_summary": {
@@ -42,20 +42,20 @@
     "remainder_bit_columns": 3,
     "rows": 128,
     "source_attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
-    "status": "READY_FOR_NATIVE_AIR_IMPLEMENTATION",
+    "status": "IMPLEMENTED_IN_SINGLE_STWO_PROOF_OBJECT",
     "trace_cells": 1536
   },
   "all_mutations_rejected": true,
   "budget": {
-    "correctness_next_step": "implement the adapter component in the one-proof Stwo object even if typed bytes increase",
-    "current_gap_to_nanozk_reported_bytes": 33768,
-    "max_adapter_overhead_for_size_win_bytes": 32,
+    "correctness_next_step": "compress the adapter AIR or restructure the proof boundary before claiming size savings",
+    "current_gap_to_nanozk_reported_bytes": 35032,
+    "max_adapter_overhead_for_size_win_bytes": -1232,
     "nanozk_reported_d128_block_proof_bytes": 6900,
-    "native_adapter_air_size_breakthrough_gate": "NO_GO_UNTIL_REPROVEN_OVERHEAD_IS_AT_MOST_32_TYPED_BYTES",
-    "projected_gap_after_lifting_only_bytes": 33128,
-    "single_proof_typed_bytes": 40668,
+    "native_adapter_air_size_breakthrough_gate": "NO_GO_NATIVE_ADAPTER_AIR_COSTS_1232_TYPED_BYTES_VS_TWO_PROOF_FRONTIER",
+    "projected_gap_after_lifting_only_bytes": 33944,
+    "single_proof_typed_bytes": 41932,
     "two_proof_frontier_typed_bytes": 40700,
-    "typed_slack_vs_two_proof_bytes": 32
+    "typed_slack_vs_two_proof_bytes": -1232
   },
   "case_count": 12,
   "cases": [
@@ -67,8 +67,8 @@
     },
     {
       "accepted": false,
-      "error": "native adapter AIR overclaim",
-      "name": "adapter_air_marked_proven",
+      "error": "native adapter AIR proof drift",
+      "name": "adapter_air_demoted_from_current_artifact",
       "rejected": true
     },
     {
@@ -132,12 +132,12 @@
       "rejected": true
     }
   ],
-  "claim_boundary": "PINS_THE_EXACT_NATIVE_AIR_CONSTRAINT_SURFACE_FOR_THE_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER_WITHOUT_REGENERATING_A_STWO_PROOF_OR_CLAIMING_PROOF_SIZE_IMPROVEMENT",
-  "decision": "NARROW_CLAIM_NATIVE_ADAPTER_AIR_FRONTIER_PINNED",
-  "issue": "https://github.com/omarespejel/provable-transformer-vm/issues/603",
+  "claim_boundary": "PINS_THE_EXACT_NATIVE_AIR_CONSTRAINT_SURFACE_FOR_THE_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER_WITH_A_REGENERATED_STWO_PROOF_BUT_WITHOUT_CLAIMING_PROOF_SIZE_IMPROVEMENT",
+  "decision": "NARROW_CLAIM_NATIVE_ADAPTER_AIR_FRONTIER_CLOSED",
+  "issue": "https://github.com/omarespejel/provable-transformer-vm/issues/629",
   "mutation_inventory": [
     "decision_promoted_to_full_block",
-    "adapter_air_marked_proven",
+    "adapter_air_demoted_from_current_artifact",
     "adapter_size_breakthrough_overclaim",
     "adapter_slack_inflated",
     "source_attention_commitment_drift",
@@ -150,8 +150,7 @@
     "payload_commitment_drift"
   ],
   "non_claims": [
-    "not a regenerated Stwo proof with the adapter component included",
-    "not proof-size savings",
+    "not proof-size savings from native adapter AIR",
     "not a NANOZK proof-size win",
     "not a matched NANOZK workload or benchmark",
     "not exact real-valued Softmax",
@@ -160,8 +159,8 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "blake2b-256:27001007282d3700a8c7da4bdfbcb2348c1da8bf21ed3ff1cc02fb09765659a0",
-  "result": "GO_CONSTRAINT_SURFACE_READY_NO_GO_SIZE_BREAKTHROUGH",
+  "payload_commitment": "blake2b-256:d8aaae43123a37f16224c181c499edca48219b74ca41c4f0367f4cea4ed2affe",
+  "result": "GO_NATIVE_ADAPTER_AIR_PROVEN_NO_GO_SIZE_BREAKTHROUGH",
   "route_id": "native_attention_mlp_adapter_air_frontier_v1",
   "schema": "zkai-native-attention-mlp-adapter-air-frontier-gate-v1",
   "source_artifacts": [
@@ -174,14 +173,14 @@
     {
       "id": "native_attention_mlp_single_proof_gate",
       "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json",
-      "payload_sha256": "0331b1d7e6984876269d75767541766ad47f195106c2efda9cde1b3219341549",
-      "sha256": "573b223c31251434d2587078a7fdcf3ba6c962400cbc39eb2badb055f93b64ac"
+      "payload_sha256": "5d09a1afd4c6926932b7c9a4234dcd10c893ab11fff14f1d72188b381dcd5d34",
+      "sha256": "7e68dac61d177b61b98468d1ad788756af7e06890585fa726fa3a5fdfbaade4c"
     },
     {
       "id": "native_attention_mlp_lifting_ablation_gate",
       "path": "docs/engineering/evidence/zkai-native-attention-mlp-lifting-ablation-2026-05.json",
-      "payload_sha256": "d969d3deb4402fc986d231e6c877e4a9a9aae201f196a3aa84aaf9d17298e14c",
-      "sha256": "9a3223c8e6979b094e9ae14071ecf5c50a3cc16a4b7901dd1a8bf1156f0d7e5e"
+      "payload_sha256": "e231457ff3f2ed51a1b8d699076eb8c7dda32730e4aa08dbccaf61a49f161aeb",
+      "sha256": "5a393c836053d06bfc3be4fc3fe1259bdd3908af934fed7cc482de74b8f66267"
     }
   ],
   "summary": {
@@ -191,16 +190,16 @@
     "adapter_trace_cells": 1536,
     "all_remainders_fit_three_bits": true,
     "constraint_count": 10,
-    "current_gap_to_nanozk_reported_bytes": 33768,
-    "max_adapter_overhead_for_size_win_bytes": 32,
+    "current_gap_to_nanozk_reported_bytes": 35032,
+    "max_adapter_overhead_for_size_win_bytes": -1232,
     "nanozk_reported_d128_block_proof_bytes": 6900,
-    "native_adapter_air_proven_in_current_artifact": false,
+    "native_adapter_air_proven_in_current_artifact": true,
     "native_adapter_air_size_breakthrough_status": "NO_GO",
-    "native_adapter_air_status": "READY_FOR_NATIVE_AIR_IMPLEMENTATION",
-    "next_attack": "implement_adapter_air_then_measure_real_typed_overhead",
-    "single_proof_typed_bytes": 40668,
+    "native_adapter_air_status": "IMPLEMENTED_IN_SINGLE_STWO_PROOF_OBJECT",
+    "next_attack": "compress_adapter_air_or_restructure_boundary_then_measure_real_typed_overhead",
+    "single_proof_typed_bytes": 41932,
     "two_proof_frontier_typed_bytes": 40700,
-    "typed_slack_vs_two_proof_bytes": 32
+    "typed_slack_vs_two_proof_bytes": -1232
   },
   "validation_commands": [
     "python3 scripts/zkai_native_attention_mlp_adapter_air_frontier_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-adapter-air-frontier-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-adapter-air-frontier-2026-05.tsv",

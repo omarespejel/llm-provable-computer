@@ -1,18 +1,21 @@
 {
-  "claim_boundary": "ONE_NATIVE_STWO_PROOF_OBJECT_FOR_STATEMENT_BOUND_D8_ATTENTION_AND_ATTENTION_DERIVED_D128_RMSNORM_MLP_SURFACES_WITHOUT_NATIVE_ADAPTER_AIR_OR_NANOZK_COMPARABILITY",
+  "claim_boundary": "ONE_NATIVE_STWO_PROOF_OBJECT_FOR_D8_ATTENTION_NATIVE_ATTENTION_TO_D128_ADAPTER_AIR_AND_ATTENTION_DERIVED_D128_RMSNORM_MLP_SURFACES_WITHOUT_PROOF_SIZE_SAVING_OR_NANOZK_COMPARABILITY",
   "decision": "GO_NATIVE_ATTENTION_MLP_SINGLE_STWO_PROOF_OBJECT_VERIFIES",
-  "issue": "https://github.com/omarespejel/provable-transformer-vm/issues/603",
+  "issue": "https://github.com/omarespejel/provable-transformer-vm/issues/629",
   "mechanism": {
+    "adapter_air_mechanism": "the adapter proves a fixed 128-row projection from d8 attention outputs into the d128 RMSNorm input with quotient/remainder constraints and boolean remainder bits",
     "explicit_lifting_reason": "the attention interaction tree is much smaller than the MLP base tree, so the route pins an explicit PCS lifting log size instead of relying on publication-v1 None",
-    "research_signal": "the first verified one-proof object saves 32 typed bytes versus the two-proof frontier",
-    "single_proof_object_mechanism": "attention LogUp interaction trace and six d128 RMSNorm-MLP components are proved under one Stwo proof object with shared PCS/Fri plumbing"
+    "research_signal": "native adapter AIR closes a correctness boundary but costs 1232 typed bytes versus the current two-proof frontier, so the next target is adapter compression rather than a size claim",
+    "single_proof_object_mechanism": "attention LogUp interaction trace, native attention-to-d128 adapter AIR, and six d128 RMSNorm-MLP components are proved under one Stwo proof object with shared PCS/FRI plumbing"
   },
   "mutation_inventory": {
     "cases": [
       "single_typed_bytes_drift",
       "two_proof_frontier_drift",
       "proof_json_bytes_drift",
-      "adapter_promoted_to_native_air",
+      "adapter_demoted_from_native_air",
+      "adapter_trace_cells_drift",
+      "proof_size_saving_promoted",
       "pcs_lifting_log_size_drift",
       "nanozk_win_promoted",
       "route_commitment_drift",
@@ -38,8 +41,18 @@
         "rejected": true
       },
       {
-        "name": "adapter_promoted_to_native_air",
+        "name": "adapter_demoted_from_native_air",
         "reason": "routes.adapter_boundary.native_adapter_air_proven drift",
+        "rejected": true
+      },
+      {
+        "name": "adapter_trace_cells_drift",
+        "reason": "summary.adapter_trace_cells drift",
+        "rejected": true
+      },
+      {
+        "name": "proof_size_saving_promoted",
+        "reason": "routes.two_proof_frontier_comparison.status drift",
         "rejected": true
       },
       {
@@ -70,7 +83,7 @@
     ]
   },
   "non_claims": [
-    "not a native AIR proof of the attention-output-to-d128-input adapter",
+    "not proof-size savings",
     "not a full transformer block proof",
     "not a NANOZK proof-size win",
     "not a matched external zkML benchmark",
@@ -80,39 +93,43 @@
     "not timing evidence",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:2d43a0791fcf91a1477ad85fdef6e282f28f81699b679be156b763d3c08c3b94",
-  "result": "NARROW_CLAIM_SINGLE_PROOF_OBJECT_BARELY_BEATS_TWO_PROOF_FRONTIER",
-  "route_commitment": "blake2b-256:6adb099b3cafb4f1eff4131f767d46bf6d694bf5f5033ffc1ba8963f9fcd60d9",
+  "payload_commitment": "sha256:57c3aa505ceabcd86903abaca1127c680b21a7a1771c75d26bcff50163852dd7",
+  "result": "NARROW_CLAIM_NATIVE_ADAPTER_AIR_VERIFIES_WITH_TYPED_SIZE_COST",
+  "route_commitment": "blake2b-256:18c621e1e5b9a4c34a38185fcf13314e0e514276e6d01df54422e28bb8aeb395",
   "routes": {
     "adapter_boundary": {
-      "adapter_status": "STATEMENT_BOUND_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER_NOT_NATIVE_AIR",
-      "native_adapter_air_proven": false,
-      "status": "NO_GO_NATIVE_ADAPTER_AIR_NOT_PROVEN"
+      "adapter_remainder_bit_columns": 3,
+      "adapter_row_count": 128,
+      "adapter_status": "NATIVE_AIR_PROVEN_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER",
+      "adapter_trace_cells": 1536,
+      "adapter_value_columns": 9,
+      "native_adapter_air_proven": true,
+      "status": "GO_NATIVE_ADAPTER_AIR_PROVEN_IN_SINGLE_STWO_PROOF_OBJECT"
     },
     "nanozk_comparison_boundary": {
       "matched_workload_or_object_class": false,
       "nanozk_reported_d128_block_proof_bytes": 6900,
       "proof_size_win_claimed": false,
       "status": "NO_GO_NOT_NANOZK_COMPARABLE",
-      "typed_gap_to_nanozk_reported_bytes": 33768
+      "typed_gap_to_nanozk_reported_bytes": 35032
     },
     "native_single_proof_object": {
       "pcs_lifting_log_size": 19,
-      "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-probe-v1",
-      "proof_json_size_bytes": 115924,
-      "proof_schema_version": "stwo-native-attention-mlp-single-proof-object-payload-v1",
-      "statement_version": "zkai-native-attention-mlp-single-proof-object-statement-v1",
-      "status": "GO_VERIFIED_SINGLE_NATIVE_STWO_PROOF_OBJECT",
-      "typed_size_estimate_bytes": 40668
+      "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-v1",
+      "proof_json_size_bytes": 119790,
+      "proof_schema_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-payload-v1",
+      "statement_version": "zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1",
+      "status": "GO_VERIFIED_SINGLE_NATIVE_STWO_PROOF_OBJECT_WITH_NATIVE_ADAPTER_AIR",
+      "typed_size_estimate_bytes": 41932
     },
     "two_proof_frontier_comparison": {
-      "json_ratio": 0.997127,
-      "json_saving_bytes": 334,
-      "status": "BARELY_GO_BEATS_CURRENT_TWO_PROOF_TYPED_TARGET",
+      "json_delta_bytes": 3532,
+      "json_ratio": 1.030381,
+      "status": "NO_GO_NATIVE_ADAPTER_AIR_COSTS_MORE_THAN_CURRENT_TWO_PROOF_FRONTIER",
       "two_proof_frontier_json_bytes": 116258,
       "two_proof_frontier_typed_bytes": 40700,
-      "typed_ratio": 0.999214,
-      "typed_saving_bytes": 32
+      "typed_delta_bytes": 1232,
+      "typed_ratio": 1.03027
     }
   },
   "schema": "zkai-native-attention-mlp-single-proof-object-gate-v1",
@@ -120,12 +137,12 @@
     {
       "id": "single_proof_envelope",
       "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json",
-      "sha256": "9271ad33658d934bfb15c20d28d1ada008778249f2dc9c76137baf26c307163a"
+      "sha256": "f3391f213531957e1dc0522e2415b3783b9e0eb759c1a52f17b1415cfe4e7585"
     },
     {
       "id": "single_proof_binary_accounting",
       "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json",
-      "sha256": "d49ce50d922a1c90ff88863fa5fccdff5ff2983df7b6d06ff2939d3f3742cef5"
+      "sha256": "96073160916177a2dad18aff8b85616774cac60bdc8734f50d59848c315bdb9a"
     },
     {
       "id": "single_proof_route_budget",
@@ -134,23 +151,29 @@
     }
   ],
   "summary": {
-    "adapter_status": "STATEMENT_BOUND_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER_NOT_NATIVE_AIR",
+    "adapter_remainder_bit_columns": 3,
+    "adapter_row_count": 128,
+    "adapter_status": "NATIVE_AIR_PROVEN_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER",
+    "adapter_trace_cells": 1536,
+    "adapter_value_columns": 9,
     "attention_fused_typed_bytes": 18124,
     "derived_mlp_fused_typed_bytes": 22576,
-    "json_ratio_vs_two_proof": 0.997127,
-    "json_saving_vs_two_proof_bytes": 334,
+    "json_delta_vs_two_proof_bytes": 3532,
+    "json_ratio_vs_two_proof": 1.030381,
+    "json_saving_vs_two_proof_bytes": -3532,
     "nanozk_reported_d128_block_proof_bytes": 6900,
-    "native_adapter_air_proven": false,
+    "native_adapter_air_proven": true,
     "pcs_lifting_log_size": 19,
-    "single_envelope_bytes": 1222508,
-    "single_proof_json_bytes": 115924,
-    "single_proof_typed_bytes": 40668,
+    "single_envelope_bytes": 1253874,
+    "single_proof_json_bytes": 119790,
+    "single_proof_typed_bytes": 41932,
     "two_proof_frontier_json_bytes": 116258,
     "two_proof_frontier_typed_bytes": 40700,
-    "typed_gap_to_nanozk_reported_bytes": 33768,
-    "typed_ratio_vs_two_proof": 0.999214,
-    "typed_reduction_needed_to_nanozk_reported_share": 0.830333,
-    "typed_saving_vs_two_proof_bytes": 32
+    "typed_delta_vs_two_proof_bytes": 1232,
+    "typed_gap_to_nanozk_reported_bytes": 35032,
+    "typed_ratio_vs_two_proof": 1.03027,
+    "typed_reduction_needed_to_nanozk_reported_share": 0.835448,
+    "typed_saving_vs_two_proof_bytes": -1232
   },
   "validation_commands": [
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- build-input docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.input.json",

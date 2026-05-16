@@ -10,13 +10,17 @@ class NativeAttentionMlpLiftingAblationGateTests(unittest.TestCase):
     def test_payload_records_lifting_ablation_no_go(self) -> None:
         payload = gate.build_payload()
         summary = payload["summary"]
-        self.assertEqual(summary["single_proof_typed_bytes"], 40_668)
+        self.assertEqual(summary["single_proof_typed_bytes"], 41_932)
         self.assertEqual(summary["two_proof_frontier_typed_bytes"], 40_700)
-        self.assertEqual(summary["current_typed_saving_vs_two_proof_bytes"], 32)
+        self.assertEqual(summary["current_typed_saving_vs_two_proof_bytes"], -1_232)
         self.assertEqual(summary["positive_overhang_group"], "fri_decommitments")
-        self.assertEqual(summary["fri_decommitment_overhang_bytes"], 640)
-        self.assertEqual(summary["projected_typed_bytes_without_fri_overhang"], 40_028)
-        self.assertEqual(summary["projected_gap_to_nanozk_reported_bytes"], 33_128)
+        self.assertEqual(summary["positive_overhang_groups"], ["fri_decommitments", "oods_samples", "queries_values"])
+        self.assertEqual(summary["positive_overhang_total_bytes"], 1_536)
+        self.assertEqual(summary["fri_decommitment_overhang_bytes"], 1_088)
+        self.assertEqual(summary["projected_typed_bytes_without_fri_overhang"], 40_844)
+        self.assertEqual(summary["projected_gap_to_nanozk_reported_bytes"], 33_944)
+        self.assertEqual(summary["projected_typed_bytes_without_all_positive_overhangs"], 40_396)
+        self.assertEqual(summary["projected_all_positive_overhang_gap_to_nanozk_reported_bytes"], 33_496)
         self.assertEqual(summary["lifting_only_breakthrough_status"], "NO_GO")
         gate.validate_payload(payload)
 
@@ -28,8 +32,8 @@ class NativeAttentionMlpLiftingAblationGateTests(unittest.TestCase):
             for name, values in deltas.items()
             if values["single_minus_two_proof_delta_bytes"] > 0
         }
-        self.assertEqual(positives, {"fri_decommitments": 640})
-        self.assertEqual(sum(value["single_minus_two_proof_delta_bytes"] for value in deltas.values()), -32)
+        self.assertEqual(positives, {"fri_decommitments": 1_088, "oods_samples": 256, "queries_values": 192})
+        self.assertEqual(sum(value["single_minus_two_proof_delta_bytes"] for value in deltas.values()), 1_232)
 
     def test_mutations_reject(self) -> None:
         payload = gate.build_payload()

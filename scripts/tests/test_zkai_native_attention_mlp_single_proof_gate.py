@@ -21,28 +21,37 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
         payload = self.fresh_payload()
         gate.validate_payload(payload, context=self.context)
         summary = payload["summary"]
-        self.assertEqual(summary["single_proof_typed_bytes"], 40_668)
+        self.assertEqual(summary["single_proof_typed_bytes"], 41_932)
         self.assertEqual(summary["two_proof_frontier_typed_bytes"], 40_700)
-        self.assertEqual(summary["typed_saving_vs_two_proof_bytes"], 32)
-        self.assertEqual(summary["typed_ratio_vs_two_proof"], 0.999214)
-        self.assertEqual(summary["single_proof_json_bytes"], 115_924)
+        self.assertEqual(summary["typed_saving_vs_two_proof_bytes"], -1_232)
+        self.assertEqual(summary["typed_delta_vs_two_proof_bytes"], 1_232)
+        self.assertEqual(summary["typed_ratio_vs_two_proof"], 1.03027)
+        self.assertEqual(summary["single_proof_json_bytes"], 119_790)
         self.assertEqual(summary["two_proof_frontier_json_bytes"], 116_258)
-        self.assertEqual(summary["json_saving_vs_two_proof_bytes"], 334)
-        self.assertEqual(summary["json_ratio_vs_two_proof"], 0.997127)
+        self.assertEqual(summary["json_saving_vs_two_proof_bytes"], -3_532)
+        self.assertEqual(summary["json_delta_vs_two_proof_bytes"], 3_532)
+        self.assertEqual(summary["json_ratio_vs_two_proof"], 1.030381)
         self.assertEqual(summary["pcs_lifting_log_size"], 19)
-        self.assertIs(summary["native_adapter_air_proven"], False)
+        self.assertEqual(summary["adapter_trace_cells"], 1_536)
+        self.assertIs(summary["native_adapter_air_proven"], True)
 
     def test_payload_keeps_adapter_and_nanozk_as_non_claims(self) -> None:
         routes = self.fresh_payload()["routes"]
         self.assertEqual(
             routes["native_single_proof_object"]["status"],
-            "GO_VERIFIED_SINGLE_NATIVE_STWO_PROOF_OBJECT",
+            "GO_VERIFIED_SINGLE_NATIVE_STWO_PROOF_OBJECT_WITH_NATIVE_ADAPTER_AIR",
         )
         self.assertEqual(
             routes["adapter_boundary"]["status"],
-            "NO_GO_NATIVE_ADAPTER_AIR_NOT_PROVEN",
+            "GO_NATIVE_ADAPTER_AIR_PROVEN_IN_SINGLE_STWO_PROOF_OBJECT",
         )
-        self.assertIs(routes["adapter_boundary"]["native_adapter_air_proven"], False)
+        self.assertEqual(routes["adapter_boundary"]["adapter_row_count"], 128)
+        self.assertEqual(routes["adapter_boundary"]["adapter_trace_cells"], 1_536)
+        self.assertIs(routes["adapter_boundary"]["native_adapter_air_proven"], True)
+        self.assertEqual(
+            routes["two_proof_frontier_comparison"]["status"],
+            "NO_GO_NATIVE_ADAPTER_AIR_COSTS_MORE_THAN_CURRENT_TWO_PROOF_FRONTIER",
+        )
         self.assertEqual(
             routes["nanozk_comparison_boundary"]["status"],
             "NO_GO_NOT_NANOZK_COMPARABLE",
@@ -125,10 +134,10 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
             "single_proof_json_bytes\ttwo_proof_frontier_json_bytes\t"
             "json_saving_vs_two_proof_bytes\tjson_ratio_vs_two_proof\tpcs_lifting_log_size\t"
             "native_adapter_air_proven\ttyped_gap_to_nanozk_reported_bytes\t"
-            "typed_reduction_needed_to_nanozk_reported_share\r\n"
+            "typed_reduction_needed_to_nanozk_reported_share\n"
             "GO_NATIVE_ATTENTION_MLP_SINGLE_STWO_PROOF_OBJECT_VERIFIES\t"
-            "NARROW_CLAIM_SINGLE_PROOF_OBJECT_BARELY_BEATS_TWO_PROOF_FRONTIER\t"
-            "40668\t40700\t32\t0.999214\t115924\t116258\t334\t0.997127\t19\tFalse\t33768\t0.830333\r\n"
+            "NARROW_CLAIM_NATIVE_ADAPTER_AIR_VERIFIES_WITH_TYPED_SIZE_COST\t"
+            "41932\t40700\t-1232\t1.03027\t119790\t116258\t-3532\t1.030381\t19\tTrue\t35032\t0.835448\n"
         )
         self.assertEqual(tsv, expected)
 

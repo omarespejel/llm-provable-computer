@@ -2,10 +2,10 @@
 
 ## Result
 
-This gate does not implement the native adapter. It pins the exact
-correctness-first attack for the native attention-plus-MLP route: the next proof
-object must prove the attention-output-to-d128-input adapter as a native AIR
-component.
+This gate started as the correctness-first frontier for the native
+attention-plus-MLP route. It is now closed by the regenerated single-proof
+object: the attention-output-to-d128-input adapter is proved as a native AIR
+component inside the same Stwo proof.
 
 The result is a narrow GO/NO-GO:
 
@@ -13,41 +13,34 @@ The result is a narrow GO/NO-GO:
   the existing attention-derived d128 input artifact;
 - GO: the adapter rows are value-connected to the attention output commitment
   and the d128 RMSNorm input commitment;
-- NO-GO: this is not yet a regenerated Stwo proof with the adapter component
-  included, and this PR must not be treated as closing the native AIR
-  implementation tracked in issue #629;
-- NO-GO: this cannot be called a size breakthrough because the current one-proof
-  object only has `32` typed bytes of slack versus the two-proof frontier;
-- NO-GO: adding the adapter to the actual proof requires a Rust/Stwo component
-  change plus regenerated one-proof verification evidence. Treating the
-  externally checked projection rows as proof-internal constraints would weaken
-  verifier binding.
+- GO: the regenerated Stwo proof includes the adapter component and verifies
+  locally;
+- NO-GO: this cannot be called a size breakthrough because the native-adapter
+  proof now costs `1,232` typed bytes more than the two-proof frontier;
+- NO-GO: this is still not a NANOZK-comparable benchmark or proof-size win.
 
-Bounded NO-GO for this PR: implementing the adapter as native AIR requires
-changing the Rust/Stwo single-proof component and regenerating a verifier-checked
-one-proof artifact. Treating the externally checked projection rows as if they
-were already inside the proof would weaken verifier binding, so this PR stops at
-pinning the exact constraint surface and opens issue #629 for the native
-implementation.
+Bounded result: issue #629 closes the native AIR implementation question, but
+opens the harder compression question. We now know the proof is more correct,
+and also know exactly how much size we need to recover.
 
 ## Numbers
 
-- Current single proof: `40,668` local typed bytes.
+- Current single proof with native adapter AIR: `41,932` local typed bytes.
 - Current two-proof frontier: `40,700` local typed bytes.
-- Current slack versus two-proof target: `32` typed bytes.
+- Current delta versus two-proof target: `+1,232` typed bytes.
 - Adapter candidate rows: `128`.
 - Adapter candidate trace columns: `9` value columns plus `3` remainder-bit
   columns.
 - Adapter candidate trace cells: `1,536`.
 - Adapter constraints pinned: `10`.
-- Current gap to NANOZK's paper-reported `6,900` byte d128 row: `33,768`
+- Current gap to NANOZK's paper-reported `6,900` byte d128 row: `35,032`
   typed bytes.
 
-The human interpretation is simple: proving the adapter natively is the right
-correctness move, but it almost certainly makes the current byte metric worse
-before it gets better. That is still useful. It tells us the next proof object
-should prioritize honest value binding first, then attack query/opening
-economics or component boundaries.
+The human interpretation is simple: proving the adapter natively was the right
+correctness move, and it made the current byte metric worse. That is still
+useful. It tells us the next proof object should attack adapter representation,
+query/opening economics, or component boundaries without weakening value
+binding.
 
 ## Adapter Surface
 
@@ -74,16 +67,13 @@ easy to blur:
    proof architecture?
 2. Can we make that stricter proof object smaller?
 
-The first question now has a concrete implementation target. The second remains
-open and hard. The current adapter overhead budget for preserving even the tiny
-single-proof size win is only `32` typed bytes, so the first native adapter-AIR
-implementation should be judged as a correctness gate, not a compression gate.
-Follow-up issue #629 tracks that implementation.
+The first question is now answered for this fixture: yes. The second remains
+open and hard. The first native adapter-AIR implementation should be judged as a
+correctness gate, not a compression gate.
 
 ## Non-Claims
 
-- This is not a regenerated Stwo proof with the adapter component included.
-- This is not proof-size savings.
+- This is not proof-size savings from native adapter AIR.
 - This is not a NANOZK proof-size win.
 - This is not a matched NANOZK workload or benchmark.
 - This is not exact real-valued Softmax.

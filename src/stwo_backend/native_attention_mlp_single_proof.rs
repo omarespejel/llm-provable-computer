@@ -13,12 +13,15 @@ use stwo::core::proof::StarkProof;
 use stwo::core::vcs_lifted::blake2_merkle::{Blake2sM31MerkleChannel, Blake2sM31MerkleHasher};
 use stwo::core::verifier::verify;
 use stwo::core::ColumnVec;
+use stwo::prover::backend::simd::column::BaseColumn;
 use stwo::prover::backend::simd::SimdBackend;
 use stwo::prover::poly::circle::{CircleEvaluation, PolyOps};
-use stwo::prover::poly::BitReversedOrder;
+use stwo::prover::poly::{BitReversedOrder, NaturalOrder};
 use stwo::prover::{prove, CommitmentSchemeProver, ComponentProver};
 use stwo_constraint_framework::preprocessed_columns::PreProcessedColumnId;
-use stwo_constraint_framework::TraceLocationAllocator;
+use stwo_constraint_framework::{
+    EvalAtRow, FrameworkComponent, FrameworkEval, TraceLocationAllocator,
+};
 
 use crate::error::{Result, VmError};
 use crate::proof::StarkProofBackend;
@@ -75,15 +78,15 @@ pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_INPUT_SCHEMA: &str =
 pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_INPUT_DECISION: &str =
     "GO_INPUT_FOR_NATIVE_ATTENTION_MLP_SINGLE_PROOF_OBJECT_PROBE";
 pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_BACKEND_VERSION: &str =
-    "stwo-native-attention-mlp-single-proof-object-probe-v1";
+    "stwo-native-attention-mlp-single-proof-object-native-adapter-v1";
 pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_PROOF_VERSION: &str =
-    "stwo-native-attention-mlp-single-proof-object-payload-v1";
+    "stwo-native-attention-mlp-single-proof-object-native-adapter-payload-v1";
 pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_STATEMENT_VERSION: &str =
-    "zkai-native-attention-mlp-single-proof-object-statement-v1";
+    "zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1";
 pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_SEMANTIC_SCOPE: &str =
-    "d8_attention_softmax_table_and_attention_derived_d128_rmsnorm_mlp_surfaces_in_one_native_stwo_proof_object";
+    "d8_attention_softmax_table_attention_to_d128_adapter_and_attention_derived_d128_rmsnorm_mlp_surfaces_in_one_native_stwo_proof_object";
 pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_DECISION: &str =
-    "GO_SINGLE_NATIVE_STWO_PROOF_OBJECT_FOR_STATEMENT_BOUND_ATTENTION_DERIVED_MLP_SURFACES";
+    "GO_SINGLE_NATIVE_STWO_PROOF_OBJECT_WITH_NATIVE_ATTENTION_TO_D128_ADAPTER_AIR";
 pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_ROUTE_ID: &str =
     "native_stwo_d8_attention_softmax_table_plus_attention_derived_d128_rmsnorm_mlp_single_proof_object_probe";
 pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_TARGET_ID: &str =
@@ -95,6 +98,19 @@ pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_MAX_PROOF_BYTES: usize = 2_097_
 pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_MAX_ENVELOPE_JSON_BYTES: usize = 10_485_760;
 
 const ATTENTION_LOG_SIZE: u32 = 6;
+const ADAPTER_LOG_SIZE: u32 = 7;
+const ADAPTER_WIDTH: usize = 128;
+const ADAPTER_VALUE_COLUMNS: usize = 9;
+const ADAPTER_REMAINDER_BIT_COLUMNS: usize = 3;
+const ADAPTER_TRACE_COLUMNS: usize = ADAPTER_VALUE_COLUMNS + ADAPTER_REMAINDER_BIT_COLUMNS;
+const ADAPTER_TRACE_CELLS: usize = ADAPTER_WIDTH * ADAPTER_TRACE_COLUMNS;
+const ATTENTION_ROWS: usize = 8;
+const ATTENTION_WIDTH: usize = 8;
+const ATTENTION_FLAT_CELLS: usize = ATTENTION_ROWS * ATTENTION_WIDTH;
+const ADAPTER_PRIMARY_COEFF: i64 = 9;
+const ADAPTER_MIX_COEFF: i64 = 5;
+const ADAPTER_DENOMINATOR: i64 = 8;
+const M31_MODULUS: i64 = (1i64 << 31) - 1;
 const EXPECTED_TRACE_COMMITMENT_TREES: usize = 3;
 const EXPECTED_PROOF_COMMITMENTS: usize = 4;
 const SINGLE_PCS_LIFTING_LOG_SIZE: u32 = 19;
@@ -110,10 +126,23 @@ const PUBLIC_INSTANCE_DOMAIN: &str =
 const PROOF_NATIVE_PARAMETER_DOMAIN: &str =
     "ptvm:zkai:native-attention-mlp-single-proof-native-parameter:v1";
 
-const EXPECTED_ADAPTER_STATUS: &str =
-    "STATEMENT_BOUND_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER_NOT_NATIVE_AIR";
+const EXPECTED_ADAPTER_STATUS: &str = "NATIVE_AIR_PROVEN_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER";
+const ADAPTER_COLUMN_IDS: [&str; ADAPTER_TRACE_COLUMNS] = [
+    "zkai/native-attention-mlp/adapter/row-index",
+    "zkai/native-attention-mlp/adapter/primary-source-index",
+    "zkai/native-attention-mlp/adapter/mix-source-index",
+    "zkai/native-attention-mlp/adapter/primary-q8",
+    "zkai/native-attention-mlp/adapter/mix-q8",
+    "zkai/native-attention-mlp/adapter/bias-q8",
+    "zkai/native-attention-mlp/adapter/numerator-q8",
+    "zkai/native-attention-mlp/adapter/output-q8",
+    "zkai/native-attention-mlp/adapter/floor-remainder-q8",
+    "zkai/native-attention-mlp/adapter/floor-remainder-bit-0",
+    "zkai/native-attention-mlp/adapter/floor-remainder-bit-1",
+    "zkai/native-attention-mlp/adapter/floor-remainder-bit-2",
+];
 const EXPECTED_NON_CLAIMS: &[&str] = &[
-    "not a native AIR proof of the attention-output-to-d128-input adapter",
+    "not proof-size savings",
     "not a full transformer block",
     "not a NANOZK proof-size win",
     "not a matched external zkML benchmark",
@@ -128,6 +157,9 @@ const EXPECTED_PROOF_VERIFIER_HARDENING: &[&str] = &[
     "attention fused summary recomputed before relation draw",
     "attention LogUp interaction trace committed in the same proof object",
     "attention output commitment pinned to the statement-bound d128 adapter source",
+    "native adapter AIR proves fixed public projection from d8 attention outputs to d128 RMSNorm input rows",
+    "native adapter AIR proves quotient/remainder semantics for every d128 adapter coordinate",
+    "native adapter AIR remainder bits are boolean-constrained inside the same proof object",
     "d128 RMSNorm-MLP fused input validated before proof construction",
     "d128 MLP input activation commitment pinned to the approved attention-derived vector",
     "d128 residual source anchors pinned to the approved attention-derived input statement",
@@ -152,6 +184,91 @@ const EXPECTED_VALIDATION_COMMANDS: &[&str] = &[
     "just gate",
 ];
 
+#[derive(Debug, Clone)]
+struct D128AttentionAdapterEval {
+    log_size: u32,
+}
+
+impl FrameworkEval for D128AttentionAdapterEval {
+    fn log_size(&self) -> u32 {
+        self.log_size
+    }
+
+    fn max_constraint_log_degree_bound(&self) -> u32 {
+        self.log_size.saturating_add(1)
+    }
+
+    fn evaluate<E: EvalAtRow>(&self, mut eval: E) -> E {
+        let row_index = eval.next_trace_mask();
+        let primary_source_index = eval.next_trace_mask();
+        let mix_source_index = eval.next_trace_mask();
+        let primary_q8 = eval.next_trace_mask();
+        let mix_q8 = eval.next_trace_mask();
+        let bias_q8 = eval.next_trace_mask();
+        let numerator_q8 = eval.next_trace_mask();
+        let output_q8 = eval.next_trace_mask();
+        let floor_remainder_q8 = eval.next_trace_mask();
+        let remainder_bit_0 = eval.next_trace_mask();
+        let remainder_bit_1 = eval.next_trace_mask();
+        let remainder_bit_2 = eval.next_trace_mask();
+
+        let trace_values = [
+            row_index,
+            primary_source_index,
+            mix_source_index,
+            primary_q8.clone(),
+            mix_q8.clone(),
+            bias_q8.clone(),
+            numerator_q8.clone(),
+            output_q8.clone(),
+            floor_remainder_q8.clone(),
+            remainder_bit_0.clone(),
+            remainder_bit_1.clone(),
+            remainder_bit_2.clone(),
+        ];
+        for (column_id, trace_value) in ADAPTER_COLUMN_IDS.iter().zip(trace_values.iter()) {
+            let public_value = eval.get_preprocessed_column(preprocessed_column_id(column_id));
+            eval.add_constraint(trace_value.clone() - public_value);
+        }
+
+        let one = E::F::from(BaseField::from(1u32));
+        for bit in [&remainder_bit_0, &remainder_bit_1, &remainder_bit_2] {
+            eval.add_constraint(bit.clone() * (bit.clone() - one.clone()));
+        }
+        eval.add_constraint(
+            numerator_q8.clone()
+                - E::F::from(BaseField::from(ADAPTER_PRIMARY_COEFF as u32)) * primary_q8
+                - E::F::from(BaseField::from(ADAPTER_MIX_COEFF as u32)) * mix_q8
+                - bias_q8,
+        );
+        eval.add_constraint(
+            numerator_q8
+                - E::F::from(BaseField::from(ADAPTER_DENOMINATOR as u32)) * output_q8
+                - floor_remainder_q8.clone(),
+        );
+        eval.add_constraint(
+            floor_remainder_q8
+                - remainder_bit_0
+                - E::F::from(BaseField::from(2u32)) * remainder_bit_1
+                - E::F::from(BaseField::from(4u32)) * remainder_bit_2,
+        );
+        eval
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct D128AttentionAdapterRow {
+    row_index: usize,
+    primary_source_index: usize,
+    mix_source_index: usize,
+    primary_q8: i64,
+    mix_q8: i64,
+    bias_q8: i64,
+    numerator_q8: i64,
+    output_q8: i64,
+    floor_remainder_q8: i64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ZkAiNativeAttentionMlpSingleProofInput {
@@ -175,6 +292,10 @@ pub struct ZkAiNativeAttentionMlpSingleProofInput {
     pub mlp_output_activation_commitment: String,
     pub mlp_row_count: usize,
     pub adapter_status: String,
+    pub adapter_row_count: usize,
+    pub adapter_value_columns: usize,
+    pub adapter_remainder_bit_columns: usize,
+    pub adapter_trace_cells: usize,
     pub pcs_lifting_log_size: u32,
     pub current_two_proof_frontier_typed_bytes: usize,
     pub current_attention_fused_typed_bytes: usize,
@@ -251,6 +372,10 @@ pub fn build_zkai_native_attention_mlp_single_proof_input(
             + mlp_input.down_projection_row_count
             + mlp_input.residual_add_row_count,
         adapter_status: EXPECTED_ADAPTER_STATUS.to_string(),
+        adapter_row_count: ADAPTER_WIDTH,
+        adapter_value_columns: ADAPTER_VALUE_COLUMNS,
+        adapter_remainder_bit_columns: ADAPTER_REMAINDER_BIT_COLUMNS,
+        adapter_trace_cells: ADAPTER_TRACE_CELLS,
         pcs_lifting_log_size,
         current_two_proof_frontier_typed_bytes: CURRENT_TWO_PROOF_FRONTIER_TYPED_BYTES,
         current_attention_fused_typed_bytes: CURRENT_ATTENTION_FUSED_TYPED_BYTES,
@@ -503,6 +628,27 @@ fn validate_single_input(input: &ZkAiNativeAttentionMlpSingleProofInput) -> Resu
         EXPECTED_ADAPTER_STATUS,
         "adapter status",
     )?;
+    let adapter_rows = attention_adapter_rows(input)?;
+    expect_usize(
+        input.adapter_row_count,
+        adapter_rows.len(),
+        "adapter row count",
+    )?;
+    expect_usize(
+        input.adapter_value_columns,
+        ADAPTER_VALUE_COLUMNS,
+        "adapter value columns",
+    )?;
+    expect_usize(
+        input.adapter_remainder_bit_columns,
+        ADAPTER_REMAINDER_BIT_COLUMNS,
+        "adapter remainder bit columns",
+    )?;
+    expect_usize(
+        input.adapter_trace_cells,
+        ADAPTER_TRACE_CELLS,
+        "adapter trace cells",
+    )?;
     let expected_lifting_log_size = single_pcs_config()?.lifting_log_size.ok_or_else(|| {
         single_error("single proof PCS config must pin an explicit lifting log size")
     })?;
@@ -637,6 +783,8 @@ fn prove_single_proof(input: &ZkAiNativeAttentionMlpSingleProofInput) -> Result<
             &mut allocator,
             AttentionKvD8FusedSoftmaxTableRelation::dummy(),
         );
+    let adapter_component =
+        zkai_native_attention_mlp_adapter_component_with_allocator(&mut allocator);
     let rmsnorm_component = zkai_d128_rmsnorm_public_row_component_with_allocator(&mut allocator);
     let bridge_component =
         zkai_d128_rmsnorm_to_projection_bridge_component_with_allocator(&mut allocator);
@@ -648,6 +796,7 @@ fn prove_single_proof(input: &ZkAiNativeAttentionMlpSingleProofInput) -> Result<
     let residual_add_component = zkai_d128_residual_add_component_with_allocator(&mut allocator);
     let max_constraint_log_degree_bound = attention_placeholder
         .max_constraint_log_degree_bound()
+        .max(adapter_component.max_constraint_log_degree_bound())
         .max(rmsnorm_component.max_constraint_log_degree_bound())
         .max(bridge_component.max_constraint_log_degree_bound())
         .max(gate_value_component.max_constraint_log_degree_bound())
@@ -715,6 +864,8 @@ fn prove_single_proof(input: &ZkAiNativeAttentionMlpSingleProofInput) -> Result<
             &mut allocator,
             lookup_elements,
         );
+    let adapter_component =
+        zkai_native_attention_mlp_adapter_component_with_allocator(&mut allocator);
     let rmsnorm_component = zkai_d128_rmsnorm_public_row_component_with_allocator(&mut allocator);
     let bridge_component =
         zkai_d128_rmsnorm_to_projection_bridge_component_with_allocator(&mut allocator);
@@ -726,6 +877,7 @@ fn prove_single_proof(input: &ZkAiNativeAttentionMlpSingleProofInput) -> Result<
     let residual_add_component = zkai_d128_residual_add_component_with_allocator(&mut allocator);
     let components: Vec<&dyn ComponentProver<SimdBackend>> = vec![
         &attention_component,
+        &adapter_component,
         &rmsnorm_component,
         &bridge_component,
         &gate_value_component,
@@ -913,6 +1065,7 @@ fn combined_preprocessed_trace(
         CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>,
     >,
 ) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    attention_preprocessed.extend(adapter_trace(input)?);
     attention_preprocessed.extend(mlp_trace(input)?);
     Ok(attention_preprocessed)
 }
@@ -921,8 +1074,135 @@ fn combined_base_trace(
     input: &ZkAiNativeAttentionMlpSingleProofInput,
     mut attention_base: ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>,
 ) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    attention_base.extend(adapter_trace(input)?);
     attention_base.extend(mlp_trace(input)?);
     Ok(attention_base)
+}
+
+fn zkai_native_attention_mlp_adapter_component_with_allocator(
+    allocator: &mut TraceLocationAllocator,
+) -> FrameworkComponent<D128AttentionAdapterEval> {
+    FrameworkComponent::new(
+        allocator,
+        D128AttentionAdapterEval {
+            log_size: ADAPTER_LOG_SIZE,
+        },
+        SecureField::from(BaseField::from(0u32)),
+    )
+}
+
+fn adapter_preprocessed_column_ids() -> Vec<PreProcessedColumnId> {
+    ADAPTER_COLUMN_IDS
+        .into_iter()
+        .map(preprocessed_column_id)
+        .collect()
+}
+
+fn adapter_trace(
+    input: &ZkAiNativeAttentionMlpSingleProofInput,
+) -> Result<ColumnVec<CircleEvaluation<SimdBackend, BaseField, BitReversedOrder>>> {
+    let domain = CanonicCoset::new(ADAPTER_LOG_SIZE).circle_domain();
+    let rows = attention_adapter_rows(input)?;
+    let columns: Vec<Vec<BaseField>> = vec![
+        rows.iter().map(|row| field_usize(row.row_index)).collect(),
+        rows.iter()
+            .map(|row| field_usize(row.primary_source_index))
+            .collect(),
+        rows.iter()
+            .map(|row| field_usize(row.mix_source_index))
+            .collect(),
+        rows.iter().map(|row| field_i64(row.primary_q8)).collect(),
+        rows.iter().map(|row| field_i64(row.mix_q8)).collect(),
+        rows.iter().map(|row| field_i64(row.bias_q8)).collect(),
+        rows.iter().map(|row| field_i64(row.numerator_q8)).collect(),
+        rows.iter().map(|row| field_i64(row.output_q8)).collect(),
+        rows.iter()
+            .map(|row| field_i64(row.floor_remainder_q8))
+            .collect(),
+        rows.iter()
+            .map(|row| field_usize((row.floor_remainder_q8 & 1) as usize))
+            .collect(),
+        rows.iter()
+            .map(|row| field_usize(((row.floor_remainder_q8 >> 1) & 1) as usize))
+            .collect(),
+        rows.iter()
+            .map(|row| field_usize(((row.floor_remainder_q8 >> 2) & 1) as usize))
+            .collect(),
+    ];
+    Ok(columns
+        .into_iter()
+        .map(|column| {
+            CircleEvaluation::<SimdBackend, BaseField, NaturalOrder>::new(
+                domain,
+                BaseColumn::from_iter(column),
+            )
+            .bit_reverse()
+        })
+        .collect())
+}
+
+fn attention_adapter_rows(
+    input: &ZkAiNativeAttentionMlpSingleProofInput,
+) -> Result<Vec<D128AttentionAdapterRow>> {
+    if input.attention_source_input.attention_outputs.len() != ATTENTION_ROWS {
+        return Err(single_error("adapter attention output row count drift"));
+    }
+    let mut flat = Vec::with_capacity(ATTENTION_FLAT_CELLS);
+    for row in &input.attention_source_input.attention_outputs {
+        if row.len() != ATTENTION_WIDTH {
+            return Err(single_error("adapter attention output width drift"));
+        }
+        flat.extend(row.iter().copied());
+    }
+    if flat.len() != ATTENTION_FLAT_CELLS {
+        return Err(single_error("adapter attention flat cell count drift"));
+    }
+    let mlp_input_values = input
+        .mlp_input
+        .rmsnorm_input
+        .rows
+        .iter()
+        .map(|row| row.input_q8)
+        .collect::<Vec<_>>();
+    if mlp_input_values.len() != ADAPTER_WIDTH {
+        return Err(single_error("adapter MLP input width drift"));
+    }
+    let mut rows = Vec::with_capacity(ADAPTER_WIDTH);
+    for row_index in 0..ADAPTER_WIDTH {
+        let primary_source_index = row_index % ATTENTION_FLAT_CELLS;
+        let mix_source_index = (17 * row_index + 11) % ATTENTION_FLAT_CELLS;
+        let primary_q8 = flat[primary_source_index];
+        let mix_q8 = flat[mix_source_index];
+        let bias_q8 = adapter_bias_q8(row_index);
+        let numerator_q8 =
+            ADAPTER_PRIMARY_COEFF * primary_q8 + ADAPTER_MIX_COEFF * mix_q8 + bias_q8;
+        let output_q8 = numerator_q8.div_euclid(ADAPTER_DENOMINATOR);
+        let floor_remainder_q8 = numerator_q8.rem_euclid(ADAPTER_DENOMINATOR);
+        if floor_remainder_q8 < 0 || floor_remainder_q8 >= ADAPTER_DENOMINATOR {
+            return Err(single_error("adapter floor remainder range drift"));
+        }
+        if output_q8 != mlp_input_values[row_index] {
+            return Err(single_error(
+                "native adapter output does not match d128 RMSNorm input row",
+            ));
+        }
+        rows.push(D128AttentionAdapterRow {
+            row_index,
+            primary_source_index,
+            mix_source_index,
+            primary_q8,
+            mix_q8,
+            bias_q8,
+            numerator_q8,
+            output_q8,
+            floor_remainder_q8,
+        });
+    }
+    Ok(rows)
+}
+
+fn adapter_bias_q8(index: usize) -> i64 {
+    ((7 * index + 3) % 9) as i64 - 4
 }
 
 fn mlp_trace(
@@ -948,6 +1228,7 @@ fn mlp_trace(
 
 fn combined_preprocessed_column_ids() -> Result<Vec<PreProcessedColumnId>> {
     let mut ids = zkai_attention_kv_native_d8_fused_softmax_table_preprocessed_column_ids();
+    ids.extend(adapter_preprocessed_column_ids());
     ids.extend(zkai_d128_rmsnorm_public_row_preprocessed_column_ids());
     ids.extend(zkai_d128_rmsnorm_to_projection_bridge_preprocessed_column_ids());
     ids.extend(zkai_d128_gate_value_projection_preprocessed_column_ids());
@@ -1006,6 +1287,9 @@ fn combined_component_boxes(
             lookup_elements,
         ),
     );
+    let adapter_component = Box::new(zkai_native_attention_mlp_adapter_component_with_allocator(
+        &mut allocator,
+    ));
     let rmsnorm_component = Box::new(zkai_d128_rmsnorm_public_row_component_with_allocator(
         &mut allocator,
     ));
@@ -1025,6 +1309,7 @@ fn combined_component_boxes(
     ));
     vec![
         attention_component as Box<dyn Component>,
+        adapter_component as Box<dyn Component>,
         rmsnorm_component as Box<dyn Component>,
         bridge_component as Box<dyn Component>,
         gate_value_component as Box<dyn Component>,
@@ -1079,6 +1364,8 @@ fn mix_single_statement(
 ) {
     channel.mix_u64(input.attention_lookup_claims as u64);
     channel.mix_u64(input.attention_table_rows as u64);
+    channel.mix_u64(input.adapter_row_count as u64);
+    channel.mix_u64(input.adapter_trace_cells as u64);
     channel.mix_u64(input.mlp_row_count as u64);
     channel.mix_u64(input.current_two_proof_frontier_typed_bytes as u64);
     channel.mix_u64(input.current_attention_fused_typed_bytes as u64);
@@ -1108,6 +1395,10 @@ fn mix_commitment(channel: &mut Blake2sM31Channel, commitment: &str) {
 fn statement_commitment(input: &ZkAiNativeAttentionMlpSingleProofInput) -> Result<String> {
     let payload = serde_json::json!({
         "adapter_status": input.adapter_status,
+        "adapter_row_count": input.adapter_row_count,
+        "adapter_trace_cells": input.adapter_trace_cells,
+        "adapter_value_columns": input.adapter_value_columns,
+        "adapter_remainder_bit_columns": input.adapter_remainder_bit_columns,
         "attention_lookup_claims": input.attention_lookup_claims,
         "attention_outputs_commitment": input.attention_outputs_commitment,
         "attention_proof_version": input.attention_proof_version,
@@ -1184,6 +1475,18 @@ fn blake2b_commitment_bytes(bytes: &[u8], domain: &str) -> String {
     )
 }
 
+fn preprocessed_column_id(id: &str) -> PreProcessedColumnId {
+    PreProcessedColumnId { id: id.to_string() }
+}
+
+fn field_usize(value: usize) -> BaseField {
+    BaseField::from(u32::try_from(value).expect("field_usize: value out of u32 range"))
+}
+
+fn field_i64(value: i64) -> BaseField {
+    BaseField::from(value.rem_euclid(M31_MODULUS) as u32)
+}
+
 fn expect_eq(actual: &str, expected: &str, label: &str) -> Result<()> {
     if actual != expected {
         return Err(single_error(format!(
@@ -1253,6 +1556,9 @@ mod tests {
             input.mlp_input_activation_commitment,
             ZKAI_D128_ATTENTION_DERIVED_INPUT_ACTIVATION_COMMITMENT
         );
+        assert_eq!(input.adapter_status, EXPECTED_ADAPTER_STATUS);
+        assert_eq!(input.adapter_row_count, ADAPTER_WIDTH);
+        assert_eq!(input.adapter_trace_cells, ADAPTER_TRACE_CELLS);
         assert_eq!(
             input.current_two_proof_frontier_typed_bytes,
             CURRENT_TWO_PROOF_FRONTIER_TYPED_BYTES
@@ -1285,6 +1591,13 @@ mod tests {
             public_instance_commitment(&input.statement_commitment).expect("public instance");
         input.proof_native_parameter_commitment =
             proof_native_parameter_commitment(&input.statement_commitment).expect("params");
+        assert!(validate_single_input(&input).is_err());
+    }
+
+    #[test]
+    fn single_proof_input_rejects_adapter_output_drift() {
+        let mut input = fixture_input();
+        input.mlp_input.rmsnorm_input.rows[0].input_q8 += 1;
         assert!(validate_single_input(&input).is_err());
     }
 

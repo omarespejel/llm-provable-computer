@@ -28,22 +28,22 @@ TSV_OUT = EVIDENCE_DIR / "zkai-native-attention-mlp-lifting-ablation-2026-05.tsv
 
 SCHEMA = "zkai-native-attention-mlp-lifting-ablation-gate-v1"
 DECISION = "NO_GO_LIFTING_ONLY_BREAKTHROUGH_FOR_NATIVE_ATTENTION_MLP_SINGLE_PROOF"
-RESULT = "NARROW_CLAIM_FRI_DECOMMITMENT_OVERHANG_IS_REAL_BUT_TOO_SMALL"
+RESULT = "NARROW_CLAIM_LIFTING_AND_QUERY_OVERHANGS_REAL_BUT_TOO_SMALL"
 ROUTE_ID = "native_attention_mlp_single_proof_pcs_lifting_ablation_v1"
 QUESTION = (
-    "Does the heterogeneous-tree PCS lifting overhang explain why the first native "
-    "attention-plus-MLP single proof barely beats the two-proof frontier?"
+    "Does the heterogeneous-tree PCS lifting overhang explain why the native-adapter "
+    "attention-plus-MLP single proof is larger than the two-proof frontier?"
 )
 CLAIM_BOUNDARY = (
     "ABLATES_TYPED_PROOF_FIELD_GROUPS_FOR_THE_CHECKED_SINGLE_PROOF_OBJECT_"
     "WITHOUT_REGENERATING_A_PROOF_OR_CLAIMING_NANOZK_COMPARABILITY"
 )
 FIRST_BLOCKER = (
-    "Removing the whole positive FRI-decommitment overhang would still leave a "
-    "40,028 typed-byte projected object, 33,128 bytes above NANOZK's paper-reported row."
+    "Removing every positive grouped-field delta would still leave a 40,396 typed-byte "
+    "projected object, 33,496 bytes above NANOZK's paper-reported row."
 )
 NEXT_RESEARCH_STEP = (
-    "attack native adapter AIR, query-value reduction, or a stronger component boundary; "
+    "attack adapter compression, query-value reduction, or a stronger component boundary; "
     "do not spend the next slice only shaving PCS lifting overhead"
 )
 
@@ -65,17 +65,17 @@ NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES = 6_900
 EXPECTED_ROWS = {
     SINGLE_RELATIVE_PATH: {
         "role": "single_native_attention_mlp",
-        "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-probe-v1",
-        "statement_version": "zkai-native-attention-mlp-single-proof-object-statement-v1",
-        "proof_json_size_bytes": 115_924,
-        "local_typed_bytes": 40_668,
+        "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-v1",
+        "statement_version": "zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1",
+        "proof_json_size_bytes": 119_790,
+        "local_typed_bytes": 41_932,
         "grouped": {
             "fixed_overhead": 48,
-            "fri_decommitments": 12_736,
-            "fri_samples": 784,
-            "oods_samples": 11_856,
-            "queries_values": 8_844,
-            "trace_decommitments": 6_400,
+            "fri_decommitments": 13_184,
+            "fri_samples": 800,
+            "oods_samples": 12_240,
+            "queries_values": 9_132,
+            "trace_decommitments": 6_528,
         },
     },
     ATTENTION_RELATIVE_PATH: {
@@ -126,69 +126,77 @@ EXPECTED_GROUP_DELTAS = {
         "single_minus_two_proof_delta_bytes": -48,
     },
     "fri_decommitments": {
-        "single_typed_bytes": 12_736,
+        "single_typed_bytes": 13_184,
         "two_proof_typed_bytes": 12_096,
-        "single_minus_two_proof_delta_bytes": 640,
+        "single_minus_two_proof_delta_bytes": 1_088,
     },
     "fri_samples": {
-        "single_typed_bytes": 784,
+        "single_typed_bytes": 800,
         "two_proof_typed_bytes": 992,
-        "single_minus_two_proof_delta_bytes": -208,
+        "single_minus_two_proof_delta_bytes": -192,
     },
     "oods_samples": {
-        "single_typed_bytes": 11_856,
+        "single_typed_bytes": 12_240,
         "two_proof_typed_bytes": 11_984,
-        "single_minus_two_proof_delta_bytes": -128,
+        "single_minus_two_proof_delta_bytes": 256,
     },
     "queries_values": {
-        "single_typed_bytes": 8_844,
+        "single_typed_bytes": 9_132,
         "two_proof_typed_bytes": 8_940,
-        "single_minus_two_proof_delta_bytes": -96,
+        "single_minus_two_proof_delta_bytes": 192,
     },
     "trace_decommitments": {
-        "single_typed_bytes": 6_400,
+        "single_typed_bytes": 6_528,
         "two_proof_typed_bytes": 6_592,
-        "single_minus_two_proof_delta_bytes": -192,
+        "single_minus_two_proof_delta_bytes": -64,
     },
 }
 
 EXPECTED_SUMMARY = {
-    "single_proof_typed_bytes": 40_668,
+    "single_proof_typed_bytes": 41_932,
     "two_proof_frontier_typed_bytes": 40_700,
-    "current_typed_saving_vs_two_proof_bytes": 32,
-    "current_typed_ratio_vs_two_proof": 0.999214,
+    "current_typed_saving_vs_two_proof_bytes": -1_232,
+    "current_typed_ratio_vs_two_proof": 1.03027,
     "positive_overhang_group": "fri_decommitments",
-    "fri_decommitment_overhang_bytes": 640,
-    "negative_delta_bytes": -672,
-    "projected_typed_bytes_without_fri_overhang": 40_028,
-    "projected_saving_vs_two_proof_bytes": 672,
-    "projected_saving_vs_two_proof_share": 0.016511,
-    "projected_ratio_vs_two_proof": 0.983489,
+    "positive_overhang_groups": ["fri_decommitments", "oods_samples", "queries_values"],
+    "positive_overhang_total_bytes": 1_536,
+    "fri_decommitment_overhang_bytes": 1_088,
+    "negative_delta_bytes": -304,
+    "projected_typed_bytes_without_fri_overhang": 40_844,
+    "projected_saving_vs_two_proof_bytes": -144,
+    "projected_saving_vs_two_proof_share": -0.003538,
+    "projected_ratio_vs_two_proof": 1.003538,
+    "projected_typed_bytes_without_all_positive_overhangs": 40_396,
+    "projected_all_positive_overhang_saving_vs_two_proof_bytes": 304,
+    "projected_all_positive_overhang_ratio_vs_two_proof": 0.992531,
+    "projected_all_positive_overhang_gap_to_nanozk_reported_bytes": 33_496,
     "nanozk_reported_d128_block_proof_bytes": 6_900,
-    "current_gap_to_nanozk_reported_bytes": 33_768,
-    "current_reduction_needed_to_nanozk_share": 0.830333,
-    "projected_gap_to_nanozk_reported_bytes": 33_128,
-    "projected_reduction_needed_to_nanozk_share": 0.827621,
-    "projected_ratio_vs_nanozk_reported": 5.801159,
+    "current_gap_to_nanozk_reported_bytes": 35_032,
+    "current_reduction_needed_to_nanozk_share": 0.835448,
+    "projected_gap_to_nanozk_reported_bytes": 33_944,
+    "projected_reduction_needed_to_nanozk_share": 0.831065,
+    "projected_ratio_vs_nanozk_reported": 5.91942,
+    "projected_all_positive_overhang_ratio_vs_nanozk_reported": 5.854493,
     "lifting_only_breakthrough_status": "NO_GO",
-    "next_attack": "native_adapter_air_or_query_value_reduction_or_boundary_restructure",
+    "next_attack": "adapter_compression_or_query_value_reduction_or_boundary_restructure",
 }
 
 MECHANISM = (
-    "the one-proof object saves fixed overhead, FRI samples, OODS samples, query values, and trace decommitments",
-    "the only positive typed-field delta versus the two-proof frontier is FRI decommitments",
-    "that positive delta is 640 typed bytes and is consistent with the heterogeneous-tree lifting cost",
-    "removing all 640 bytes would improve the object, but only to 40,028 typed bytes",
-    "40,028 typed bytes is still 5.801159x NANOZK's paper-reported 6,900 byte d128 row",
+    "the native-adapter one-proof object saves fixed overhead, FRI samples, and trace decommitments",
+    "the positive typed-field deltas versus the two-proof frontier are FRI decommitments, OODS samples, and query values",
+    "those positive deltas total 1536 typed bytes, with 1088 bytes from FRI decommitments",
+    "removing only the FRI-decommitment overhang would still leave a 40,844 typed-byte object",
+    "removing every positive grouped-field delta would still leave a 40,396 typed-byte object",
+    "40,396 typed bytes is still 5.854493x NANOZK's paper-reported 6,900 byte d128 row",
     "therefore the next serious attack must change the proved surface or query/opening economics, not only the lifting knob",
 )
 
 NON_CLAIMS = (
     "not a regenerated proof after removing lifting overhead",
-    "not proof that the 640 bytes are removable without verifier changes",
+    "not proof that the 1536 positive grouped-field bytes are removable without verifier changes",
     "not a NANOZK proof-size win",
     "not a matched NANOZK workload or benchmark",
-    "not native AIR proof of the attention-output-to-d128-input adapter",
+    "not proof-size savings from native adapter AIR",
     "not a full transformer block proof",
     "not timing evidence",
     "not recursion or proof-carrying data",
@@ -403,32 +411,43 @@ def group_deltas() -> dict[str, dict[str, int]]:
 
 def summary_from_groups(groups: dict[str, dict[str, int]]) -> dict[str, Any]:
     positive = [(name, values["single_minus_two_proof_delta_bytes"]) for name, values in groups.items() if values["single_minus_two_proof_delta_bytes"] > 0]
-    if positive != [("fri_decommitments", 640)]:
+    if positive != [("fri_decommitments", 1_088), ("oods_samples", 256), ("queries_values", 192)]:
         raise LiftingAblationError("positive overhang drift")
     negative_delta = sum(values["single_minus_two_proof_delta_bytes"] for values in groups.values() if values["single_minus_two_proof_delta_bytes"] < 0)
     single_typed = EXPECTED_ROWS[SINGLE_RELATIVE_PATH]["local_typed_bytes"]
     two_typed = EXPECTED_ROWS[ATTENTION_RELATIVE_PATH]["local_typed_bytes"] + EXPECTED_ROWS[MLP_RELATIVE_PATH]["local_typed_bytes"]
+    positive_total = sum(delta for _name, delta in positive)
     projected = int(single_typed) - positive[0][1]
+    projected_all_positive = int(single_typed) - positive_total
     summary = {
         "single_proof_typed_bytes": single_typed,
         "two_proof_frontier_typed_bytes": two_typed,
         "current_typed_saving_vs_two_proof_bytes": int(two_typed) - int(single_typed),
         "current_typed_ratio_vs_two_proof": rounded_ratio(int(single_typed), int(two_typed)),
         "positive_overhang_group": positive[0][0],
+        "positive_overhang_groups": [name for name, _delta in positive],
+        "positive_overhang_total_bytes": positive_total,
         "fri_decommitment_overhang_bytes": positive[0][1],
         "negative_delta_bytes": negative_delta,
         "projected_typed_bytes_without_fri_overhang": projected,
         "projected_saving_vs_two_proof_bytes": int(two_typed) - projected,
         "projected_saving_vs_two_proof_share": rounded_ratio(int(two_typed) - projected, int(two_typed)),
         "projected_ratio_vs_two_proof": rounded_ratio(projected, int(two_typed)),
+        "projected_typed_bytes_without_all_positive_overhangs": projected_all_positive,
+        "projected_all_positive_overhang_saving_vs_two_proof_bytes": int(two_typed) - projected_all_positive,
+        "projected_all_positive_overhang_ratio_vs_two_proof": rounded_ratio(projected_all_positive, int(two_typed)),
+        "projected_all_positive_overhang_gap_to_nanozk_reported_bytes": projected_all_positive - NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES,
         "nanozk_reported_d128_block_proof_bytes": NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES,
         "current_gap_to_nanozk_reported_bytes": int(single_typed) - NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES,
         "current_reduction_needed_to_nanozk_share": rounded_ratio(int(single_typed) - NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES, int(single_typed)),
         "projected_gap_to_nanozk_reported_bytes": projected - NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES,
         "projected_reduction_needed_to_nanozk_share": rounded_ratio(projected - NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES, projected),
         "projected_ratio_vs_nanozk_reported": rounded_ratio(projected, NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES),
+        "projected_all_positive_overhang_ratio_vs_nanozk_reported": rounded_ratio(
+            projected_all_positive, NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES
+        ),
         "lifting_only_breakthrough_status": "NO_GO",
-        "next_attack": "native_adapter_air_or_query_value_reduction_or_boundary_restructure",
+        "next_attack": "adapter_compression_or_query_value_reduction_or_boundary_restructure",
     }
     if summary != EXPECTED_SUMMARY:
         raise LiftingAblationError("summary drift")
@@ -438,7 +457,7 @@ def summary_from_groups(groups: dict[str, dict[str, int]]) -> dict[str, Any]:
 def validate_single_gate(single_gate: dict[str, Any]) -> None:
     if single_gate.get("decision") != "GO_NATIVE_ATTENTION_MLP_SINGLE_STWO_PROOF_OBJECT_VERIFIES":
         raise LiftingAblationError("single gate decision drift")
-    if single_gate.get("result") != "NARROW_CLAIM_SINGLE_PROOF_OBJECT_BARELY_BEATS_TWO_PROOF_FRONTIER":
+    if single_gate.get("result") != "NARROW_CLAIM_NATIVE_ADAPTER_AIR_VERIFIES_WITH_TYPED_SIZE_COST":
         raise LiftingAblationError("single gate result drift")
     summary = require_dict(single_gate.get("summary"), "single gate summary")
     for key in (
@@ -450,11 +469,11 @@ def validate_single_gate(single_gate: dict[str, Any]) -> None:
         "pcs_lifting_log_size",
     ):
         expected = {
-            "single_proof_typed_bytes": 40_668,
+            "single_proof_typed_bytes": 41_932,
             "two_proof_frontier_typed_bytes": 40_700,
-            "typed_saving_vs_two_proof_bytes": 32,
-            "typed_gap_to_nanozk_reported_bytes": 33_768,
-            "typed_reduction_needed_to_nanozk_reported_share": 0.830333,
+            "typed_saving_vs_two_proof_bytes": -1_232,
+            "typed_gap_to_nanozk_reported_bytes": 35_032,
+            "typed_reduction_needed_to_nanozk_reported_share": 0.835448,
             "pcs_lifting_log_size": 19,
         }[key]
         if summary.get(key) != expected:
@@ -712,7 +731,7 @@ def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
 def write_tsv(path: pathlib.Path, payload: dict[str, Any]) -> None:
     row = {column: payload["summary"].get(column, payload.get(column)) for column in TSV_COLUMNS}
     handle = io.StringIO(newline="")
-    writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t")
+    writer = csv.DictWriter(handle, fieldnames=TSV_COLUMNS, delimiter="\t", lineterminator="\n")
     writer.writeheader()
     writer.writerow(row)
     write_bytes_atomic(path, handle.getvalue().encode("utf-8"), "lifting ablation TSV")
