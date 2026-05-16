@@ -349,8 +349,8 @@ def rows_by_path(accounting: dict[str, Any], expected_paths: set[str], label: st
     if not isinstance(rows, list):
         raise LiftingAblationError(f"{label} rows must be a list")
     result: dict[str, dict[str, Any]] = {}
-    for row in rows:
-        row = require_dict(row, f"{label} row")
+    for raw_row in rows:
+        row = require_dict(raw_row, f"{label} row")
         relative = row.get("evidence_relative_path")
         if relative in expected_paths:
             result[str(relative)] = row
