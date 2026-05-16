@@ -102,6 +102,18 @@ MLP-side proof-size evidence, not attention plus MLP in one native proof object,
 not a full transformer block proof, and not a NANOZK benchmark win. See
 `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`.
 
+Latest attribution follow-up: the exact six-envelope derived d128 MLP-side
+fusion saving is now attributed by typed proof-field group. The gate records
+`36,768` typed bytes saved, with `33,280` typed bytes (`90.5135%`) coming from
+FRI plus trace decommitment plumbing. FRI decommitments alone account for
+`20,512` typed bytes (`55.7876%`). The bounded compression probe is a NO-GO for
+dropping that largest group inside the same proof object because it would drop
+verifier opening witness material. Treat this as a narrowed, stronger mechanism
+claim: the next real compression frontier is a larger native boundary,
+especially attention plus RMSNorm-MLP, not squeezing the current MLP fused proof
+by removing verifier-required opening data. See
+`docs/engineering/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05-16.md`.
+
 ### 1. Publication/default lane
 
 - Source of truth: `docs/paper/` and the shipped carry-free backend path.

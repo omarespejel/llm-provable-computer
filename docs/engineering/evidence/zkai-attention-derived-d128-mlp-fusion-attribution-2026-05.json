@@ -1,0 +1,385 @@
+{
+  "aggregate": {
+    "available_separate_component_count": 6,
+    "available_separate_proof_bytes": 198937,
+    "available_separate_typed_bytes": 59344,
+    "derived_fused_proof_bytes": 68560,
+    "derived_fused_typed_bytes": 22576,
+    "json_ratio_vs_separate": 0.344632,
+    "json_saving_vs_separate_bytes": 130377,
+    "matched_six_separate_derived_baseline_status": "COMPLETE_EXACT_SIX_DERIVED_SEPARATE_ENVELOPES",
+    "typed_ratio_vs_separate": 0.380426,
+    "typed_saving_vs_separate_bytes": 36768
+  },
+  "claim_boundary": "ATTRIBUTES_EXACT_DERIVED_D128_MLP_SIDE_FUSION_SAVING_TO_TYPED_STWO_PROOF_FIELDS_NOT_A_NEW_PROOF_OBJECT_NOT_A_NANOZK_BENCHMARK",
+  "component_roles": {
+    "zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json": {
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 3232,
+        "fri_samples": 416,
+        "oods_samples": 416,
+        "queries_values": 312,
+        "trace_decommitments": 2496
+      },
+      "local_typed_bytes": 6920,
+      "proof_backend_version": "stwo-d128-activation-swiglu-air-proof-v1",
+      "proof_json_size_bytes": 24455,
+      "role": "separate_activation_swiglu",
+      "statement_version": "zkai-d128-activation-swiglu-statement-v1"
+    },
+    "zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json": {
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 10656,
+        "fri_samples": 736,
+        "oods_samples": 320,
+        "queries_values": 240,
+        "trace_decommitments": 4416
+      },
+      "local_typed_bytes": 16416,
+      "proof_backend_version": "stwo-d128-down-projection-air-proof-v1",
+      "proof_json_size_bytes": 58151,
+      "role": "separate_down_projection",
+      "statement_version": "zkai-d128-down-projection-statement-v1"
+    },
+    "zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json": {
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 12128,
+        "fri_samples": 784,
+        "oods_samples": 352,
+        "queries_values": 264,
+        "trace_decommitments": 4704
+      },
+      "local_typed_bytes": 18280,
+      "proof_backend_version": "stwo-d128-gate-value-projection-air-proof-v1",
+      "proof_json_size_bytes": 64651,
+      "role": "separate_gate_value_projection",
+      "statement_version": "zkai-d128-gate-value-projection-statement-v1"
+    },
+    "zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json": {
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1856,
+        "fri_samples": 320,
+        "oods_samples": 256,
+        "queries_values": 192,
+        "trace_decommitments": 1920
+      },
+      "local_typed_bytes": 4592,
+      "proof_backend_version": "stwo-d128-residual-add-air-proof-v1",
+      "proof_json_size_bytes": 16042,
+      "role": "separate_residual_add",
+      "statement_version": "zkai-d128-residual-add-statement-v1"
+    },
+    "zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json": {
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1856,
+        "fri_samples": 320,
+        "oods_samples": 2848,
+        "queries_values": 2136,
+        "trace_decommitments": 1920
+      },
+      "local_typed_bytes": 9128,
+      "proof_backend_version": "stwo-d128-rmsnorm-public-row-air-proof-v3",
+      "proof_json_size_bytes": 21632,
+      "role": "separate_rmsnorm_public_rows",
+      "statement_version": "zkai-d128-rmsnorm-public-row-statement-v2"
+    },
+    "zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json": {
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 1568,
+        "fri_samples": 272,
+        "oods_samples": 224,
+        "queries_values": 168,
+        "trace_decommitments": 1728
+      },
+      "local_typed_bytes": 4008,
+      "proof_backend_version": "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1",
+      "proof_json_size_bytes": 14006,
+      "role": "separate_rmsnorm_projection_bridge",
+      "statement_version": "zkai-d128-rmsnorm-to-projection-bridge-statement-v1"
+    },
+    "zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json": {
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 10784,
+        "fri_samples": 720,
+        "oods_samples": 3776,
+        "queries_values": 2832,
+        "trace_decommitments": 4416
+      },
+      "local_typed_bytes": 22576,
+      "proof_backend_version": "stwo-d128-rmsnorm-mlp-fused-air-proof-v1",
+      "proof_json_size_bytes": 68560,
+      "role": "fused_rmsnorm_mlp",
+      "statement_version": "zkai-d128-rmsnorm-mlp-fused-statement-v1"
+    }
+  },
+  "decision": "NARROW_CLAIM_EXACT_DERIVED_MLP_FUSION_SAVING_IS_SHARED_OPENING_PLUMBING",
+  "evidence": {
+    "accounting_json": "docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
+    "attribution_json": "docs/engineering/evidence/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05.json",
+    "attribution_tsv": "docs/engineering/evidence/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05.tsv",
+    "route_gate_json": "docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json"
+  },
+  "first_blocker": "The largest saved buckets are verifier opening/decommitment witnesses; reducing them safely requires a new shared native proof object boundary, with attention-plus-MLP as the next frontier.",
+  "group_attribution": {
+    "fixed_overhead": {
+      "fused_typed_bytes": 48,
+      "saved_share_of_total": 0.006527,
+      "saved_typed_bytes": 240,
+      "separate_typed_bytes": 288
+    },
+    "fri_decommitments": {
+      "fused_typed_bytes": 10784,
+      "saved_share_of_total": 0.557876,
+      "saved_typed_bytes": 20512,
+      "separate_typed_bytes": 31296
+    },
+    "fri_samples": {
+      "fused_typed_bytes": 720,
+      "saved_share_of_total": 0.057876,
+      "saved_typed_bytes": 2128,
+      "separate_typed_bytes": 2848
+    },
+    "oods_samples": {
+      "fused_typed_bytes": 3776,
+      "saved_share_of_total": 0.017406,
+      "saved_typed_bytes": 640,
+      "separate_typed_bytes": 4416
+    },
+    "queries_values": {
+      "fused_typed_bytes": 2832,
+      "saved_share_of_total": 0.013055,
+      "saved_typed_bytes": 480,
+      "separate_typed_bytes": 3312
+    },
+    "trace_decommitments": {
+      "fused_typed_bytes": 4416,
+      "saved_share_of_total": 0.347258,
+      "saved_typed_bytes": 12768,
+      "separate_typed_bytes": 17184
+    }
+  },
+  "mechanism": [
+    "the fused proof pays one FRI/decommitment surface for six adjacent MLP-side relations",
+    "the six separate proof objects repeat FRI and trace Merkle path material",
+    "90.5135% of the typed saving comes from FRI plus trace decommitment groups",
+    "the largest saved group is FRI decommitments at 20,512 typed bytes",
+    "dropping that group inside the same proof object would remove verifier opening witness material",
+    "the honest next frontier is a larger native object boundary, especially attention plus RMSNorm-MLP"
+  ],
+  "mutation_inventory": {
+    "all_mutations_rejected": true,
+    "case_count": 19,
+    "cases": [
+      "schema_relabeling",
+      "decision_overclaim",
+      "result_overclaim",
+      "claim_boundary_overclaim",
+      "fused_typed_metric_smuggling",
+      "separate_typed_metric_smuggling",
+      "typed_saving_metric_smuggling",
+      "group_saved_metric_smuggling",
+      "largest_group_relabeling",
+      "opening_share_smuggling",
+      "compression_probe_overclaim",
+      "mechanism_removed",
+      "non_claim_removed",
+      "validation_command_drift",
+      "evidence_path_drift",
+      "component_role_removed",
+      "matched_baseline_status_drift",
+      "payload_commitment_relabeling",
+      "unknown_field_injection"
+    ]
+  },
+  "mutation_result": {
+    "all_mutations_rejected": true,
+    "case_count": 19,
+    "cases": [
+      {
+        "error": "schema drift",
+        "name": "schema_relabeling",
+        "rejected": true
+      },
+      {
+        "error": "decision drift",
+        "name": "decision_overclaim",
+        "rejected": true
+      },
+      {
+        "error": "result drift",
+        "name": "result_overclaim",
+        "rejected": true
+      },
+      {
+        "error": "claim_boundary drift",
+        "name": "claim_boundary_overclaim",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "fused_typed_metric_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "separate_typed_metric_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "typed_saving_metric_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "group attribution mismatch",
+        "name": "group_saved_metric_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "summary mismatch",
+        "name": "largest_group_relabeling",
+        "rejected": true
+      },
+      {
+        "error": "summary mismatch",
+        "name": "opening_share_smuggling",
+        "rejected": true
+      },
+      {
+        "error": "summary mismatch",
+        "name": "compression_probe_overclaim",
+        "rejected": true
+      },
+      {
+        "error": "mechanism mismatch",
+        "name": "mechanism_removed",
+        "rejected": true
+      },
+      {
+        "error": "non-claims mismatch",
+        "name": "non_claim_removed",
+        "rejected": true
+      },
+      {
+        "error": "validation commands mismatch",
+        "name": "validation_command_drift",
+        "rejected": true
+      },
+      {
+        "error": "evidence mismatch",
+        "name": "evidence_path_drift",
+        "rejected": true
+      },
+      {
+        "error": "component roles mismatch",
+        "name": "component_role_removed",
+        "rejected": true
+      },
+      {
+        "error": "aggregate mismatch",
+        "name": "matched_baseline_status_drift",
+        "rejected": true
+      },
+      {
+        "error": "payload commitment mismatch",
+        "name": "payload_commitment_relabeling",
+        "rejected": true
+      },
+      {
+        "error": "payload keys drift: ['mutation_result', 'unexpected']",
+        "name": "unknown_field_injection",
+        "rejected": true
+      }
+    ]
+  },
+  "next_research_step": "attempt a value-connected attention-plus-RMSNorm-MLP native proof object, or record a typed handoff boundary if attention should stay separate",
+  "non_claims": [
+    "not attention plus MLP in one native proof object",
+    "not a new proof object",
+    "not a smaller fused MLP proof",
+    "not a NANOZK benchmark win",
+    "not a matched external zkML benchmark",
+    "not upstream Stwo serialization",
+    "not timing evidence",
+    "not recursion or proof-carrying data",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "sha256:e4361b5c559cc9ba88957370626a113bea2c34a2c51f8cdbda90a762d0da16a5",
+  "question": "Is the exact six-envelope derived d128 RMSNorm-MLP fusion saving mostly removable internal fat, or mostly verifier-required STARK opening/decommitment plumbing?",
+  "ranked_saved_groups": [
+    {
+      "fused_typed_bytes": 10784,
+      "group": "fri_decommitments",
+      "saved_share_of_total": 0.557876,
+      "saved_typed_bytes": 20512,
+      "separate_typed_bytes": 31296
+    },
+    {
+      "fused_typed_bytes": 4416,
+      "group": "trace_decommitments",
+      "saved_share_of_total": 0.347258,
+      "saved_typed_bytes": 12768,
+      "separate_typed_bytes": 17184
+    },
+    {
+      "fused_typed_bytes": 720,
+      "group": "fri_samples",
+      "saved_share_of_total": 0.057876,
+      "saved_typed_bytes": 2128,
+      "separate_typed_bytes": 2848
+    },
+    {
+      "fused_typed_bytes": 3776,
+      "group": "oods_samples",
+      "saved_share_of_total": 0.017406,
+      "saved_typed_bytes": 640,
+      "separate_typed_bytes": 4416
+    },
+    {
+      "fused_typed_bytes": 2832,
+      "group": "queries_values",
+      "saved_share_of_total": 0.013055,
+      "saved_typed_bytes": 480,
+      "separate_typed_bytes": 3312
+    },
+    {
+      "fused_typed_bytes": 48,
+      "group": "fixed_overhead",
+      "saved_share_of_total": 0.006527,
+      "saved_typed_bytes": 240,
+      "separate_typed_bytes": 288
+    }
+  ],
+  "result": "NO_GO_SAFE_INTERNAL_COMPRESSION_BEFORE_NEW_ATTENTION_PLUS_MLP_OBJECT",
+  "route_id": "attention_derived_d128_rmsnorm_mlp_exact_six_envelope_fusion_attribution",
+  "schema": "zkai-attention-derived-d128-mlp-fusion-attribution-gate-v1",
+  "summary": {
+    "compression_probe_result": "NO_GO_DROP_FRI_DECOMMITMENTS_WOULD_DROP_VERIFIER_OPENING_WITNESS",
+    "fri_plus_trace_plus_fri_sample_saved_bytes": 35408,
+    "fri_plus_trace_plus_fri_sample_share": 0.963011,
+    "largest_saved_group": "fri_decommitments",
+    "largest_saved_group_bytes": 20512,
+    "largest_saved_group_share": 0.557876,
+    "opening_plumbing_saved_bytes": 33280,
+    "opening_plumbing_share": 0.905135,
+    "safe_compression_status": "NO_SAFE_INTERNAL_BUCKET_REMOVED_WITHOUT_CHANGING_PROOF_OBJECT_CLASS",
+    "sample_and_query_saved_bytes": 3248,
+    "sample_and_query_share": 0.088338
+  },
+  "validation_commands": [
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-public-row-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
+    "python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv",
+    "python3 scripts/zkai_attention_derived_d128_mlp_fusion_attribution_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_attention_derived_d128_mlp_fusion_attribution_gate.py scripts/tests/test_zkai_attention_derived_d128_mlp_fusion_attribution_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_mlp_fusion_attribution_gate",
+    "git diff --check",
+    "just gate-fast"
+  ]
+}
