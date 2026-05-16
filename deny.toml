@@ -20,7 +20,7 @@ ignore = [
   { id = "RUSTSEC-2025-0141", reason = "burn 0.20.1 still depends on bincode 2.0.1; no compatible patch release is available and the burn-model surface remains optional." },
   { id = "RUSTSEC-2024-0388", reason = "stwo 2.2.0 transitively depends on derivative 2.2.0 via starknet-ff 0.3.7; no compatible patch release is available." },
   { id = "RUSTSEC-2024-0436", reason = "paste 1.0.15 remains in the ark-ff 0.5.0 and ratatui 0.29.0 dependency chains; no compatible patch release is available." },
-  { id = "RUSTSEC-2026-0002", reason = "lru 0.12.5 IterMut Stacked-Borrows soundness issue is reachable only via ratatui 0.29.0; the TUI surface is not used in proving paths and Miri suite covers the proving paths. Remove when ratatui upgrades to lru >= 0.13." },
+  { id = "RUSTSEC-2026-0002", reason = "Temporary scoped allowlist: lru 0.12.5 IterMut Stacked-Borrows soundness issue is reachable only via ratatui 0.29.0; the TUI surface is not used in proving, verification, or evidence generation paths. Remove via issue #628 when ratatui removes lru 0.12.5 or upgrades to lru >= 0.16.3." },
 ]
 
 [licenses]

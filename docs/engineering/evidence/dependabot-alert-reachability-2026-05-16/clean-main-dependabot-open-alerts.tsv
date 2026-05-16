@@ -1,0 +1,14 @@
+17	high	rust	gix-fs	<= 0.21.0	GHSA-f89h-2fjh-2r9q
+16	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+15	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+14	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+13	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+12	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+11	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+10	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+9	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+8	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+7	low	rust	tracing-subscriber	< 0.3.20	GHSA-xwfj-jgwm-7wp5
+6	high	npm	underscore	<= 1.13.7	GHSA-qpx9-hpmf-5gmw
+4	low	rust	lru	>= 0.9.0, < 0.16.3	GHSA-rhfx-m35p-ff5j
+2	low	rust	lru	>= 0.9.0, < 0.16.3	GHSA-rhfx-m35p-ff5j
