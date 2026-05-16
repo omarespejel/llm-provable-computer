@@ -80,6 +80,8 @@ EXPECTED_MLP = {
     "derived_fused_proof_bytes": 68_560,
     "typed_saving_vs_available_separate_bytes": 36_768,
     "typed_ratio_vs_available_separate": 0.380426,
+    "json_saving_vs_available_separate_bytes": 130_377,
+    "json_ratio_vs_available_separate": 0.344632,
     "matched_six_separate_derived_baseline_status": "COMPLETE_EXACT_SIX_DERIVED_SEPARATE_ENVELOPES",
     "remaining_no_go_result": "NO-GO for attention plus MLP in one native proof object or matched external benchmark",
 }
@@ -374,9 +376,12 @@ def build_routes(context: dict[str, Any]) -> dict[str, Any]:
     bounded_plus_mlp_json = bounded["proof_json_size_bytes"] + mlp_fused["proof_json_size_bytes"]
     bounded_plus_six_mlp_typed = bounded["typed_size_estimate_bytes"] + mlp_summary["available_separate_typed_bytes"]
     bounded_plus_six_mlp_json = bounded["proof_json_size_bytes"] + mlp_summary["available_separate_proof_bytes"]
+    mlp_json_saving = mlp_summary["available_separate_proof_bytes"] - mlp_summary["derived_fused_proof_bytes"]
     nano_gap = attention_fused_plus_mlp_typed - NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES
     if nano_gap <= 0:
         raise AttentionMlpBoundaryFrontierError("unexpected NANOZK gap non-positive")
+    if mlp_json_saving != mlp_summary["json_saving_vs_available_separate_bytes"]:
+        raise AttentionMlpBoundaryFrontierError("MLP JSON saving arithmetic drift")
 
     return {
         "attention_bounded_plus_derived_mlp_fused_separate_proofs": {
@@ -409,9 +414,7 @@ def build_routes(context: dict[str, Any]) -> dict[str, Any]:
             "typed_saving_vs_six_separate_mlp_plus_attention_fused_bytes": mlp_summary[
                 "typed_saving_vs_available_separate_bytes"
             ],
-            "json_saving_vs_six_separate_mlp_plus_attention_fused_bytes": mlp_summary[
-                "json_saving_vs_available_separate_bytes"
-            ],
+            "json_saving_vs_six_separate_mlp_plus_attention_fused_bytes": mlp_json_saving,
             "typed_ratio_vs_six_separate_mlp_plus_attention_fused": ratio(
                 attention_fused_plus_mlp_typed, attention_fused_plus_six_mlp_typed
             ),
@@ -586,7 +589,8 @@ def validate_payload(payload: Any, *, expected: dict[str, Any] | None = None, co
 MutationFn = Callable[[dict[str, Any]], None]
 
 
-def _refresh_route_and_payload(payload: dict[str, Any]) -> None:
+def refresh_route_and_payload(payload: dict[str, Any]) -> None:
+    """Refresh derived commitments after route-only test mutations."""
     payload["route_commitment"] = route_commitment(payload["routes"])
     refresh_payload_commitment(payload)
 
@@ -646,7 +650,7 @@ def run_mutations(core: dict[str, Any], context: dict[str, Any]) -> dict[str, An
         mutated = copy.deepcopy(core)
         mutator(mutated)
         if refresh:
-            _refresh_route_and_payload(mutated)
+            refresh_route_and_payload(mutated)
         try:
             validate_payload(mutated, expected=core, context=context)
         except AttentionMlpBoundaryFrontierError as err:
