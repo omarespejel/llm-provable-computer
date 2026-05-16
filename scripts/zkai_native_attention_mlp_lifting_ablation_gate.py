@@ -276,7 +276,7 @@ def payload_commitment(payload: dict[str, Any]) -> str:
     return "sha256:" + hashlib.sha256(canonical_bytes(canonical)).hexdigest()
 
 
-def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple[Any, int]:
+def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple[Any, int, bytes]:
     if path.is_symlink():
         raise LiftingAblationError(f"{label} must not be a symlink: {path}")
     resolved = path.resolve(strict=False)
@@ -300,7 +300,17 @@ def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple
             raise LiftingAblationError(f"{label} changed while opening: {path}")
         if post.st_size > max_bytes:
             raise LiftingAblationError(f"{label} exceeds max size: got {post.st_size} bytes")
-        raw = os.read(fd, max_bytes + 1)
+        chunks: list[bytes] = []
+        total = 0
+        while total < post.st_size:
+            chunk = os.read(fd, min(65_536, int(post.st_size) - total))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            total += len(chunk)
+            if total > max_bytes:
+                raise LiftingAblationError(f"{label} exceeds max size while reading")
+        raw = b"".join(chunks)
     finally:
         if fd is not None:
             os.close(fd)
@@ -309,24 +319,21 @@ def read_json_with_size(path: pathlib.Path, max_bytes: int, label: str) -> tuple
     if len(raw) != post.st_size:
         raise LiftingAblationError(f"{label} changed while reading: {path}")
     try:
-        return json.loads(raw.decode("utf-8"), parse_constant=reject_json_constant), int(post.st_size)
+        return json.loads(raw.decode("utf-8"), parse_constant=reject_json_constant), int(post.st_size), raw
     except (UnicodeDecodeError, json.JSONDecodeError) as err:
         raise LiftingAblationError(f"{label} is not JSON: {err}") from err
 
 
 def read_json(path: pathlib.Path, max_bytes: int, label: str) -> Any:
-    payload, _size = read_json_with_size(path, max_bytes, label)
+    payload, _size, _raw = read_json_with_size(path, max_bytes, label)
     return payload
 
 
-def sha256_file(path: pathlib.Path, max_bytes: int, label: str) -> str:
-    _payload, size = read_json_with_size(path, max_bytes, label)
-    resolved = path.resolve(strict=False)
-    with open(resolved, "rb") as handle:
-        raw = handle.read()
+def sha256_file(path: pathlib.Path, max_bytes: int, label: str) -> tuple[str, int]:
+    _payload, size, raw = read_json_with_size(path, max_bytes, label)
     if len(raw) != size:
         raise LiftingAblationError(f"{label} changed while hashing")
-    return hashlib.sha256(raw).hexdigest()
+    return hashlib.sha256(raw).hexdigest(), size
 
 
 def require_dict(value: Any, label: str) -> dict[str, Any]:
@@ -477,11 +484,12 @@ def source_artifacts() -> list[dict[str, str | int]]:
     )
     artifacts: list[dict[str, str | int]] = []
     for path, max_bytes, label in specs:
+        digest, size = sha256_file(path, max_bytes, label)
         artifacts.append(
             {
                 "path": path.relative_to(ROOT).as_posix(),
-                "sha256": sha256_file(path, max_bytes, label),
-                "size_bytes": path.stat().st_size,
+                "sha256": digest,
+                "size_bytes": size,
             }
         )
     return artifacts
