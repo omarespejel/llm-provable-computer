@@ -95,13 +95,13 @@ class NativeAttentionMlpAdapterAirFrontierGateTests(unittest.TestCase):
         mutated = self.fresh_payload()
         mutated["summary"]["native_adapter_air_proven_in_current_artifact"] = True
         gate.refresh_payload_commitment(mutated)
-        with self.assertRaises(gate.AdapterAirFrontierError):
+        with self.assertRaisesRegex(gate.AdapterAirFrontierError, "native adapter AIR overclaim"):
             gate.validate_payload(mutated)
 
         mutated = self.fresh_payload()
         mutated["summary"]["native_adapter_air_size_breakthrough_status"] = "GO"
         gate.refresh_payload_commitment(mutated)
-        with self.assertRaises(gate.AdapterAirFrontierError):
+        with self.assertRaisesRegex(gate.AdapterAirFrontierError, "native adapter size breakthrough overclaim"):
             gate.validate_payload(mutated)
 
     def test_source_artifacts_are_hash_bound(self) -> None:
@@ -117,8 +117,8 @@ class NativeAttentionMlpAdapterAirFrontierGateTests(unittest.TestCase):
         )
         for artifact in artifacts.values():
             self.assertTrue(artifact["path"].startswith("docs/engineering/evidence/"))
-            self.assertEqual(len(artifact["sha256"]), 64)
-            self.assertEqual(len(artifact["payload_sha256"]), 64)
+            self.assertRegex(artifact["sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(artifact["payload_sha256"], r"^[0-9a-f]{64}$")
 
     def test_tsv_round_trips_from_validated_payload(self) -> None:
         payload = self.fresh_payload()

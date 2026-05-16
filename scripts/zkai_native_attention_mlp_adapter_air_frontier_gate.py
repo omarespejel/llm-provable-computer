@@ -498,12 +498,6 @@ def validate_payload(payload: Any) -> None:
         raise AdapterAirFrontierError("non-claims drift")
     if data.get("validation_commands") != list(VALIDATION_COMMANDS):
         raise AdapterAirFrontierError("validation commands drift")
-    expected = build_payload()
-    for key in CORE_KEYS - {"payload_commitment"}:
-        if data.get(key) != expected.get(key):
-            raise AdapterAirFrontierError(f"{key} drift")
-    if data.get("payload_commitment") != payload_commitment(data):
-        raise AdapterAirFrontierError("payload commitment drift")
     summary = _dict(data.get("summary"), "summary")
     if _bool(summary.get("native_adapter_air_proven_in_current_artifact"), "native adapter proven") is not False:
         raise AdapterAirFrontierError("native adapter AIR overclaim")
@@ -511,6 +505,12 @@ def validate_payload(payload: Any) -> None:
         raise AdapterAirFrontierError("native adapter size breakthrough overclaim")
     if _int(summary.get("max_adapter_overhead_for_size_win_bytes"), "adapter overhead budget") != 32:
         raise AdapterAirFrontierError("adapter overhead budget drift")
+    expected = build_payload()
+    for key in CORE_KEYS - {"payload_commitment"}:
+        if data.get(key) != expected.get(key):
+            raise AdapterAirFrontierError(f"{key} drift")
+    if data.get("payload_commitment") != payload_commitment(data):
+        raise AdapterAirFrontierError("payload commitment drift")
     if set(data) == FINAL_KEYS:
         cases = _list(data.get("cases"), "cases")
         if data.get("mutation_inventory") != list(MUTATION_NAMES):

@@ -117,6 +117,13 @@ class AttentionDerivedD128InputGateTests(unittest.TestCase):
         with self.assertRaisesRegex(GATE.AttentionDerivedD128InputError, "derived input payload drift"):
             GATE.validate_payload(payload)
 
+    def test_rejects_projection_row_floor_remainder_drift(self) -> None:
+        payload = self.fresh_payload()
+        payload["derived_input"]["projection_rows"][0]["floor_remainder_q8"] += 1
+        GATE.refresh_payload_commitment(payload)
+        with self.assertRaisesRegex(GATE.AttentionDerivedD128InputError, "derived input payload drift"):
+            GATE.validate_payload(payload)
+
     def test_rejects_source_artifact_hash_drift(self) -> None:
         payload = self.fresh_payload()
         payload["source_artifacts"][0]["sha256"] = "44" * 32

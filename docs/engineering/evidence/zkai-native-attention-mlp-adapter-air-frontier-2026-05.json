@@ -67,13 +67,13 @@
     },
     {
       "accepted": false,
-      "error": "summary drift",
+      "error": "native adapter AIR overclaim",
       "name": "adapter_air_marked_proven",
       "rejected": true
     },
     {
       "accepted": false,
-      "error": "summary drift",
+      "error": "native adapter size breakthrough overclaim",
       "name": "adapter_size_breakthrough_overclaim",
       "rejected": true
     },
@@ -160,7 +160,7 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "blake2b-256:26e788e05f9d045cec1ac3c147852a8f1dfe28fe4e2c09ff73b9d7b8119f4c58",
+  "payload_commitment": "blake2b-256:27001007282d3700a8c7da4bdfbcb2348c1da8bf21ed3ff1cc02fb09765659a0",
   "result": "GO_CONSTRAINT_SURFACE_READY_NO_GO_SIZE_BREAKTHROUGH",
   "route_id": "native_attention_mlp_adapter_air_frontier_v1",
   "schema": "zkai-native-attention-mlp-adapter-air-frontier-gate-v1",
