@@ -142,7 +142,10 @@ class NativeAttentionMlpVariantInvariantReprovePreflightGateTests(unittest.TestC
             try:
                 if link.exists():
                     link.unlink()
-                link.symlink_to(target)
+                try:
+                    link.symlink_to(target)
+                except OSError as err:
+                    self.skipTest(f"symlink creation unavailable: {err}")
                 with self.assertRaisesRegex(gate.VariantInvariantReprovePreflightError, "symlink"):
                     gate.write_outputs(payload, link, None)
             finally:
