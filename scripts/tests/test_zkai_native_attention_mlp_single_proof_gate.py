@@ -155,7 +155,10 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
             target = temp_dir / "target.json"
             link = temp_dir / "out.json"
             target.write_text("{}", encoding="utf-8")
-            link.symlink_to(target)
+            try:
+                link.symlink_to(target)
+            except OSError as err:
+                self.skipTest(f"symlink creation unavailable: {err}")
             with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "symlink"):
                 gate.write_json(link, self.fresh_payload())
 
@@ -166,7 +169,10 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
             target = temp_dir / "target.tsv"
             link = temp_dir / "out.tsv"
             target.write_text("", encoding="utf-8")
-            link.symlink_to(target)
+            try:
+                link.symlink_to(target)
+            except OSError as err:
+                self.skipTest(f"symlink creation unavailable: {err}")
             with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "symlink"):
                 gate.write_tsv(link, self.fresh_payload(), self.context)
 
