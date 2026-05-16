@@ -13,6 +13,10 @@ The checked result is a correctness GO and a size NO-GO:
   attention-derived d128 RMSNorm-MLP fused surface;
 - it now also proves the 128-row attention-output-to-d128-input adapter as
   native AIR;
+- proof backend version:
+  `stwo-native-attention-mlp-single-proof-object-native-adapter-v1`;
+- statement version:
+  `zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1`;
 - local typed proof bytes: `41,932`;
 - previous two-proof frontier: `40,700` typed bytes;
 - typed delta versus that frontier: `+1,232` bytes;
@@ -65,6 +69,10 @@ What it proves:
   share one Stwo proof object;
 - the attention-to-d128 handoff is now value-checked by native adapter AIR;
 - the proof verifies and its commitments are recomputed from source rows;
+- the result is pinned to proof backend version
+  `stwo-native-attention-mlp-single-proof-object-native-adapter-v1` and
+  statement version
+  `zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1`;
 - the stricter route costs `1,232` typed bytes over the previous two-proof
   target.
 
