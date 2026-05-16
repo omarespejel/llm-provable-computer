@@ -114,11 +114,14 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
 
         def load_with_coordinated_drift(path: pathlib.Path, label: str):
             payload, raw = original_load_json(path, label)
-            payload = copy.deepcopy(payload)
             if path == GATE.DERIVED_NATIVE_RESIDUAL:
+                payload = dict(payload)
                 payload["statement_commitment"] = drifted_statement
             if path == GATE.DERIVED_NATIVE_RESIDUAL_ENVELOPE:
-                payload["input"]["statement_commitment"] = drifted_statement
+                payload = dict(payload)
+                input_payload = dict(payload["input"])
+                input_payload["statement_commitment"] = drifted_statement
+                payload["input"] = input_payload
             return payload, raw
 
         with mock.patch.object(GATE, "_load_json", side_effect=load_with_coordinated_drift):
@@ -134,15 +137,22 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
 
         def load_with_coordinated_drift(path: pathlib.Path, label: str):
             payload, raw = original_load_json(path, label)
-            payload = copy.deepcopy(payload)
             if path == GATE.DERIVED_NATIVE_ACTIVATION:
+                payload = dict(payload)
                 payload["statement_commitment"] = drifted_statement
             if path == GATE.DERIVED_NATIVE_ACTIVATION_ENVELOPE:
-                payload["input"]["statement_commitment"] = drifted_statement
+                payload = dict(payload)
+                input_payload = dict(payload["input"])
+                input_payload["statement_commitment"] = drifted_statement
+                payload["input"] = input_payload
             if path == GATE.DERIVED_NATIVE_DOWN:
+                payload = dict(payload)
                 payload["source_activation_swiglu_statement_commitment"] = drifted_statement
             if path == GATE.DERIVED_NATIVE_DOWN_ENVELOPE:
-                payload["input"]["source_activation_swiglu_statement_commitment"] = drifted_statement
+                payload = dict(payload)
+                input_payload = dict(payload["input"])
+                input_payload["source_activation_swiglu_statement_commitment"] = drifted_statement
+                payload["input"] = input_payload
             return payload, raw
 
         with mock.patch.object(GATE, "_load_json", side_effect=load_with_coordinated_drift):
