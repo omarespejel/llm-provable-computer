@@ -112,6 +112,19 @@ class NativeAttentionMlpAdapterCompressionAblationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AdapterCompressionAblationError, "current_single_proof_gate hash drift"):
             gate.validate_current_sources(mutated)
 
+    def test_current_source_validation_rejects_malformed_artifact_inventory(self) -> None:
+        sources = gate.load_sources()
+
+        mutated = copy.deepcopy(sources)
+        mutated["source_artifacts"].append(copy.deepcopy(mutated["source_artifacts"][0]))
+        with self.assertRaisesRegex(gate.AdapterCompressionAblationError, "duplicate source artifact id"):
+            gate.validate_current_sources(mutated)
+
+        mutated = copy.deepcopy(sources)
+        mutated["source_artifacts"][0] = "not-an-artifact"
+        with self.assertRaisesRegex(gate.AdapterCompressionAblationError, "source artifact 0 must be object"):
+            gate.validate_current_sources(mutated)
+
     def test_tsv_round_trips_from_validated_payload(self) -> None:
         payload = self.fresh_payload()
         tsv = gate.to_tsv(payload)
