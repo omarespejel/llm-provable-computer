@@ -24,6 +24,15 @@ class SourceBackedAdapterSelectorGateTests(unittest.TestCase):
         with self.assertRaises(gate.SourceBackedAdapterSelectorError):
             gate.validate_payload(candidate, context=context)
 
+    def test_forged_mutation_result_is_rejected(self) -> None:
+        context = gate.build_context()
+        payload = gate.build_payload(context)
+        candidate = copy.deepcopy(payload)
+        candidate["mutation_result"]["cases"][0]["reason"] = "forged"
+        candidate["payload_commitment"] = gate.payload_commitment(candidate)
+        with self.assertRaises(gate.SourceBackedAdapterSelectorError):
+            gate.validate_payload(candidate, context=context)
+
 
 if __name__ == "__main__":
     unittest.main()
