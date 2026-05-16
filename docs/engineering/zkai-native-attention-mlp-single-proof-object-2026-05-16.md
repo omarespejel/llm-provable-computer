@@ -49,6 +49,12 @@ This is evidence, not just plumbing: the cost of making heterogeneous
 attention/adapter/MLP trees live in one proof object is visible in the proof
 bytes.
 
+The adapter values are intentionally mirrored into the base trace and the
+preprocessed trace in this version. The base trace is the proved witness; the
+preprocessed copy is the verifier-recomputed public projection used to bind that
+witness to the source attention output and d128 RMSNorm input artifacts. Issue
+`#631` tracks compressing this boundary without dropping that binding.
+
 ## Interpretation
 
 The result is interesting but not enough.

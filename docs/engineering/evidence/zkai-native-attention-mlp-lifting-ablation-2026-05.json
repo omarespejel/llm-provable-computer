@@ -236,7 +236,7 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:ffc119ecea8a383a6d184490c1852452f949d05cc49477890a74519b2ff2a207",
+  "payload_commitment": "sha256:e857e668092bd725fde3a390c0d3a7d22656f7e98edbda1706cbe145d67ddf08",
   "question": "Does the heterogeneous-tree PCS lifting overhang explain why the native-adapter attention-plus-MLP single proof is larger than the two-proof frontier?",
   "result": "NARROW_CLAIM_LIFTING_AND_QUERY_OVERHANGS_REAL_BUT_TOO_SMALL",
   "route_id": "native_attention_mlp_single_proof_pcs_lifting_ablation_v1",
@@ -310,6 +310,7 @@
     "python3 scripts/research_issue_lint.py --repo-root .",
     "python3 scripts/paper/paper_preflight.py --repo-root .",
     "git diff --check",
-    "just gate-fast"
+    "just gate-fast",
+    "just gate"
   ]
 }

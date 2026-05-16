@@ -211,6 +211,7 @@ VALIDATION_COMMANDS = (
     "python3 scripts/paper/paper_preflight.py --repo-root .",
     "git diff --check",
     "just gate-fast",
+    "just gate",
 )
 
 EXPECTED_EVIDENCE = {
