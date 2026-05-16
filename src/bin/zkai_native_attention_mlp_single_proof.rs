@@ -15,7 +15,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(feature = "stwo-backend")]
 use llm_provable_computer::stwo_backend::{
-    build_zkai_native_attention_mlp_single_proof_input,
     build_zkai_native_attention_mlp_single_proof_input_with_adapter_mode,
     prove_zkai_native_attention_mlp_single_proof_envelope,
     verify_zkai_native_attention_mlp_single_proof_envelope,
@@ -81,8 +80,12 @@ fn run() -> Result<String, String> {
             )?;
             let mlp = zkai_d128_rmsnorm_mlp_fused_input_from_json_str(&mlp_raw)
                 .map_err(|error| error.to_string())?;
-            let input = build_zkai_native_attention_mlp_single_proof_input(attention, mlp)
-                .map_err(|error| error.to_string())?;
+            let input = build_zkai_native_attention_mlp_single_proof_input_with_adapter_mode(
+                attention,
+                mlp,
+                ZkAiNativeAttentionMlpAdapterMode::DuplicateBasePreprocessed,
+            )
+            .map_err(|error| error.to_string())?;
             let bytes = pretty_json_bytes_with_trailing_newline(
                 &input,
                 ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_MAX_INPUT_JSON_BYTES,
@@ -96,7 +99,9 @@ fn run() -> Result<String, String> {
                 "input_size_bytes": bytes.len(),
                 "statement_commitment": input.statement_commitment,
                 "public_instance_commitment": input.public_instance_commitment,
+                "adapter_mode": input.adapter_mode,
                 "adapter_status": input.adapter_status,
+                "adapter_trace_cells": input.adapter_trace_cells,
                 "pcs_lifting_log_size": input.pcs_lifting_log_size,
                 "current_two_proof_frontier_typed_bytes": input.current_two_proof_frontier_typed_bytes,
             })

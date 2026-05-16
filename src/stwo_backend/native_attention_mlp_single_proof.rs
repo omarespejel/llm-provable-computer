@@ -1851,6 +1851,47 @@ mod tests {
     }
 
     #[test]
+    fn compact_adapter_round_trip_verifies_and_rejects_relabeling() {
+        let input =
+            fixture_input_with_mode(ZkAiNativeAttentionMlpAdapterMode::CompactBaseReferencedFixed);
+        let envelope =
+            prove_zkai_native_attention_mlp_single_proof_envelope(&input).expect("compact prove");
+        assert!(
+            verify_zkai_native_attention_mlp_single_proof_envelope(&envelope)
+                .expect("compact verify")
+        );
+
+        let mut proof_tampered = envelope.clone();
+        proof_tampered.proof[0] ^= 1;
+        let proof_tamper_result =
+            verify_zkai_native_attention_mlp_single_proof_envelope(&proof_tampered);
+        assert!(matches!(proof_tamper_result, Ok(false) | Err(_)));
+
+        let mut relabeled = envelope;
+        relabeled.input.adapter_mode =
+            ZkAiNativeAttentionMlpAdapterMode::DuplicateBasePreprocessedSelector;
+        assert!(verify_zkai_native_attention_mlp_single_proof_envelope(&relabeled).is_err());
+    }
+
+    #[test]
+    fn legacy_json_without_adapter_mode_defaults_to_duplicate() {
+        let input = fixture_input();
+        let mut value = serde_json::to_value(&input).expect("input JSON value");
+        value
+            .as_object_mut()
+            .expect("input object")
+            .remove("adapter_mode");
+        let raw = serde_json::to_string(&value).expect("input JSON string");
+        let parsed =
+            zkai_native_attention_mlp_single_proof_input_from_json_str(&raw).expect("parse input");
+        assert_eq!(
+            parsed.adapter_mode,
+            ZkAiNativeAttentionMlpAdapterMode::DuplicateBasePreprocessed
+        );
+        validate_single_input(&parsed).expect("legacy input validates");
+    }
+
+    #[test]
     fn single_proof_input_rejects_attention_output_commitment_drift() {
         let mut input = fixture_input();
         input.attention_outputs_commitment =

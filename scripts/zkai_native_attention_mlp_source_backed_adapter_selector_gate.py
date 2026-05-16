@@ -445,14 +445,14 @@ def build_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
     payload["mutation_inventory"] = {"cases": list(MUTATION_NAMES)}
     payload["mutation_result"] = mutation_result_placeholder()
     refresh_payload_commitment(payload)
-    validate_payload(payload, context=context)
+    validate_payload_core(payload, context=context)
     payload["mutation_result"] = mutation_result(payload, context)
     refresh_payload_commitment(payload)
     validate_payload(payload, context=context)
     return payload
 
 
-def validate_payload(payload: dict[str, Any], *, context: dict[str, Any] | None = None) -> None:
+def validate_payload_core(payload: dict[str, Any], *, context: dict[str, Any] | None = None) -> None:
     context = build_context() if context is None else context
     if set(payload) != FINAL_KEYS:
         raise SourceBackedAdapterSelectorError("top-level key drift")
@@ -462,14 +462,22 @@ def validate_payload(payload: dict[str, Any], *, context: dict[str, Any] | None 
             raise SourceBackedAdapterSelectorError(f"{key} drift")
     if payload.get("payload_commitment") != payload_commitment(payload):
         raise SourceBackedAdapterSelectorError("payload_commitment drift")
+    if payload.get("mutation_inventory") != {"cases": list(MUTATION_NAMES)}:
+        raise SourceBackedAdapterSelectorError("mutation inventory drift")
+
+
+def validate_payload(payload: dict[str, Any], *, context: dict[str, Any] | None = None) -> None:
+    context = build_context() if context is None else context
+    validate_payload_core(payload, context=context)
     mutation = _dict(payload.get("mutation_result"), "mutation result")
     cases = _list(mutation.get("cases"), "mutation cases")
     if [case.get("name") for case in cases] != list(MUTATION_NAMES):
         raise SourceBackedAdapterSelectorError("mutation inventory drift")
     if not all(case.get("rejected") is True for case in cases):
         raise SourceBackedAdapterSelectorError("mutation rejection drift")
-    if payload.get("mutation_inventory") != {"cases": list(MUTATION_NAMES)}:
-        raise SourceBackedAdapterSelectorError("mutation inventory drift")
+    expected_mutation = mutation_result(payload, context)
+    if payload.get("mutation_result") != expected_mutation:
+        raise SourceBackedAdapterSelectorError("mutation result drift")
 
 
 def mutation_result_placeholder() -> dict[str, Any]:
@@ -482,7 +490,7 @@ def mutation_result(payload: dict[str, Any], context: dict[str, Any]) -> dict[st
         candidate = copy.deepcopy(payload)
         mutator(candidate)
         try:
-            validate_payload(candidate, context=context)
+            validate_payload_core(candidate, context=context)
         except SourceBackedAdapterSelectorError as err:
             cases.append({"name": name, "rejected": True, "reason": str(err)})
         else:
