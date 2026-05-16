@@ -122,6 +122,18 @@ query/opening reduction. See
 `docs/engineering/zkai-native-attention-mlp-adapter-compression-ablation-2026-05-16.md`;
 follow-up issue `#633` tracks the transcript-stable harness.
 
+Latest transcript-stable comparison gate: issue `#633` is now checked as a
+conservative NO-GO for promoting the compact-adapter proof-size result. The
+gate decomposes the `736` typed-byte label-control saving into only `112`
+direct opened-value bytes and `624` FRI/Merkle path-sensitive bytes
+(`84.7826%`). The legacy-label microprobe similarly has `592 / 704` typed
+bytes in path-sensitive groups. No compact-adapter comparison is promotable
+because the local variants do not yet have their own proof artifacts and query
+inventory fingerprints. Treat the `736` bytes as a real mechanism lead, not a
+frontier replacement; the next attack is a variant-invariant transcript policy
+or multi-transcript rerun with per-variant binary accounting. See
+`docs/engineering/zkai-native-attention-mlp-transcript-stable-comparison-2026-05-16.md`.
+
 Single-proof object reproducibility metadata:
 
 - Backend binary/version: `zkai_native_attention_mlp_single_proof` with
