@@ -68,15 +68,33 @@ class NativeAttentionMlpSingleProofRouteGateTests(unittest.TestCase):
 
     def test_to_tsv_validates_payload(self) -> None:
         tsv = gate.to_tsv(self.fresh_payload(), self.context)
-        self.assertIn("40700", tsv)
-        self.assertIn("22576", tsv)
-        self.assertIn("False", tsv)
+        expected = (
+            "decision\tresult\tcurrent_two_proof_typed_bytes\t"
+            "attention_proof_typed_bytes_available_to_remove\tmlp_surface_floor_typed_bytes\t"
+            "mlp_surface_floor_ratio_vs_two_proof\tvalue_connected_chain_to_mlp_row_ratio\t"
+            "native_proof_success_threshold_typed_bytes\tnanozk_gap_after_mlp_surface_floor_bytes\t"
+            "one_native_proof_exists\r\n"
+            "GO_ROUTE_BUDGET_FOR_NATIVE_ATTENTION_MLP_SINGLE_PROOF_OBJECT\t"
+            "NARROW_CLAIM_IMPLEMENTATION_TARGET_PINNED_NO_NATIVE_PROOF_OBJECT_YET\t"
+            "40700\t18124\t22576\t0.554693\t1.010374\t40700\t15676\tFalse\r\n"
+        )
+        self.assertEqual(tsv, expected)
 
     def test_written_payload_validates(self) -> None:
-        if not gate.JSON_OUT.exists():
-            self.skipTest("written route evidence has not been generated")
-        payload = gate.load_json(gate.JSON_OUT, "written route JSON")
-        gate.validate_payload(payload, context=self.context)
+        handle = tempfile.NamedTemporaryFile(
+            dir=gate.EVIDENCE_DIR,
+            prefix=".tmp-native-attention-mlp-route-written-",
+            suffix=".json",
+            delete=False,
+        )
+        path = Path(handle.name)
+        handle.close()
+        try:
+            gate.write_json(path, self.fresh_payload())
+            payload = gate.load_json(path, "written route JSON")
+            gate.validate_payload(payload, context=self.context)
+        finally:
+            path.unlink(missing_ok=True)
 
     def test_output_path_escape_rejects(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -85,28 +103,53 @@ class NativeAttentionMlpSingleProofRouteGateTests(unittest.TestCase):
                 gate.attribution_gate.resolve_evidence_output_path(outside, "route JSON")
 
     def test_source_artifact_read_binds_payload_and_raw_bytes_once(self) -> None:
-        path = gate.EVIDENCE_DIR / ".tmp-native-attention-mlp-route-source.json"
+        handle = tempfile.NamedTemporaryFile(
+            dir=gate.EVIDENCE_DIR,
+            prefix=".tmp-native-attention-mlp-route-source-",
+            suffix=".json",
+            delete=False,
+        )
+        path = Path(handle.name)
         raw = b'{ "answer": 7, "nested": [1, 2, 3] }\n'
         try:
-            path.write_bytes(raw)
+            handle.write(raw)
+            handle.close()
             payload, loaded_raw = gate.read_json_and_raw_bytes(path, "route source")
             self.assertEqual(payload, {"answer": 7, "nested": [1, 2, 3]})
             self.assertEqual(loaded_raw, raw)
         finally:
+            handle.close()
             path.unlink(missing_ok=True)
 
     @unittest.skipUnless(hasattr(os, "symlink"), "symlink support required")
     def test_source_artifact_read_rejects_symlink_source(self) -> None:
-        target = gate.EVIDENCE_DIR / ".tmp-native-attention-mlp-route-target.json"
-        link = gate.EVIDENCE_DIR / ".tmp-native-attention-mlp-route-link.json"
+        target_handle = tempfile.NamedTemporaryFile(
+            dir=gate.EVIDENCE_DIR,
+            prefix=".tmp-native-attention-mlp-route-target-",
+            suffix=".json",
+            delete=False,
+        )
+        link_handle = tempfile.NamedTemporaryFile(
+            dir=gate.EVIDENCE_DIR,
+            prefix=".tmp-native-attention-mlp-route-link-",
+            suffix=".json",
+            delete=False,
+        )
+        target = Path(target_handle.name)
+        link = Path(link_handle.name)
         try:
-            target.write_text('{"ok": true}\n', encoding="utf-8")
+            target_handle.write(b'{"ok": true}\n')
+            target_handle.close()
+            link_handle.close()
+            link.unlink()
             link.symlink_to(target)
             with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofRouteError, "symlink"):
                 gate.read_json_and_raw_bytes(link, "linked route source")
         except OSError as err:
             self.skipTest(f"symlink creation unavailable: {err}")
         finally:
+            target_handle.close()
+            link_handle.close()
             link.unlink(missing_ok=True)
             target.unlink(missing_ok=True)
 
