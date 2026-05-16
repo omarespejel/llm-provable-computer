@@ -555,11 +555,22 @@ def to_tsv(payload: dict[str, Any], context: dict[str, Any]) -> str:
 
 
 def write_json(path: pathlib.Path, payload: dict[str, Any]) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    data = (json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
+    try:
+        route_gate.attribution_gate.write_bytes_atomic(path, data, "single proof JSON")
+    except route_gate.attribution_gate.MlpFusionAttributionError as err:
+        raise NativeAttentionMlpSingleProofGateError(str(err)) from err
 
 
 def write_tsv(path: pathlib.Path, payload: dict[str, Any], context: dict[str, Any]) -> None:
-    path.write_text(to_tsv(payload, context), encoding="utf-8")
+    try:
+        route_gate.attribution_gate.write_bytes_atomic(
+            path,
+            to_tsv(payload, context).encode("utf-8"),
+            "single proof TSV",
+        )
+    except route_gate.attribution_gate.MlpFusionAttributionError as err:
+        raise NativeAttentionMlpSingleProofGateError(str(err)) from err
 
 
 def main() -> int:
@@ -572,11 +583,9 @@ def main() -> int:
     payload = build_payload(context)
     validate_payload(payload, context=context)
     if args.write_json:
-        output = route_gate.attribution_gate.resolve_evidence_output_path(args.write_json, "single proof JSON")
-        write_json(output, payload)
+        write_json(args.write_json, payload)
     if args.write_tsv:
-        output = route_gate.attribution_gate.resolve_evidence_output_path(args.write_tsv, "single proof TSV")
-        write_tsv(output, payload, context)
+        write_tsv(args.write_tsv, payload, context)
     if not args.write_json and not args.write_tsv:
         print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
