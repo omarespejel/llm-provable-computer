@@ -17,6 +17,13 @@ The result is a narrow GO/NO-GO:
 - NO-GO: this cannot be called a size breakthrough because the current one-proof
   object only has `32` typed bytes of slack versus the two-proof frontier.
 
+Bounded NO-GO for this PR: implementing the adapter as native AIR requires
+changing the Rust/Stwo single-proof component and regenerating a verifier-checked
+one-proof artifact. Treating the externally checked projection rows as if they
+were already inside the proof would weaken verifier binding, so this PR stops at
+pinning the exact constraint surface and opens issue #629 for the native
+implementation.
+
 ## Numbers
 
 - Current single proof: `40,668` local typed bytes.

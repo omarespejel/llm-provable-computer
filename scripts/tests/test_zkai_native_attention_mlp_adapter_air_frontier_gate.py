@@ -50,6 +50,15 @@ class NativeAttentionMlpAdapterAirFrontierGateTests(unittest.TestCase):
         self.assertEqual(projection["output_max_q8"], 5)
         self.assertEqual(projection["output_sum_q8"], 104)
 
+    def test_projection_rows_reject_bias_policy_compensation(self) -> None:
+        sources = gate.load_sources()
+        derived = copy.deepcopy(sources["derived"])
+        row = derived["derived_input"]["projection_rows"][0]
+        row["bias_q8"] += 9
+        row["primary_q8"] -= 1
+        with self.assertRaisesRegex(gate.AdapterAirFrontierError, "bias policy drift"):
+            gate.validate_projection_rows(derived)
+
     def test_candidate_constraints_include_commitment_boundary(self) -> None:
         payload = self.fresh_payload()
         candidate = payload["adapter_air_candidate"]
