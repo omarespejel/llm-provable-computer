@@ -86,6 +86,29 @@ NANOZK's paper-reported `6,900` byte d128 row is still `33,768` typed bytes
 (`83.0333%` reduction needed). See
 `docs/engineering/zkai-native-attention-mlp-single-proof-object-2026-05-16.md`.
 
+Single-proof object reproducibility metadata:
+
+- Backend binary/version: `zkai_native_attention_mlp_single_proof` with
+  `stwo-native-attention-mlp-single-proof-object-probe-v1`.
+- Timing mode: proof-size accounting only; the artifact was generated once and
+  carries no timing or median-of-5 claim.
+- Checked surface: `1` native Stwo proof object, d8 fused attention with `52`
+  lookup claims and `9` Softmax-table rows, plus `6` attention-derived d128
+  RMSNorm-MLP components over `197,504` MLP rows.
+- Evidence paths:
+  `docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.input.json`,
+  `docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json`,
+  `docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json`,
+  `docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json`,
+  and
+  `docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.tsv`.
+- Reproduce commands:
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- build-input docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.input.json`;
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- prove docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.input.json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json`;
+  `cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- verify docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json`.
+- Gate command:
+  `python3 scripts/zkai_native_attention_mlp_single_proof_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.tsv`.
+
 Reproducibility metadata:
 
 - Backend binary/version:

@@ -97,6 +97,7 @@ pub const ZKAI_NATIVE_ATTENTION_MLP_SINGLE_PROOF_MAX_ENVELOPE_JSON_BYTES: usize 
 const ATTENTION_LOG_SIZE: u32 = 6;
 const EXPECTED_TRACE_COMMITMENT_TREES: usize = 3;
 const EXPECTED_PROOF_COMMITMENTS: usize = 4;
+const SINGLE_PCS_LIFTING_LOG_SIZE: u32 = 19;
 const CURRENT_TWO_PROOF_FRONTIER_TYPED_BYTES: usize = 40_700;
 const CURRENT_ATTENTION_FUSED_TYPED_BYTES: usize = 18_124;
 const CURRENT_DERIVED_MLP_FUSED_TYPED_BYTES: usize = 22_576;
@@ -1055,8 +1056,14 @@ fn single_pcs_config() -> Result<PcsConfig> {
     let max_constraint_log_degree_bound =
         combined_max_constraint_log_degree_bound(&preprocessed_ids);
     let mut config = publication_v1_pcs_config();
-    config.lifting_log_size =
-        Some(max_constraint_log_degree_bound + config.fri_config.log_blowup_factor);
+    let derived_lifting_log_size =
+        max_constraint_log_degree_bound + config.fri_config.log_blowup_factor;
+    if derived_lifting_log_size != SINGLE_PCS_LIFTING_LOG_SIZE {
+        return Err(single_error(format!(
+            "single proof PCS lifting log size drift: derived {derived_lifting_log_size}, expected {SINGLE_PCS_LIFTING_LOG_SIZE}"
+        )));
+    }
+    config.lifting_log_size = Some(SINGLE_PCS_LIFTING_LOG_SIZE);
     if publication_v1_pcs_config_matches(&config) {
         return Err(single_error(
             "single proof PCS config unexpectedly matches publication-v1 default",
@@ -1286,5 +1293,41 @@ mod tests {
         let ids = combined_preprocessed_column_ids().expect("ids");
         let unique = ids.iter().map(|id| id.id.clone()).collect::<BTreeSet<_>>();
         assert_eq!(ids.len(), unique.len());
+    }
+
+    #[test]
+    fn single_proof_round_trip_verifies_and_rejects_tamper() {
+        let input = fixture_input();
+        assert_eq!(
+            input.statement_commitment,
+            statement_commitment(&input).expect("statement")
+        );
+        assert_eq!(
+            input.public_instance_commitment,
+            public_instance_commitment(&input.statement_commitment).expect("public instance")
+        );
+        assert_eq!(
+            input.proof_native_parameter_commitment,
+            proof_native_parameter_commitment(&input.statement_commitment).expect("params")
+        );
+        validate_single_input(&input).expect("input validates");
+
+        let envelope =
+            prove_zkai_native_attention_mlp_single_proof_envelope(&input).expect("prove");
+        assert!(verify_zkai_native_attention_mlp_single_proof_envelope(&envelope).expect("verify"));
+
+        let mut proof_tampered = envelope.clone();
+        proof_tampered.proof[0] ^= 1;
+        let proof_tamper_result =
+            verify_zkai_native_attention_mlp_single_proof_envelope(&proof_tampered);
+        assert!(matches!(proof_tamper_result, Ok(false) | Err(_)));
+
+        let mut public_input_tampered = envelope;
+        public_input_tampered.input.public_instance_commitment =
+            "blake2b-256:3333333333333333333333333333333333333333333333333333333333333333"
+                .to_string();
+        assert!(
+            verify_zkai_native_attention_mlp_single_proof_envelope(&public_input_tampered).is_err()
+        );
     }
 }

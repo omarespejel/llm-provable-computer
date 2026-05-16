@@ -24,47 +24,47 @@
     "cases": [
       {
         "name": "single_typed_bytes_drift",
-        "reason": "top-level key drift",
+        "reason": "summary drift",
         "rejected": true
       },
       {
         "name": "two_proof_frontier_drift",
-        "reason": "top-level key drift",
+        "reason": "summary drift",
         "rejected": true
       },
       {
         "name": "proof_json_bytes_drift",
-        "reason": "top-level key drift",
+        "reason": "summary drift",
         "rejected": true
       },
       {
         "name": "adapter_promoted_to_native_air",
-        "reason": "top-level key drift",
+        "reason": "routes drift",
         "rejected": true
       },
       {
         "name": "pcs_lifting_log_size_drift",
-        "reason": "top-level key drift",
+        "reason": "summary drift",
         "rejected": true
       },
       {
         "name": "nanozk_win_promoted",
-        "reason": "top-level key drift",
+        "reason": "routes drift",
         "rejected": true
       },
       {
         "name": "route_commitment_drift",
-        "reason": "top-level key drift",
+        "reason": "route commitment drift",
         "rejected": true
       },
       {
         "name": "payload_commitment_drift",
-        "reason": "top-level key drift",
+        "reason": "payload commitment drift",
         "rejected": true
       },
       {
         "name": "missing_non_claim",
-        "reason": "top-level key drift",
+        "reason": "non-claims drift",
         "rejected": true
       }
     ]
@@ -80,7 +80,7 @@
     "not timing evidence",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:c4521a14a9587f6676fccabed210c4ab05bd42508b634cb6d02c27b659cd3c4d",
+  "payload_commitment": "sha256:ab2f8807ef13ff3c752cba7cefabc5ef1ffb3346fadb1dc31e80b867930cd2fa",
   "result": "NARROW_CLAIM_SINGLE_PROOF_OBJECT_BARELY_BEATS_TWO_PROOF_FRONTIER",
   "route_commitment": "blake2b-256:6adb099b3cafb4f1eff4131f767d46bf6d694bf5f5033ffc1ba8963f9fcd60d9",
   "routes": {
