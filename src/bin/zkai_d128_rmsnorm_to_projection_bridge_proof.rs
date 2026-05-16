@@ -211,15 +211,27 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
         .map_err(|error| format!("system clock before epoch: {error}"))?
         .as_nanos();
     let tmp_path = parent.join(format!(".{file_name}.tmp.{}.{}", process::id(), nonce));
-    {
-        let mut file = fs::File::create_new(&tmp_path)
-            .map_err(|error| format!("failed to create {}: {error}", tmp_path.display()))?;
-        file.write_all(bytes)
-            .map_err(|error| format!("failed to write {}: {error}", tmp_path.display()))?;
-        file.sync_all()
-            .map_err(|error| format!("failed to sync {}: {error}", tmp_path.display()))?;
-    }
+    write_temp_file(&tmp_path, bytes)?;
     publish_temp_file(&tmp_path, path, label)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn write_temp_file(tmp_path: &Path, bytes: &[u8]) -> Result<(), String> {
+    let mut file = fs::File::create_new(tmp_path)
+        .map_err(|error| format!("failed to create {}: {error}", tmp_path.display()))?;
+    let write_result = file
+        .write_all(bytes)
+        .map_err(|error| format!("failed to write {}: {error}", tmp_path.display()))
+        .and_then(|()| {
+            file.sync_all()
+                .map_err(|error| format!("failed to sync {}: {error}", tmp_path.display()))
+        });
+    if let Err(error) = write_result {
+        drop(file);
+        let _ = fs::remove_file(tmp_path);
+        return Err(error);
+    }
+    Ok(())
 }
 
 #[cfg(feature = "stwo-backend")]
