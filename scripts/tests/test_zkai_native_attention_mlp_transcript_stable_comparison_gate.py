@@ -200,11 +200,13 @@ class NativeAttentionMlpTranscriptStableComparisonGateTests(unittest.TestCase):
         self.assertIn("NO_GO_LABELS_DIFFER_AND_VARIANT_PROOF_ARTIFACTS_MISSING", tsv)
 
     def test_read_json_rejects_non_finite_constants(self) -> None:
-        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
-            path = gate.pathlib.Path(temp_dir) / "nan.json"
+        path = gate.EVIDENCE_DIR / f"test-nan-{gate.secrets.token_hex(8)}.json"
+        try:
             path.write_text('{"bad": NaN}', encoding="utf-8")
             with self.assertRaises(gate.TranscriptStableComparisonError):
                 gate.read_json(path, "nan JSON")
+        finally:
+            path.unlink(missing_ok=True)
 
     def test_read_json_open_error_is_structured(self) -> None:
         with mock.patch.object(gate.os, "open", side_effect=OSError("boom")):
@@ -220,41 +222,48 @@ class NativeAttentionMlpTranscriptStableComparisonGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "output path must stay"):
                 gate.write_outputs(payload, outside, None)
 
-        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
-            temp_path = gate.pathlib.Path(temp_dir)
-            target = temp_path / "target.json"
-            link = temp_path / "out.json"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target = gate.pathlib.Path(temp_dir) / "target.json"
+            link = gate.EVIDENCE_DIR / f"test-symlink-out-{gate.secrets.token_hex(8)}.json"
             target.write_text("{}", encoding="utf-8")
             link.symlink_to(target)
-            with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "symlink"):
-                gate.write_outputs(payload, link, None)
+            try:
+                with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "symlink"):
+                    gate.write_outputs(payload, link, None)
+            finally:
+                link.unlink(missing_ok=True)
+
+    def test_write_outputs_rejects_pinned_input_overwrite(self) -> None:
+        with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "pinned input evidence"):
+            gate.require_output_path(gate.ABLATION_PATH, ".json")
 
     def test_write_outputs_does_not_remove_stale_deterministic_temp(self) -> None:
         payload = self.fresh_payload()
-        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
-            temp_path = gate.pathlib.Path(temp_dir)
-            out = temp_path / "out.json"
-            stale = temp_path / f".{out.name}.tmp-{gate.os.getpid()}"
+        out = gate.EVIDENCE_DIR / f"test-stale-out-{gate.secrets.token_hex(8)}.json"
+        stale = gate.EVIDENCE_DIR / f".{out.name}.tmp-{gate.os.getpid()}"
+        try:
             stale.write_text("keep", encoding="utf-8")
 
             gate.write_outputs(payload, out, None)
 
             self.assertEqual(stale.read_text(encoding="utf-8"), "keep")
             self.assertTrue(out.exists())
+        finally:
+            out.unlink(missing_ok=True)
+            stale.unlink(missing_ok=True)
 
     def test_write_text_atomic_rejects_symlink_parent(self) -> None:
         if getattr(gate.os, "O_NOFOLLOW", 0) == 0:
             self.skipTest("platform lacks O_NOFOLLOW")
         with tempfile.TemporaryDirectory() as outside_dir:
-            with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
-                temp_path = gate.pathlib.Path(temp_dir)
-                outside = gate.pathlib.Path(outside_dir)
-                link_parent = temp_path / "link-parent"
-                link_parent.symlink_to(outside, target_is_directory=True)
-
-                with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "atomic write failed"):
+            outside = gate.pathlib.Path(outside_dir)
+            link_parent = gate.EVIDENCE_DIR / f"test-link-parent-{gate.secrets.token_hex(8)}"
+            link_parent.symlink_to(outside, target_is_directory=True)
+            try:
+                with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "direct child"):
                     gate.write_text_atomic(link_parent / "out.json", "{}\n")
-
+            finally:
+                link_parent.unlink(missing_ok=True)
                 self.assertFalse((outside / "out.json").exists())
 
 
