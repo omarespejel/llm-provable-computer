@@ -204,6 +204,21 @@ class NativeAttentionMlpTranscriptStableComparisonGateTests(unittest.TestCase):
             self.assertEqual(stale.read_text(encoding="utf-8"), "keep")
             self.assertTrue(out.exists())
 
+    def test_write_text_atomic_rejects_symlink_parent(self) -> None:
+        if getattr(gate.os, "O_NOFOLLOW", 0) == 0:
+            self.skipTest("platform lacks O_NOFOLLOW")
+        with tempfile.TemporaryDirectory() as outside_dir:
+            with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
+                temp_path = gate.pathlib.Path(temp_dir)
+                outside = gate.pathlib.Path(outside_dir)
+                link_parent = temp_path / "link-parent"
+                link_parent.symlink_to(outside, target_is_directory=True)
+
+                with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "atomic write failed"):
+                    gate.write_text_atomic(link_parent / "out.json", "{}\n")
+
+                self.assertFalse((outside / "out.json").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

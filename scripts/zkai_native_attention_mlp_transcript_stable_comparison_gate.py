@@ -11,6 +11,7 @@ import io
 import json
 import os
 import pathlib
+import secrets
 import stat
 import tempfile
 from collections.abc import Callable
@@ -777,35 +778,45 @@ def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path 
 
 
 def write_text_atomic(path: pathlib.Path, text: str) -> None:
-    if path.exists() and path.is_symlink():
-        raise TranscriptStableComparisonError("refusing to write through symlink")
     parent = path.parent
     parent.mkdir(parents=True, exist_ok=True)
-    temp_path: pathlib.Path | None = None
+    parent_fd = -1
+    temp_name: str | None = None
     fd = -1
     try:
-        fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.tmp-", dir=parent)
-        temp_path = pathlib.Path(temp_name)
+        parent_fd = os.open(parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+        parent_stat = os.fstat(parent_fd)
+        if not stat.S_ISDIR(parent_stat.st_mode):
+            raise TranscriptStableComparisonError("output parent must be a directory")
+        try:
+            target_stat = os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        else:
+            if stat.S_ISLNK(target_stat.st_mode):
+                raise TranscriptStableComparisonError("refusing to write through symlink")
+        temp_name = f".{path.name}.tmp-{os.getpid()}-{secrets.token_hex(8)}"
+        fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=parent_fd)
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             fd = -1
             handle.write(text)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temp_path, path)
-        temp_path = None
-        parent_fd = os.open(parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-        try:
-            os.fsync(parent_fd)
-        finally:
-            os.close(parent_fd)
+        os.replace(temp_name, path.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        temp_name = None
+        os.fsync(parent_fd)
+    except OSError as err:
+        raise TranscriptStableComparisonError(f"atomic write failed for {path}: {err}") from err
     finally:
         if fd != -1:
             os.close(fd)
-        if temp_path is not None:
+        if temp_name is not None and parent_fd != -1:
             try:
-                temp_path.unlink()
+                os.unlink(temp_name, dir_fd=parent_fd)
             except FileNotFoundError:
                 pass
+        if parent_fd != -1:
+            os.close(parent_fd)
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
