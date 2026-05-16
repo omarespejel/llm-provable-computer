@@ -167,7 +167,7 @@
     "not a full transformer block proof",
     "not production-ready zkML"
   ],
-  "payload_commitment": "blake2b-256:072b0347fcc962bb8768d95fd46863755484a1839c8be3d198e814b97d5d752f",
+  "payload_commitment": "blake2b-256:b9852316a62a1a5d516baa1e8eee2c1d273843f6823aa3562bf68e8c7da2cc75",
   "result": "NARROW_CLAIM_ADAPTER_COMPRESSION_REQUIRES_TRANSCRIPT_STABLE_REPROVE",
   "schema": "zkai-native-attention-mlp-transcript-stable-comparison-gate-v1",
   "source_artifacts": [
@@ -254,6 +254,7 @@
       "notes": "checked current route; native adapter is duplicated in base and preprocessed traces",
       "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-v1",
       "proof_json_bytes": 119790,
+      "public_instance_commitment": "blake2b-256:9fe7df13461e44d2694e657d8e80b6cedda175b40029f45c5e92b86af18bfa50",
       "public_instance_commitments": {
         "attention_public_instance_commitment": "blake2b-256:24007e2e093726eaeabfefc32de4b0633babe0f8ccb80945036dd93579f7d05c",
         "mlp_public_instance_commitment": "blake2b-256:281440678289f1a5ab4ca85cf07aaf831ae6e4f881c00f33500dd67e535f2bee"
@@ -291,6 +292,7 @@
       "notes": "local compact-base probe under legacy labels; useful for mechanism, not safe as a published frontier",
       "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-v1",
       "proof_json_bytes": 117416,
+      "public_instance_commitment": null,
       "public_instance_commitments": null,
       "query_inventory_fingerprint": null,
       "query_inventory_status": "MISSING_VARIANT_PROOF_ARTIFACT",
@@ -325,6 +327,7 @@
       "notes": "duplicate adapter with bumped labels; controls for transcript-label drift",
       "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-duplicate-adapter-v2",
       "proof_json_bytes": 124492,
+      "public_instance_commitment": null,
       "public_instance_commitments": null,
       "query_inventory_fingerprint": null,
       "query_inventory_status": "MISSING_VARIANT_PROOF_ARTIFACT",
@@ -359,6 +362,7 @@
       "notes": "compact base with deterministic fixed columns still referenced by the AIR evaluator",
       "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-compact-adapter-v1",
       "proof_json_bytes": 121841,
+      "public_instance_commitment": null,
       "public_instance_commitments": null,
       "query_inventory_fingerprint": null,
       "query_inventory_status": "MISSING_VARIANT_PROOF_ARTIFACT",
@@ -393,6 +397,7 @@
       "notes": "reading fixed columns without zero constraints verifies but gives weaker savings",
       "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-compact-adapter-v1",
       "proof_json_bytes": 124192,
+      "public_instance_commitment": null,
       "public_instance_commitments": null,
       "query_inventory_fingerprint": null,
       "query_inventory_status": "MISSING_VARIANT_PROOF_ARTIFACT",

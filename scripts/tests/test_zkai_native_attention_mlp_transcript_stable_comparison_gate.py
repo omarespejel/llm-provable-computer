@@ -88,9 +88,11 @@ class NativeAttentionMlpTranscriptStableComparisonGateTests(unittest.TestCase):
             "4f1b230afc4f7fec71ce632faa2b0b9512276467aa9dd05f48cd1fba4ba581f4",
         )
         self.assertRegex(current["statement_commitment"], r"^blake2b-256:[0-9a-f]{64}$")
+        self.assertRegex(current["public_instance_commitment"], r"^blake2b-256:[0-9a-f]{64}$")
         self.assertFalse(compact["artifact_backed"])
         self.assertEqual(compact["query_inventory_status"], "MISSING_VARIANT_PROOF_ARTIFACT")
         self.assertIsNone(compact["query_inventory_fingerprint"])
+        self.assertIsNone(compact["public_instance_commitment"])
         self.assertRegex(compact["reported_shape_fingerprint"], r"^blake2b-256:[0-9a-f]{64}$")
 
     def test_stability_policy_rejects_grouped_bytes_as_query_inventory(self) -> None:
@@ -98,6 +100,30 @@ class NativeAttentionMlpTranscriptStableComparisonGateTests(unittest.TestCase):
         self.assertTrue(policy["promotion_requires_source_artifact_per_variant"])
         self.assertTrue(policy["promotion_requires_query_inventory_fingerprint"])
         self.assertTrue(policy["grouped_bytes_alone_are_not_a_query_inventory"])
+
+    def test_promotion_status_requires_commitments_and_query_fingerprint(self) -> None:
+        variants = {variant["id"]: variant for variant in self.fresh_payload()["variant_inventory"]}
+        baseline = copy.deepcopy(variants["current_duplicate_adapter_v1_frontier"])
+        candidate = copy.deepcopy(variants["compact_base_legacy_label_microprobe"])
+        candidate["artifact_backed"] = True
+        candidate["query_inventory_status"] = "PINNED_RECORD_STREAM"
+        candidate["query_inventory_fingerprint"] = "blake2b-256:" + "11" * 32
+        candidate["proof_backend_version"] = baseline["proof_backend_version"]
+        candidate["statement_version"] = baseline["statement_version"]
+
+        self.assertEqual(
+            gate.promotion_status(baseline, candidate),
+            "NO_GO_CANDIDATE_STATEMENT_COMMITMENT_MISSING",
+        )
+
+        candidate["statement_commitment"] = "blake2b-256:" + "22" * 32
+        self.assertEqual(
+            gate.promotion_status(baseline, candidate),
+            "NO_GO_CANDIDATE_PUBLIC_INSTANCE_COMMITMENT_MISSING",
+        )
+
+        candidate["public_instance_commitment"] = "blake2b-256:" + "33" * 32
+        self.assertEqual(gate.promotion_status(baseline, candidate), "GO_TRANSCRIPT_STABLE")
 
     def test_mutations_reject_overclaims_and_fake_inventory(self) -> None:
         payload = self.fresh_payload()

@@ -456,6 +456,7 @@ def variant_inventory(sources: dict[str, Any]) -> list[dict[str, Any]]:
         item["query_inventory_status"] = "PINNED_RECORD_STREAM" if is_current else "MISSING_VARIANT_PROOF_ARTIFACT"
         item["query_inventory_fingerprint"] = local_accounting.get("record_stream_sha256") if is_current else None
         item["statement_commitment"] = envelope_input.get("statement_commitment") if is_current else None
+        item["public_instance_commitment"] = envelope_input.get("public_instance_commitment") if is_current else None
         item["public_instance_commitments"] = (
             {
                 "attention_public_instance_commitment": envelope_input.get("attention_public_instance_commitment"),
@@ -482,6 +483,10 @@ def promotion_status(left: dict[str, Any], right: dict[str, Any]) -> str:
         return "NO_GO_TRANSCRIPT_LABELS_DIFFER"
     if left["query_inventory_status"] != "PINNED_RECORD_STREAM" or right["query_inventory_status"] != "PINNED_RECORD_STREAM":
         return "NO_GO_QUERY_INVENTORY_NOT_PINNED"
+    for side, variant in (("baseline", left), ("candidate", right)):
+        for key in ("statement_commitment", "public_instance_commitment", "query_inventory_fingerprint"):
+            if not isinstance(variant.get(key), str) or not variant[key]:
+                return f"NO_GO_{side.upper()}_{key.upper()}_MISSING"
     return "GO_TRANSCRIPT_STABLE"
 
 
