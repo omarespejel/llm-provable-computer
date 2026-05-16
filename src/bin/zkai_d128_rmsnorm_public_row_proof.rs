@@ -229,8 +229,7 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
 fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), String> {
     reject_symlinked_ancestors(path, label)?;
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|error| format!("failed to create {}: {error}", parent.display()))?;
+        ensure_directory_without_symlinks(parent, label)?;
         reject_symlinked_ancestors(path, label)?;
     }
     let metadata = fs::symlink_metadata(path).ok();
@@ -253,6 +252,7 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
         .map_err(|error| format!("system clock before epoch: {error}"))?
         .as_nanos();
     let tmp_path = parent.join(format!(".{file_name}.tmp.{}.{}", process::id(), nonce));
+    reject_symlinked_ancestors(&tmp_path, label)?;
     write_temp_file(&tmp_path, bytes)?;
     publish_temp_file(&tmp_path, path, label)
 }
@@ -312,21 +312,120 @@ fn reject_symlinked_ancestors(path: &Path, label: &str) -> Result<(), String> {
 }
 
 #[cfg(feature = "stwo-backend")]
+fn ensure_directory_without_symlinks(path: &Path, label: &str) -> Result<(), String> {
+    if path.as_os_str().is_empty() {
+        return Ok(());
+    }
+    let mut current = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::RootDir => {
+                current.push(component.as_os_str());
+            }
+            std::path::Component::CurDir => {
+                if current.as_os_str().is_empty() {
+                    current.push(".");
+                }
+            }
+            std::path::Component::Normal(part) => {
+                current.push(part);
+                ensure_existing_or_created_dir(&current, label)?;
+            }
+            std::path::Component::ParentDir => {
+                return Err(format!(
+                    "refusing parent-directory component in {label} path: {}",
+                    path.display()
+                ));
+            }
+            std::path::Component::Prefix(_) => {
+                return Err(format!(
+                    "unsupported path prefix for {label}: {}",
+                    path.display()
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "stwo-backend")]
+fn ensure_existing_or_created_dir(path: &Path, label: &str) -> Result<(), String> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_symlink() => {
+            return Err(format!(
+                "refusing symlinked directory for {label}: {}",
+                path.display()
+            ));
+        }
+        Ok(metadata) if metadata.is_dir() => Ok(()),
+        Ok(_) => Err(format!(
+            "refusing non-directory parent for {label}: {}",
+            path.display()
+        )),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            match fs::create_dir(path) {
+                Ok(()) => {}
+                Err(create_error) if create_error.kind() == std::io::ErrorKind::AlreadyExists => {}
+                Err(create_error) => {
+                    return Err(format!(
+                        "failed to create directory {} for {label}: {create_error}",
+                        path.display()
+                    ));
+                }
+            }
+            match fs::symlink_metadata(path) {
+                Ok(metadata) if metadata.file_type().is_symlink() => Err(format!(
+                    "refusing symlinked directory for {label}: {}",
+                    path.display()
+                )),
+                Ok(metadata) if metadata.is_dir() => Ok(()),
+                Ok(_) => Err(format!(
+                    "refusing non-directory parent for {label}: {}",
+                    path.display()
+                )),
+                Err(stat_error) => Err(format!(
+                    "failed to inspect created directory {} for {label}: {stat_error}",
+                    path.display()
+                )),
+            }
+        }
+        Err(error) => Err(format!(
+            "failed to inspect parent directory {} for {label}: {error}",
+            path.display()
+        )),
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
 fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), String> {
     match fs::rename(tmp_path, path) {
         Ok(()) => Ok(()),
-        Err(first_error) if first_error.kind() == std::io::ErrorKind::AlreadyExists => {
-            if let Err(remove_error) = fs::remove_file(path) {
-                let _ = fs::remove_file(tmp_path);
-                return Err(format!(
-                    "failed to replace existing {label} {} after publish error {first_error}: {remove_error}",
-                    path.display()
-                ));
+        Err(first_error)
+            if matches!(
+                first_error.kind(),
+                std::io::ErrorKind::AlreadyExists | std::io::ErrorKind::PermissionDenied
+            ) =>
+        {
+            match existing_non_symlink_destination(path, label) {
+                Ok(true) => {
+                    if let Err(remove_error) = fs::remove_file(path) {
+                        let _ = fs::remove_file(tmp_path);
+                        return Err(format!(
+                            "failed to replace existing {label} {} after publish error {first_error}: {remove_error}",
+                            path.display()
+                        ));
+                    }
+                }
+                Ok(false) => {}
+                Err(error) => {
+                    let _ = fs::remove_file(tmp_path);
+                    return Err(error);
+                }
             }
             if let Err(second_error) = fs::rename(tmp_path, path) {
                 let _ = fs::remove_file(tmp_path);
                 return Err(format!(
-                    "failed to publish replacement {label} {} after removing existing destination: {second_error}",
+                    "failed to publish replacement {label} {} after handling existing destination: {second_error}",
                     path.display()
                 ));
             }
@@ -340,6 +439,26 @@ fn publish_temp_file(tmp_path: &Path, path: &Path, label: &str) -> Result<(), St
                 path.display()
             ))
         }
+    }
+}
+
+#[cfg(feature = "stwo-backend")]
+fn existing_non_symlink_destination(path: &Path, label: &str) -> Result<bool, String> {
+    match fs::symlink_metadata(path) {
+        Ok(metadata) if metadata.file_type().is_symlink() => Err(format!(
+            "refusing to overwrite symlink for {label}: {}",
+            path.display()
+        )),
+        Ok(metadata) if metadata.is_file() => Ok(true),
+        Ok(_) => Err(format!(
+            "refusing to replace non-file destination for {label}: {}",
+            path.display()
+        )),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(format!(
+            "failed to inspect destination {} for {label}: {error}",
+            path.display()
+        )),
     }
 }
 
@@ -450,6 +569,16 @@ mod tests {
             error.contains("exceeds max size"),
             "unexpected error: {error}"
         );
+    }
+
+    #[test]
+    fn atomic_write_file_creates_nested_directory_without_symlink() {
+        let dir = local_tempdir();
+        let output = dir.path().join("nested").join("proof").join("output.json");
+
+        atomic_write_file(&output, b"{\"ok\":true}\n", "test output").expect("atomic write");
+
+        assert_eq!(fs::read(&output).expect("read output"), b"{\"ok\":true}\n");
     }
 
     #[cfg(unix)]
