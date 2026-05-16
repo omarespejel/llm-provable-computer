@@ -75,11 +75,13 @@ If you are in a local checkout, prefer `AGENTS.md`, `.codex/START_HERE.md`, and
 64. `docs/engineering/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05-16.md`
 65. `docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`
 66. `docs/engineering/zkai-native-attention-mlp-single-proof-route-2026-05-16.md`
-67. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
-68. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
-69. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
-70. `docs/engineering/reproducibility.md`
-71. `git status --short --branch`
+67. `docs/engineering/zkai-native-attention-mlp-single-proof-object-2026-05-16.md`
+68. `docs/engineering/zkai-native-attention-mlp-lifting-ablation-2026-05-16.md`
+69. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
+70. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
+71. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
+72. `docs/engineering/reproducibility.md`
+73. `git status --short --branch`
 
 ## Current lane split
 
@@ -156,6 +158,18 @@ attention-output-to-d128-input adapter and not NANOZK-comparable; the gap to
 NANOZK's paper-reported `6,900` byte d128 row is still `33,768` typed bytes
 (`83.0333%` reduction needed). See
 `docs/engineering/zkai-native-attention-mlp-single-proof-object-2026-05-16.md`.
+
+Latest lifting ablation: the explicit heterogeneous-tree lifting cost is real
+but not the breakthrough by itself. The single proof's only positive typed
+field delta versus the two-proof frontier is `+640` bytes in
+`fri_decommitments`; all other grouped deltas are savings. If that whole
+overhang disappeared, the projected object would be `40,028` typed bytes,
+saving `672` typed bytes versus the `40,700` typed-byte two-proof frontier, but
+it would still sit `33,128` typed bytes above NANOZK's paper-reported `6,900`
+byte d128 row (`82.7621%` further reduction needed). Treat this as
+`NO_GO_LIFTING_ONLY_BREAKTHROUGH`; the next attack should be native adapter
+AIR, query-value/opening reduction, or a different component boundary. See
+`docs/engineering/zkai-native-attention-mlp-lifting-ablation-2026-05-16.md`.
 
 Reproducibility metadata:
 
