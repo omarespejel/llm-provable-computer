@@ -33,25 +33,29 @@ TSV_OUT = EVIDENCE_DIR / "zkai-native-attention-mlp-single-proof-2026-05.tsv"
 
 SCHEMA = "zkai-native-attention-mlp-single-proof-object-gate-v1"
 DECISION = "GO_NATIVE_ATTENTION_MLP_SINGLE_STWO_PROOF_OBJECT_VERIFIES"
-RESULT = "NARROW_CLAIM_SINGLE_PROOF_OBJECT_BARELY_BEATS_TWO_PROOF_FRONTIER"
-ISSUE = "https://github.com/omarespejel/provable-transformer-vm/issues/603"
+RESULT = "NARROW_CLAIM_NATIVE_ADAPTER_AIR_VERIFIES_WITH_TYPED_SIZE_COST"
+ISSUE = "https://github.com/omarespejel/provable-transformer-vm/issues/629"
 CLAIM_BOUNDARY = (
-    "ONE_NATIVE_STWO_PROOF_OBJECT_FOR_STATEMENT_BOUND_D8_ATTENTION_AND_ATTENTION_DERIVED_"
-    "D128_RMSNORM_MLP_SURFACES_WITHOUT_NATIVE_ADAPTER_AIR_OR_NANOZK_COMPARABILITY"
+    "ONE_NATIVE_STWO_PROOF_OBJECT_FOR_D8_ATTENTION_NATIVE_ATTENTION_TO_D128_ADAPTER_AIR_AND_"
+    "ATTENTION_DERIVED_D128_RMSNORM_MLP_SURFACES_WITHOUT_PROOF_SIZE_SAVING_OR_NANOZK_COMPARABILITY"
 )
 PAYLOAD_DOMAIN = "ptvm:zkai:native-attention-mlp-single-proof-object:v1"
 
 EXPECTED = {
-    "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-probe-v1",
-    "proof_schema_version": "stwo-native-attention-mlp-single-proof-object-payload-v1",
-    "statement_version": "zkai-native-attention-mlp-single-proof-object-statement-v1",
+    "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-v1",
+    "proof_schema_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-payload-v1",
+    "statement_version": "zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1",
     "target_id": "attention-kv-d8-fused-softmax-table-plus-attention-derived-d128-rmsnorm-mlp-v1",
     "verifier_domain": "ptvm:zkai:native-attention-mlp-single-proof-object:v1",
-    "adapter_status": "STATEMENT_BOUND_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER_NOT_NATIVE_AIR",
+    "adapter_status": "NATIVE_AIR_PROVEN_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER",
+    "adapter_row_count": 128,
+    "adapter_value_columns": 9,
+    "adapter_remainder_bit_columns": 3,
+    "adapter_trace_cells": 1_536,
     "pcs_lifting_log_size": 19,
-    "single_proof_json_bytes": 115_924,
-    "single_proof_typed_bytes": 40_668,
-    "single_envelope_bytes": 1_222_508,
+    "single_proof_json_bytes": 119_790,
+    "single_proof_typed_bytes": 41_932,
+    "single_envelope_bytes": 1_253_874,
     "two_proof_frontier_json_bytes": 116_258,
     "two_proof_frontier_typed_bytes": 40_700,
     "attention_fused_typed_bytes": 18_124,
@@ -60,7 +64,7 @@ EXPECTED = {
 }
 
 NON_CLAIMS = (
-    "not a native AIR proof of the attention-output-to-d128-input adapter",
+    "not proof-size savings",
     "not a full transformer block proof",
     "not a NANOZK proof-size win",
     "not a matched external zkML benchmark",
@@ -123,7 +127,9 @@ MUTATION_NAMES = (
     "single_typed_bytes_drift",
     "two_proof_frontier_drift",
     "proof_json_bytes_drift",
-    "adapter_promoted_to_native_air",
+    "adapter_demoted_from_native_air",
+    "adapter_trace_cells_drift",
+    "proof_size_saving_promoted",
     "pcs_lifting_log_size_drift",
     "nanozk_win_promoted",
     "route_commitment_drift",
@@ -135,7 +141,9 @@ EXPECTED_MUTATION_REASONS = {
     "single_typed_bytes_drift": "summary.single_proof_typed_bytes drift",
     "two_proof_frontier_drift": "summary.two_proof_frontier_typed_bytes drift",
     "proof_json_bytes_drift": "summary.single_proof_json_bytes drift",
-    "adapter_promoted_to_native_air": "routes.adapter_boundary.native_adapter_air_proven drift",
+    "adapter_demoted_from_native_air": "routes.adapter_boundary.native_adapter_air_proven drift",
+    "adapter_trace_cells_drift": "summary.adapter_trace_cells drift",
+    "proof_size_saving_promoted": "routes.two_proof_frontier_comparison.status drift",
     "pcs_lifting_log_size_drift": "summary.pcs_lifting_log_size drift",
     "nanozk_win_promoted": "routes.nanozk_comparison_boundary.proof_size_win_claimed drift",
     "route_commitment_drift": "route commitment drift",
@@ -382,7 +390,7 @@ def build_payload_no_mutations(context: dict[str, Any]) -> dict[str, Any]:
         "source_artifacts": source_artifacts(),
         "routes": {
             "native_single_proof_object": {
-                "status": "GO_VERIFIED_SINGLE_NATIVE_STWO_PROOF_OBJECT",
+                "status": "GO_VERIFIED_SINGLE_NATIVE_STWO_PROOF_OBJECT_WITH_NATIVE_ADAPTER_AIR",
                 "proof_backend_version": metadata["proof_backend_version"],
                 "proof_schema_version": metadata["proof_schema_version"],
                 "statement_version": metadata["statement_version"],
@@ -391,18 +399,22 @@ def build_payload_no_mutations(context: dict[str, Any]) -> dict[str, Any]:
                 "pcs_lifting_log_size": input_payload["pcs_lifting_log_size"],
             },
             "two_proof_frontier_comparison": {
-                "status": "BARELY_GO_BEATS_CURRENT_TWO_PROOF_TYPED_TARGET",
+                "status": "NO_GO_NATIVE_ADAPTER_AIR_COSTS_MORE_THAN_CURRENT_TWO_PROOF_FRONTIER",
                 "two_proof_frontier_typed_bytes": two_typed,
-                "typed_saving_bytes": two_typed - single_typed,
+                "typed_delta_bytes": single_typed - two_typed,
                 "typed_ratio": ratio(single_typed, two_typed),
                 "two_proof_frontier_json_bytes": two_json,
-                "json_saving_bytes": two_json - single_json,
+                "json_delta_bytes": single_json - two_json,
                 "json_ratio": ratio(single_json, two_json),
             },
             "adapter_boundary": {
-                "status": "NO_GO_NATIVE_ADAPTER_AIR_NOT_PROVEN",
+                "status": "GO_NATIVE_ADAPTER_AIR_PROVEN_IN_SINGLE_STWO_PROOF_OBJECT",
                 "adapter_status": input_payload["adapter_status"],
-                "native_adapter_air_proven": False,
+                "adapter_row_count": input_payload["adapter_row_count"],
+                "adapter_value_columns": input_payload["adapter_value_columns"],
+                "adapter_remainder_bit_columns": input_payload["adapter_remainder_bit_columns"],
+                "adapter_trace_cells": input_payload["adapter_trace_cells"],
+                "native_adapter_air_proven": True,
             },
             "nanozk_comparison_boundary": {
                 "status": "NO_GO_NOT_NANOZK_COMPARABLE",
@@ -416,31 +428,44 @@ def build_payload_no_mutations(context: dict[str, Any]) -> dict[str, Any]:
             "single_proof_typed_bytes": single_typed,
             "two_proof_frontier_typed_bytes": two_typed,
             "typed_saving_vs_two_proof_bytes": two_typed - single_typed,
+            "typed_delta_vs_two_proof_bytes": single_typed - two_typed,
             "typed_ratio_vs_two_proof": ratio(single_typed, two_typed),
             "single_proof_json_bytes": single_json,
             "two_proof_frontier_json_bytes": two_json,
             "json_saving_vs_two_proof_bytes": two_json - single_json,
+            "json_delta_vs_two_proof_bytes": single_json - two_json,
             "json_ratio_vs_two_proof": ratio(single_json, two_json),
             "single_envelope_bytes": envelope_bytes,
             "pcs_lifting_log_size": input_payload["pcs_lifting_log_size"],
             "attention_fused_typed_bytes": input_payload["current_attention_fused_typed_bytes"],
             "derived_mlp_fused_typed_bytes": input_payload["current_derived_mlp_fused_typed_bytes"],
             "adapter_status": input_payload["adapter_status"],
-            "native_adapter_air_proven": False,
+            "adapter_row_count": input_payload["adapter_row_count"],
+            "adapter_value_columns": input_payload["adapter_value_columns"],
+            "adapter_remainder_bit_columns": input_payload["adapter_remainder_bit_columns"],
+            "adapter_trace_cells": input_payload["adapter_trace_cells"],
+            "native_adapter_air_proven": True,
             "nanozk_reported_d128_block_proof_bytes": nanozk,
             "typed_gap_to_nanozk_reported_bytes": typed_gap_to_nanozk,
             "typed_reduction_needed_to_nanozk_reported_share": ratio(typed_gap_to_nanozk, single_typed),
         },
         "mechanism": {
             "single_proof_object_mechanism": (
-                "attention LogUp interaction trace and six d128 RMSNorm-MLP components are proved "
-                "under one Stwo proof object with shared PCS/Fri plumbing"
+                "attention LogUp interaction trace, native attention-to-d128 adapter AIR, and six d128 "
+                "RMSNorm-MLP components are proved under one Stwo proof object with shared PCS/FRI plumbing"
+            ),
+            "adapter_air_mechanism": (
+                "the adapter proves a fixed 128-row projection from d8 attention outputs into the d128 "
+                "RMSNorm input with quotient/remainder constraints and boolean remainder bits"
             ),
             "explicit_lifting_reason": (
                 "the attention interaction tree is much smaller than the MLP base tree, so the route "
                 "pins an explicit PCS lifting log size instead of relying on publication-v1 None"
             ),
-            "research_signal": "the first verified one-proof object saves 32 typed bytes versus the two-proof frontier",
+            "research_signal": (
+                "native adapter AIR closes a correctness boundary but costs 1232 typed bytes versus the "
+                "current two-proof frontier, so the next target is adapter compression rather than a size claim"
+            ),
         },
         "non_claims": list(NON_CLAIMS),
         "validation_commands": validation_commands,
@@ -473,6 +498,10 @@ def validate_context(context: dict[str, Any]) -> None:
         "target_id": envelope.get("target_id"),
         "verifier_domain": envelope.get("verifier_domain"),
         "adapter_status": input_payload.get("adapter_status"),
+        "adapter_row_count": input_payload.get("adapter_row_count"),
+        "adapter_value_columns": input_payload.get("adapter_value_columns"),
+        "adapter_remainder_bit_columns": input_payload.get("adapter_remainder_bit_columns"),
+        "adapter_trace_cells": input_payload.get("adapter_trace_cells"),
         "pcs_lifting_log_size": input_payload.get("pcs_lifting_log_size"),
         "single_proof_json_bytes": len(_list(envelope.get("proof"), "proof byte array")),
         "single_envelope_bytes": len(_bytes(context.get("envelope_raw_bytes"), "single envelope raw bytes")),
@@ -494,8 +523,8 @@ def validate_context(context: dict[str, Any]) -> None:
         raise NativeAttentionMlpSingleProofGateError("accounting proof JSON bytes drift")
     if local.get("component_sum_bytes") != local.get("typed_size_estimate_bytes"):
         raise NativeAttentionMlpSingleProofGateError("typed accounting component sum drift")
-    if EXPECTED["two_proof_frontier_typed_bytes"] - EXPECTED["single_proof_typed_bytes"] != 32:
-        raise NativeAttentionMlpSingleProofGateError("expected 32-byte typed saving drift")
+    if EXPECTED["single_proof_typed_bytes"] - EXPECTED["two_proof_frontier_typed_bytes"] != 1_232:
+        raise NativeAttentionMlpSingleProofGateError("expected 1232-byte typed adapter cost drift")
 
 
 def mutation_result_placeholder() -> dict[str, Any]:
@@ -530,7 +559,18 @@ def mutation_cases() -> list[tuple[str, Callable[[dict[str, Any]], None]]]:
         ("single_typed_bytes_drift", lambda p: p["summary"].__setitem__("single_proof_typed_bytes", 40_701)),
         ("two_proof_frontier_drift", lambda p: p["summary"].__setitem__("two_proof_frontier_typed_bytes", 40_699)),
         ("proof_json_bytes_drift", lambda p: p["summary"].__setitem__("single_proof_json_bytes", 116_258)),
-        ("adapter_promoted_to_native_air", lambda p: p["routes"]["adapter_boundary"].__setitem__("native_adapter_air_proven", True)),
+        (
+            "adapter_demoted_from_native_air",
+            lambda p: p["routes"]["adapter_boundary"].__setitem__("native_adapter_air_proven", False),
+        ),
+        ("adapter_trace_cells_drift", lambda p: p["summary"].__setitem__("adapter_trace_cells", 1_535)),
+        (
+            "proof_size_saving_promoted",
+            lambda p: p["routes"]["two_proof_frontier_comparison"].__setitem__(
+                "status",
+                "GO_BEATS_CURRENT_TWO_PROOF_TYPED_TARGET",
+            ),
+        ),
         ("pcs_lifting_log_size_drift", lambda p: p["summary"].__setitem__("pcs_lifting_log_size", 0)),
         ("nanozk_win_promoted", lambda p: p["routes"]["nanozk_comparison_boundary"].__setitem__("proof_size_win_claimed", True)),
         ("route_commitment_drift", lambda p: p.__setitem__("route_commitment", "blake2b-256:" + "0" * 64)),
@@ -548,7 +588,7 @@ def to_tsv(payload: dict[str, Any], context: dict[str, Any]) -> str:
         **{key: summary[key] for key in TSV_COLUMNS if key in summary},
     }
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=TSV_COLUMNS, extrasaction="ignore", delimiter="\t")
+    writer = csv.DictWriter(output, fieldnames=TSV_COLUMNS, extrasaction="ignore", delimiter="\t", lineterminator="\n")
     writer.writeheader()
     writer.writerow(row)
     return output.getvalue()

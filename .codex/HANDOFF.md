@@ -1402,6 +1402,17 @@ Validate with
    surface as a second-boundary reproduction; if that question matters, move it
    to the experimental lane or a boundary that actually removes replay
    dependencies.
+14. Treat the native attention+MLP adapter AIR result as a correctness GO and
+    size NO-GO: the regenerated single Stwo proof now proves the 128-row
+    attention-output-to-d128-input adapter inside the same object and verifies
+    locally, but it is `41,932` local typed bytes versus the `40,700` typed-byte
+    two-proof frontier. Do not describe this as proof-size savings or as
+    NANOZK-comparable.
+15. The next high-leverage attack is adapter/query/boundary compression, not
+    merely PCS lifting. The latest lifting ablation projects `40,396` typed
+    bytes even after removing all current positive grouped-field deltas, still
+    `33,496` bytes above NANOZK's paper-reported `6,900` byte row. Follow-up
+    issue `#631` tracks the adapter-compression attack.
 
 ## Resume protocol
 

@@ -2,27 +2,34 @@
 
 ## Result
 
-This PR turns the route budget into a real native Stwo proof-object probe.
+This PR updates the route from a statement-bound adapter probe into a real
+native Stwo proof object with the attention-to-d128 adapter proved inside the
+same object.
 
-The checked result is a narrow GO:
+The checked result is a correctness GO and a size NO-GO:
 
 - one native Stwo proof object verifies locally;
 - it contains the d8 fused attention + Softmax-table LogUp surface and the
   attention-derived d128 RMSNorm-MLP fused surface;
-- local typed proof bytes: `40,668`;
+- it now also proves the 128-row attention-output-to-d128-input adapter as
+  native AIR;
+- local typed proof bytes: `41,932`;
 - previous two-proof frontier: `40,700` typed bytes;
-- typed saving versus that frontier: `32` bytes;
-- typed ratio: `0.999214x`;
-- JSON proof bytes: `115,924`;
+- typed delta versus that frontier: `+1,232` bytes;
+- typed ratio: `1.030270x`;
+- JSON proof bytes: `119,790`;
 - previous two-proof JSON proof bytes: `116,258`;
-- JSON saving: `334` bytes;
-- JSON ratio: `0.997127x`;
+- JSON delta: `+3,532` bytes;
+- JSON ratio: `1.030381x`;
+- adapter rows: `128`;
+- adapter trace cells: `1,536`;
 - explicit PCS lifting log size: `19`.
 
-This is the first checked proof object that puts the attention LogUp surface
-and the six d128 MLP-side components under one Stwo proof. It barely beats the
-two-proof target, so the honest claim is architectural feasibility with a very
-small byte win, not a compression breakthrough yet.
+This is the first checked proof object that puts the attention LogUp surface,
+the native attention-to-d128 adapter, and the six d128 MLP-side components
+under one Stwo proof. It does not beat the two-proof target anymore. That is
+still progress: it closes the value-binding weakness that reviewers would
+attack, and it makes the next compression target precise.
 
 ## Important Constraint
 
@@ -39,7 +46,8 @@ The fix is to pin an explicit route-specific lifting log size:
 - PCS profile: `publication_v1_with_explicit_lifting_log_size`
 
 This is evidence, not just plumbing: the cost of making heterogeneous
-attention/MLP trees live in one proof object is visible in the proof bytes.
+attention/adapter/MLP trees live in one proof object is visible in the proof
+bytes.
 
 ## Interpretation
 
@@ -49,34 +57,36 @@ What it proves:
 
 - attention arithmetic + Softmax-table membership and the d128 MLP surface can
   share one Stwo proof object;
+- the attention-to-d128 handoff is now value-checked by native adapter AIR;
 - the proof verifies and its commitments are recomputed from source rows;
-- the route is below the previous two-proof typed target by `32` bytes.
+- the stricter route costs `1,232` typed bytes over the previous two-proof
+  target.
 
 What it does not prove:
 
-- it does not prove the attention-output-to-d128-input adapter inside AIR;
 - it does not prove a full transformer block;
 - it is not NANOZK-comparable;
 - it is not a proof-size win against NANOZK's reported `6,900` byte d128 row.
 
 Distance to NANOZK remains large:
 
-- single-proof typed bytes: `40,668`;
+- single-proof typed bytes: `41,932`;
 - NANOZK paper-reported d128 block row: `6,900` bytes;
-- gap: `33,768` typed bytes;
-- reduction still needed from this object: `83.0333%`.
+- gap: `35,032` typed bytes;
+- reduction still needed from this object: `83.5448%`.
 
 ## Next Breakthrough Gate
 
 The next useful experiments are:
 
-1. Prove the attention-output-to-d128-input adapter as native AIR, or record a
-   precise NO-GO.
-2. Reduce the explicit-lifting cost from heterogeneous tree sizes.
+1. Compress the adapter AIR representation without weakening value binding.
+2. Reduce query/opening value pressure from the added adapter columns.
 3. Split or reorder components only if it lowers typed bytes while preserving a
    single proof object and verifier binding.
 4. Compare the resulting native object against the two-proof frontier and only
    then revisit external comparison.
+
+Follow-up issue: `#631` tracks the adapter-compression attack.
 
 ## Evidence
 

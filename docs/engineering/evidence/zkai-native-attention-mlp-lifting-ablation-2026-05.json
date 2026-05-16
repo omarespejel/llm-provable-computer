@@ -34,17 +34,17 @@
     "zkai-native-attention-mlp-single-proof-2026-05.envelope.json": {
       "grouped": {
         "fixed_overhead": 48,
-        "fri_decommitments": 12736,
-        "fri_samples": 784,
-        "oods_samples": 11856,
-        "queries_values": 8844,
-        "trace_decommitments": 6400
+        "fri_decommitments": 13184,
+        "fri_samples": 800,
+        "oods_samples": 12240,
+        "queries_values": 9132,
+        "trace_decommitments": 6528
       },
-      "local_typed_bytes": 40668,
-      "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-probe-v1",
-      "proof_json_size_bytes": 115924,
+      "local_typed_bytes": 41932,
+      "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-v1",
+      "proof_json_size_bytes": 119790,
       "role": "single_native_attention_mlp",
-      "statement_version": "zkai-native-attention-mlp-single-proof-object-statement-v1"
+      "statement_version": "zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1"
     }
   },
   "decision": "NO_GO_LIFTING_ONLY_BREAKTHROUGH_FOR_NATIVE_ATTENTION_MLP_SINGLE_PROOF",
@@ -56,7 +56,7 @@
     "single_accounting_json": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json",
     "single_gate_json": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json"
   },
-  "first_blocker": "Removing the whole positive FRI-decommitment overhang would still leave a 40,028 typed-byte projected object, 33,128 bytes above NANOZK's paper-reported row.",
+  "first_blocker": "Removing every positive grouped-field delta would still leave a 40,396 typed-byte projected object, 33,496 bytes above NANOZK's paper-reported row.",
   "group_deltas": {
     "fixed_overhead": {
       "single_minus_two_proof_delta_bytes": -48,
@@ -64,37 +64,38 @@
       "two_proof_typed_bytes": 96
     },
     "fri_decommitments": {
-      "single_minus_two_proof_delta_bytes": 640,
-      "single_typed_bytes": 12736,
+      "single_minus_two_proof_delta_bytes": 1088,
+      "single_typed_bytes": 13184,
       "two_proof_typed_bytes": 12096
     },
     "fri_samples": {
-      "single_minus_two_proof_delta_bytes": -208,
-      "single_typed_bytes": 784,
+      "single_minus_two_proof_delta_bytes": -192,
+      "single_typed_bytes": 800,
       "two_proof_typed_bytes": 992
     },
     "oods_samples": {
-      "single_minus_two_proof_delta_bytes": -128,
-      "single_typed_bytes": 11856,
+      "single_minus_two_proof_delta_bytes": 256,
+      "single_typed_bytes": 12240,
       "two_proof_typed_bytes": 11984
     },
     "queries_values": {
-      "single_minus_two_proof_delta_bytes": -96,
-      "single_typed_bytes": 8844,
+      "single_minus_two_proof_delta_bytes": 192,
+      "single_typed_bytes": 9132,
       "two_proof_typed_bytes": 8940
     },
     "trace_decommitments": {
-      "single_minus_two_proof_delta_bytes": -192,
-      "single_typed_bytes": 6400,
+      "single_minus_two_proof_delta_bytes": -64,
+      "single_typed_bytes": 6528,
       "two_proof_typed_bytes": 6592
     }
   },
   "mechanism": [
-    "the one-proof object saves fixed overhead, FRI samples, OODS samples, query values, and trace decommitments",
-    "the only positive typed-field delta versus the two-proof frontier is FRI decommitments",
-    "that positive delta is 640 typed bytes and is consistent with the heterogeneous-tree lifting cost",
-    "removing all 640 bytes would improve the object, but only to 40,028 typed bytes",
-    "40,028 typed bytes is still 5.801159x NANOZK's paper-reported 6,900 byte d128 row",
+    "the native-adapter one-proof object saves fixed overhead, FRI samples, and trace decommitments",
+    "the positive typed-field deltas versus the two-proof frontier are FRI decommitments, OODS samples, and query values",
+    "those positive deltas total 1536 typed bytes, with 1088 bytes from FRI decommitments",
+    "removing only the FRI-decommitment overhang would still leave a 40,844 typed-byte object",
+    "removing every positive grouped-field delta would still leave a 40,396 typed-byte object",
+    "40,396 typed bytes is still 5.854493x NANOZK's paper-reported 6,900 byte d128 row",
     "therefore the next serious attack must change the proved surface or query/opening economics, not only the lifting knob"
   ],
   "mutation_inventory": {
@@ -223,28 +224,28 @@
       }
     ]
   },
-  "next_research_step": "attack native adapter AIR, query-value reduction, or a stronger component boundary; do not spend the next slice only shaving PCS lifting overhead",
+  "next_research_step": "attack adapter compression, query-value reduction, or a stronger component boundary; do not spend the next slice only shaving PCS lifting overhead",
   "non_claims": [
     "not a regenerated proof after removing lifting overhead",
-    "not proof that the 640 bytes are removable without verifier changes",
+    "not proof that the 1536 positive grouped-field bytes are removable without verifier changes",
     "not a NANOZK proof-size win",
     "not a matched NANOZK workload or benchmark",
-    "not native AIR proof of the attention-output-to-d128-input adapter",
+    "not proof-size savings from native adapter AIR",
     "not a full transformer block proof",
     "not timing evidence",
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:bb02be4b5e818e986fd4a6fbb0dbc74667e67df18ee532381c06646e858cbdc6",
-  "question": "Does the heterogeneous-tree PCS lifting overhang explain why the first native attention-plus-MLP single proof barely beats the two-proof frontier?",
-  "result": "NARROW_CLAIM_FRI_DECOMMITMENT_OVERHANG_IS_REAL_BUT_TOO_SMALL",
+  "payload_commitment": "sha256:ffc119ecea8a383a6d184490c1852452f949d05cc49477890a74519b2ff2a207",
+  "question": "Does the heterogeneous-tree PCS lifting overhang explain why the native-adapter attention-plus-MLP single proof is larger than the two-proof frontier?",
+  "result": "NARROW_CLAIM_LIFTING_AND_QUERY_OVERHANGS_REAL_BUT_TOO_SMALL",
   "route_id": "native_attention_mlp_single_proof_pcs_lifting_ablation_v1",
   "schema": "zkai-native-attention-mlp-lifting-ablation-gate-v1",
   "source_artifacts": [
     {
       "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json",
-      "sha256": "d49ce50d922a1c90ff88863fa5fccdff5ff2983df7b6d06ff2939d3f3742cef5",
-      "size_bytes": 5813
+      "sha256": "96073160916177a2dad18aff8b85616774cac60bdc8734f50d59848c315bdb9a",
+      "size_bytes": 5852
     },
     {
       "path": "docs/engineering/evidence/zkai-d128-attention-mlp-boundary-frontier-accounting-2026-05.json",
@@ -253,8 +254,8 @@
     },
     {
       "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json",
-      "sha256": "573b223c31251434d2587078a7fdcf3ba6c962400cbc39eb2badb055f93b64ac",
-      "size_bytes": 8014
+      "sha256": "7e68dac61d177b61b98468d1ad788756af7e06890585fa726fa3a5fdfbaade4c",
+      "size_bytes": 9134
     },
     {
       "path": "docs/engineering/evidence/zkai-d128-attention-mlp-boundary-frontier-2026-05.json",
@@ -263,24 +264,35 @@
     }
   ],
   "summary": {
-    "current_gap_to_nanozk_reported_bytes": 33768,
-    "current_reduction_needed_to_nanozk_share": 0.830333,
-    "current_typed_ratio_vs_two_proof": 0.999214,
-    "current_typed_saving_vs_two_proof_bytes": 32,
-    "fri_decommitment_overhang_bytes": 640,
+    "current_gap_to_nanozk_reported_bytes": 35032,
+    "current_reduction_needed_to_nanozk_share": 0.835448,
+    "current_typed_ratio_vs_two_proof": 1.03027,
+    "current_typed_saving_vs_two_proof_bytes": -1232,
+    "fri_decommitment_overhang_bytes": 1088,
     "lifting_only_breakthrough_status": "NO_GO",
     "nanozk_reported_d128_block_proof_bytes": 6900,
-    "negative_delta_bytes": -672,
-    "next_attack": "native_adapter_air_or_query_value_reduction_or_boundary_restructure",
+    "negative_delta_bytes": -304,
+    "next_attack": "adapter_compression_or_query_value_reduction_or_boundary_restructure",
     "positive_overhang_group": "fri_decommitments",
-    "projected_gap_to_nanozk_reported_bytes": 33128,
-    "projected_ratio_vs_nanozk_reported": 5.801159,
-    "projected_ratio_vs_two_proof": 0.983489,
-    "projected_reduction_needed_to_nanozk_share": 0.827621,
-    "projected_saving_vs_two_proof_bytes": 672,
-    "projected_saving_vs_two_proof_share": 0.016511,
-    "projected_typed_bytes_without_fri_overhang": 40028,
-    "single_proof_typed_bytes": 40668,
+    "positive_overhang_groups": [
+      "fri_decommitments",
+      "oods_samples",
+      "queries_values"
+    ],
+    "positive_overhang_total_bytes": 1536,
+    "projected_all_positive_overhang_gap_to_nanozk_reported_bytes": 33496,
+    "projected_all_positive_overhang_ratio_vs_nanozk_reported": 5.854493,
+    "projected_all_positive_overhang_ratio_vs_two_proof": 0.992531,
+    "projected_all_positive_overhang_saving_vs_two_proof_bytes": 304,
+    "projected_gap_to_nanozk_reported_bytes": 33944,
+    "projected_ratio_vs_nanozk_reported": 5.91942,
+    "projected_ratio_vs_two_proof": 1.003538,
+    "projected_reduction_needed_to_nanozk_share": 0.831065,
+    "projected_saving_vs_two_proof_bytes": -144,
+    "projected_saving_vs_two_proof_share": -0.003538,
+    "projected_typed_bytes_without_all_positive_overhangs": 40396,
+    "projected_typed_bytes_without_fri_overhang": 40844,
+    "single_proof_typed_bytes": 41932,
     "two_proof_frontier_typed_bytes": 40700
   },
   "two_proof_grouped": {

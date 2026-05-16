@@ -27,13 +27,13 @@ JSON_OUT = EVIDENCE_DIR / "zkai-native-attention-mlp-adapter-air-frontier-2026-0
 TSV_OUT = EVIDENCE_DIR / "zkai-native-attention-mlp-adapter-air-frontier-2026-05.tsv"
 
 SCHEMA = "zkai-native-attention-mlp-adapter-air-frontier-gate-v1"
-DECISION = "NARROW_CLAIM_NATIVE_ADAPTER_AIR_FRONTIER_PINNED"
-RESULT = "GO_CONSTRAINT_SURFACE_READY_NO_GO_SIZE_BREAKTHROUGH"
-ISSUE = "https://github.com/omarespejel/provable-transformer-vm/issues/603"
+DECISION = "NARROW_CLAIM_NATIVE_ADAPTER_AIR_FRONTIER_CLOSED"
+RESULT = "GO_NATIVE_ADAPTER_AIR_PROVEN_NO_GO_SIZE_BREAKTHROUGH"
+ISSUE = "https://github.com/omarespejel/provable-transformer-vm/issues/629"
 ROUTE_ID = "native_attention_mlp_adapter_air_frontier_v1"
 CLAIM_BOUNDARY = (
     "PINS_THE_EXACT_NATIVE_AIR_CONSTRAINT_SURFACE_FOR_THE_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER_"
-    "WITHOUT_REGENERATING_A_STWO_PROOF_OR_CLAIMING_PROOF_SIZE_IMPROVEMENT"
+    "WITH_A_REGENERATED_STWO_PROOF_BUT_WITHOUT_CLAIMING_PROOF_SIZE_IMPROVEMENT"
 )
 PAYLOAD_DOMAIN = "ptvm:zkai:native-attention-mlp-adapter-air-frontier:v1"
 DERIVED_INPUT_DOMAIN = "ptvm:zkai:d128-input-activation:v1"
@@ -64,21 +64,23 @@ EXPECTED_DERIVED_INPUT = {
 EXPECTED_SINGLE = {
     "schema": "zkai-native-attention-mlp-single-proof-object-gate-v1",
     "decision": "GO_NATIVE_ATTENTION_MLP_SINGLE_STWO_PROOF_OBJECT_VERIFIES",
-    "result": "NARROW_CLAIM_SINGLE_PROOF_OBJECT_BARELY_BEATS_TWO_PROOF_FRONTIER",
-    "adapter_status": "STATEMENT_BOUND_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER_NOT_NATIVE_AIR",
-    "single_proof_typed_bytes": 40_668,
+    "result": "NARROW_CLAIM_NATIVE_ADAPTER_AIR_VERIFIES_WITH_TYPED_SIZE_COST",
+    "adapter_status": "NATIVE_AIR_PROVEN_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER",
+    "single_proof_typed_bytes": 41_932,
     "two_proof_frontier_typed_bytes": 40_700,
-    "typed_saving_vs_two_proof_bytes": 32,
-    "typed_gap_to_nanozk_reported_bytes": 33_768,
+    "typed_saving_vs_two_proof_bytes": -1_232,
+    "adapter_trace_cells": 1_536,
+    "native_adapter_air_proven": True,
+    "typed_gap_to_nanozk_reported_bytes": 35_032,
 }
 
 EXPECTED_LIFTING = {
     "schema": "zkai-native-attention-mlp-lifting-ablation-gate-v1",
     "decision": "NO_GO_LIFTING_ONLY_BREAKTHROUGH_FOR_NATIVE_ATTENTION_MLP_SINGLE_PROOF",
-    "result": "NARROW_CLAIM_FRI_DECOMMITMENT_OVERHANG_IS_REAL_BUT_TOO_SMALL",
-    "projected_typed_bytes_without_fri_overhang": 40_028,
-    "projected_gap_to_nanozk_reported_bytes": 33_128,
-    "next_attack": "native_adapter_air_or_query_value_reduction_or_boundary_restructure",
+    "result": "NARROW_CLAIM_LIFTING_AND_QUERY_OVERHANGS_REAL_BUT_TOO_SMALL",
+    "projected_typed_bytes_without_fri_overhang": 40_844,
+    "projected_gap_to_nanozk_reported_bytes": 33_944,
+    "next_attack": "adapter_compression_or_query_value_reduction_or_boundary_restructure",
 }
 
 ADAPTER_COLUMNS = (
@@ -107,8 +109,7 @@ CONSTRAINTS = (
 )
 
 NON_CLAIMS = (
-    "not a regenerated Stwo proof with the adapter component included",
-    "not proof-size savings",
+    "not proof-size savings from native adapter AIR",
     "not a NANOZK proof-size win",
     "not a matched NANOZK workload or benchmark",
     "not exact real-valued Softmax",
@@ -416,8 +417,8 @@ def build_payload() -> dict[str, Any]:
     typed_slack = single_summary["two_proof_frontier_typed_bytes"] - single_summary["single_proof_typed_bytes"]
     adapter_trace_cells = WIDTH * (len(ADAPTER_COLUMNS) + REMAINDER_BITS)
     candidate = {
-        "status": "READY_FOR_NATIVE_AIR_IMPLEMENTATION",
-        "native_adapter_air_proven_in_current_artifact": False,
+        "status": "IMPLEMENTED_IN_SINGLE_STWO_PROOF_OBJECT",
+        "native_adapter_air_proven_in_current_artifact": True,
         "policy_id": EXPECTED_DERIVED_INPUT["adapter_policy_id"],
         "source_attention_outputs_commitment": EXPECTED_DERIVED_INPUT["source_attention_outputs_commitment"],
         "output_d128_input_activation_commitment": EXPECTED_DERIVED_INPUT["derived_input_activation_commitment"],
@@ -436,15 +437,15 @@ def build_payload() -> dict[str, Any]:
         "two_proof_frontier_typed_bytes": single_summary["two_proof_frontier_typed_bytes"],
         "typed_slack_vs_two_proof_bytes": typed_slack,
         "max_adapter_overhead_for_size_win_bytes": typed_slack,
-        "native_adapter_air_size_breakthrough_gate": "NO_GO_UNTIL_REPROVEN_OVERHEAD_IS_AT_MOST_32_TYPED_BYTES",
-        "correctness_next_step": "implement the adapter component in the one-proof Stwo object even if typed bytes increase",
+        "native_adapter_air_size_breakthrough_gate": "NO_GO_NATIVE_ADAPTER_AIR_COSTS_1232_TYPED_BYTES_VS_TWO_PROOF_FRONTIER",
+        "correctness_next_step": "compress the adapter AIR or restructure the proof boundary before claiming size savings",
         "nanozk_reported_d128_block_proof_bytes": NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES,
         "current_gap_to_nanozk_reported_bytes": single_summary["typed_gap_to_nanozk_reported_bytes"],
         "projected_gap_after_lifting_only_bytes": lifting_summary["projected_gap_to_nanozk_reported_bytes"],
     }
     summary = {
         "native_adapter_air_status": candidate["status"],
-        "native_adapter_air_proven_in_current_artifact": False,
+        "native_adapter_air_proven_in_current_artifact": True,
         "adapter_rows": candidate["rows"],
         "adapter_columns": candidate["column_count"],
         "adapter_trace_cells": candidate["trace_cells"],
@@ -458,7 +459,7 @@ def build_payload() -> dict[str, Any]:
         "nanozk_reported_d128_block_proof_bytes": NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES,
         "current_gap_to_nanozk_reported_bytes": budget["current_gap_to_nanozk_reported_bytes"],
         "native_adapter_air_size_breakthrough_status": "NO_GO",
-        "next_attack": "implement_adapter_air_then_measure_real_typed_overhead",
+        "next_attack": "compress_adapter_air_or_restructure_boundary_then_measure_real_typed_overhead",
     }
     payload = {
         "schema": SCHEMA,
@@ -499,11 +500,11 @@ def validate_payload(payload: Any) -> None:
     if data.get("validation_commands") != list(VALIDATION_COMMANDS):
         raise AdapterAirFrontierError("validation commands drift")
     summary = _dict(data.get("summary"), "summary")
-    if _bool(summary.get("native_adapter_air_proven_in_current_artifact"), "native adapter proven") is not False:
-        raise AdapterAirFrontierError("native adapter AIR overclaim")
+    if _bool(summary.get("native_adapter_air_proven_in_current_artifact"), "native adapter proven") is not True:
+        raise AdapterAirFrontierError("native adapter AIR proof drift")
     if summary.get("native_adapter_air_size_breakthrough_status") != "NO_GO":
         raise AdapterAirFrontierError("native adapter size breakthrough overclaim")
-    if _int(summary.get("max_adapter_overhead_for_size_win_bytes"), "adapter overhead budget") != 32:
+    if _int(summary.get("max_adapter_overhead_for_size_win_bytes"), "adapter overhead budget") != -1_232:
         raise AdapterAirFrontierError("adapter overhead budget drift")
     expected = build_payload()
     for key in CORE_KEYS - {"payload_commitment"}:
@@ -541,8 +542,8 @@ def _payload_commitment_drift(payload: dict[str, Any]) -> None:
 MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
     ("decision_promoted_to_full_block", lambda p: p.__setitem__("decision", "GO_FULL_TRANSFORMER_BLOCK"), True),
     (
-        "adapter_air_marked_proven",
-        lambda p: p["summary"].__setitem__("native_adapter_air_proven_in_current_artifact", True),
+        "adapter_air_demoted_from_current_artifact",
+        lambda p: p["summary"].__setitem__("native_adapter_air_proven_in_current_artifact", False),
         True,
     ),
     (
