@@ -48,14 +48,34 @@ NANOZK_REPORTED_D128_BLOCK_PROOF_BYTES = 6_900
 MAX_JSON_BYTES = 16 * 1024 * 1024
 
 CURRENT_EXPECTED = {
+    "schema": "zkai-native-attention-mlp-single-proof-object-gate-v1",
+    "decision": "GO_NATIVE_ATTENTION_MLP_SINGLE_STWO_PROOF_OBJECT_VERIFIES",
+    "result": "NARROW_CLAIM_NATIVE_ADAPTER_AIR_VERIFIES_WITH_TYPED_SIZE_COST",
     "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-v1",
     "statement_version": "zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1",
     "adapter_status": "NATIVE_AIR_PROVEN_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER",
+    "native_adapter_air_proven": True,
+    "adapter_row_count": WIDTH,
+    "adapter_value_columns": 9,
+    "adapter_remainder_bit_columns": 3,
     "adapter_trace_cells": 1_536,
     "single_proof_json_bytes": 119_790,
     "single_proof_typed_bytes": 41_932,
     "single_envelope_bytes": 1_253_874,
     "two_proof_frontier_typed_bytes": TWO_PROOF_TYPED_BYTES,
+}
+
+EXPECTED_SOURCE_ARTIFACTS = {
+    "current_single_proof_gate": {
+        "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json",
+        "sha256": "7e68dac61d177b61b98468d1ad788756af7e06890585fa726fa3a5fdfbaade4c",
+        "payload_sha256": "5d09a1afd4c6926932b7c9a4234dcd10c893ab11fff14f1d72188b381dcd5d34",
+    },
+    "current_single_proof_binary_accounting": {
+        "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json",
+        "sha256": "96073160916177a2dad18aff8b85616774cac60bdc8734f50d59848c315bdb9a",
+        "payload_sha256": "a8a6a23e3fb08223a8ca631095d89ccc26c69d8930ec77fde9d69e8b940f1189",
+    },
 }
 
 GROUP_KEYS = (
@@ -368,13 +388,36 @@ def validate_current_sources(sources: dict[str, Any]) -> None:
     routes = _dict(gate.get("routes"), "current single proof routes")
     adapter_route = _dict(routes.get("adapter_boundary"), "adapter route")
     native_route = _dict(routes.get("native_single_proof_object"), "native single proof route")
+    artifacts = {
+        _str(artifact.get("id"), "source artifact id"): artifact
+        for artifact in _list(sources.get("source_artifacts"), "source artifacts")
+    }
+    if set(artifacts) != set(EXPECTED_SOURCE_ARTIFACTS):
+        raise AdapterCompressionAblationError("source artifact inventory drift")
+    for artifact_id, expected_artifact in EXPECTED_SOURCE_ARTIFACTS.items():
+        artifact = _dict(artifacts[artifact_id], f"{artifact_id} artifact")
+        if artifact != {"id": artifact_id, **expected_artifact}:
+            raise AdapterCompressionAblationError(f"{artifact_id} hash drift")
     for key, expected in CURRENT_EXPECTED.items():
-        if key in {"proof_backend_version", "statement_version"}:
+        if key in {"schema", "decision", "result"}:
+            actual = gate.get(key)
+        elif key in {"proof_backend_version", "statement_version"}:
             actual = native_route.get(key)
         else:
             actual = summary.get(key)
         if actual != expected:
             raise AdapterCompressionAblationError(f"current source {key} drift")
+    if adapter_route.get("native_adapter_air_proven") is not True:
+        raise AdapterCompressionAblationError("adapter route native AIR proof drift")
+    for key in (
+        "adapter_status",
+        "adapter_row_count",
+        "adapter_value_columns",
+        "adapter_remainder_bit_columns",
+        "adapter_trace_cells",
+    ):
+        if adapter_route.get(key) != summary.get(key):
+            raise AdapterCompressionAblationError(f"adapter route {key} mismatch")
 
     accounting = _dict(sources["accounting"], "current accounting")
     rows = _list(accounting.get("rows"), "current accounting rows")
@@ -678,6 +721,11 @@ def write_text_atomic(path: pathlib.Path, text: str) -> None:
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temp_path, path)
+        parent_fd = os.open(parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(parent_fd)
+        finally:
+            os.close(parent_fd)
     finally:
         if temp_path.exists():
             temp_path.unlink()
