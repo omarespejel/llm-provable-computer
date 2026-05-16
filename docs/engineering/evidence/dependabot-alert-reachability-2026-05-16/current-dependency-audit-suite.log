@@ -1,0 +1,2041 @@
+[dependency-audit] cargo audit: root (Cargo.lock)
+[dependency-audit] allowed advisories: RUSTSEC-2024-0388, RUSTSEC-2024-0436, RUSTSEC-2025-0141, RUSTSEC-2026-0002
+[dependency-audit] cargo deny: root (Cargo.toml)
+warning[license-not-encountered]: license was not encountered
+   ┌─ <workspace>/deny.toml:35:4
+   │
+35 │   "NCSA",
+   │    ━━━━ unmatched license allowance
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-ff'
+   ┌─ <workspace>/Cargo.lock:15:1
+   │  
+15 │ ╭ ark-ff 0.4.2 registry+https://github.com/rust-lang/crates.io-index
+16 │ │ ark-ff 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰──────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-ff v0.4.2
+     └── starknet-ff v0.3.7
+         ├── starknet-crypto v0.6.2
+         │   └── stwo v2.2.0
+         │       ├── llm-provable-computer v0.1.0
+         │       └── stwo-constraint-framework v2.2.0
+         │           └── llm-provable-computer v0.1.0 (*)
+         ├── starknet-crypto-codegen v0.3.3
+         │   └── starknet-crypto v0.6.2 (*)
+         ├── starknet-curve v0.4.2
+         │   ├── starknet-crypto v0.6.2 (*)
+         │   └── starknet-crypto-codegen v0.3.3 (*)
+         └── stwo v2.2.0 (*)
+   ├ ark-ff v0.5.0
+     └── llm-provable-computer v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-ff-asm'
+   ┌─ <workspace>/Cargo.lock:17:1
+   │  
+17 │ ╭ ark-ff-asm 0.4.2 registry+https://github.com/rust-lang/crates.io-index
+18 │ │ ark-ff-asm 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-ff-asm v0.4.2
+     └── ark-ff v0.4.2
+         └── starknet-ff v0.3.7
+             ├── starknet-crypto v0.6.2
+             │   └── stwo v2.2.0
+             │       ├── llm-provable-computer v0.1.0
+             │       └── stwo-constraint-framework v2.2.0
+             │           └── llm-provable-computer v0.1.0 (*)
+             ├── starknet-crypto-codegen v0.3.3
+             │   └── starknet-crypto v0.6.2 (*)
+             ├── starknet-curve v0.4.2
+             │   ├── starknet-crypto v0.6.2 (*)
+             │   └── starknet-crypto-codegen v0.3.3 (*)
+             └── stwo v2.2.0 (*)
+   ├ ark-ff-asm v0.5.0
+     └── ark-ff v0.5.0
+         └── llm-provable-computer v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-ff-macros'
+   ┌─ <workspace>/Cargo.lock:19:1
+   │  
+19 │ ╭ ark-ff-macros 0.4.2 registry+https://github.com/rust-lang/crates.io-index
+20 │ │ ark-ff-macros 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-ff-macros v0.4.2
+     └── ark-ff v0.4.2
+         └── starknet-ff v0.3.7
+             ├── starknet-crypto v0.6.2
+             │   └── stwo v2.2.0
+             │       ├── llm-provable-computer v0.1.0
+             │       └── stwo-constraint-framework v2.2.0
+             │           └── llm-provable-computer v0.1.0 (*)
+             ├── starknet-crypto-codegen v0.3.3
+             │   └── starknet-crypto v0.6.2 (*)
+             ├── starknet-curve v0.4.2
+             │   ├── starknet-crypto v0.6.2 (*)
+             │   └── starknet-crypto-codegen v0.3.3 (*)
+             └── stwo v2.2.0 (*)
+   ├ ark-ff-macros v0.5.0
+     └── ark-ff v0.5.0
+         └── llm-provable-computer v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-serialize'
+   ┌─ <workspace>/Cargo.lock:21:1
+   │  
+21 │ ╭ ark-serialize 0.4.2 registry+https://github.com/rust-lang/crates.io-index
+22 │ │ ark-serialize 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-serialize v0.4.2
+     └── ark-ff v0.4.2
+         └── starknet-ff v0.3.7
+             ├── starknet-crypto v0.6.2
+             │   └── stwo v2.2.0
+             │       ├── llm-provable-computer v0.1.0
+             │       └── stwo-constraint-framework v2.2.0
+             │           └── llm-provable-computer v0.1.0 (*)
+             ├── starknet-crypto-codegen v0.3.3
+             │   └── starknet-crypto v0.6.2 (*)
+             ├── starknet-curve v0.4.2
+             │   ├── starknet-crypto v0.6.2 (*)
+             │   └── starknet-crypto-codegen v0.3.3 (*)
+             └── stwo v2.2.0 (*)
+   ├ ark-serialize v0.5.0
+     └── ark-ff v0.5.0
+         └── llm-provable-computer v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-std'
+   ┌─ <workspace>/Cargo.lock:23:1
+   │  
+23 │ ╭ ark-std 0.4.0 registry+https://github.com/rust-lang/crates.io-index
+24 │ │ ark-std 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-std v0.4.0
+     ├── ark-ff v0.4.2
+     │   └── starknet-ff v0.3.7
+     │       ├── starknet-crypto v0.6.2
+     │       │   └── stwo v2.2.0
+     │       │       ├── llm-provable-computer v0.1.0
+     │       │       └── stwo-constraint-framework v2.2.0
+     │       │           └── llm-provable-computer v0.1.0 (*)
+     │       ├── starknet-crypto-codegen v0.3.3
+     │       │   └── starknet-crypto v0.6.2 (*)
+     │       ├── starknet-curve v0.4.2
+     │       │   ├── starknet-crypto v0.6.2 (*)
+     │       │   └── starknet-crypto-codegen v0.3.3 (*)
+     │       └── stwo v2.2.0 (*)
+     └── ark-serialize v0.4.2
+         └── ark-ff v0.4.2 (*)
+   ├ ark-std v0.5.0
+     ├── ark-ff v0.5.0
+     │   └── llm-provable-computer v0.1.0
+     └── ark-serialize v0.5.0
+         └── ark-ff v0.5.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'cpufeatures'
+   ┌─ <workspace>/Cargo.lock:79:1
+   │  
+79 │ ╭ cpufeatures 0.2.17 registry+https://github.com/rust-lang/crates.io-index
+80 │ │ cpufeatures 0.3.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ cpufeatures v0.2.17
+     ├── keccak v0.1.6
+     │   └── sha3 v0.10.8
+     │       └── llm-provable-computer v0.1.0
+     └── sha2 v0.10.9
+         ├── llm-provable-computer v0.1.0 (*)
+         ├── (build) pest_meta v2.8.6
+         │   └── pest_generator v2.8.6
+         │       └── pest_derive v2.8.6
+         │           └── liquid-core v0.26.11
+         │               ├── liquid v0.26.11
+         │               │   ├── (build) tract-linalg v0.23.0-dev.2
+         │               │   │   └── tract-core v0.23.0-dev.2
+         │               │   │       ├── tract-hir v0.23.0-dev.2
+         │               │   │       │   └── tract-onnx v0.23.0-dev.2
+         │               │   │       │       └── llm-provable-computer v0.1.0 (*)
+         │               │   │       └── tract-nnef v0.23.0-dev.2
+         │               │   │           ├── tract-extra v0.23.0-dev.2
+         │               │   │           │   ├── tract-onnx v0.23.0-dev.2 (*)
+         │               │   │           │   └── tract-onnx-opl v0.23.0-dev.2
+         │               │   │           │       └── tract-onnx v0.23.0-dev.2 (*)
+         │               │   │           ├── tract-onnx v0.23.0-dev.2 (*)
+         │               │   │           ├── tract-onnx-opl v0.23.0-dev.2 (*)
+         │               │   │           └── tract-pulse-opl v0.23.0-dev.2
+         │               │   │               └── tract-pulse v0.23.0-dev.2
+         │               │   │                   └── tract-extra v0.23.0-dev.2 (*)
+         │               │   └── tract-nnef v0.23.0-dev.2 (*)
+         │               ├── liquid-lib v0.26.11
+         │               │   └── liquid v0.26.11 (*)
+         │               ├── (build) tract-linalg v0.23.0-dev.2 (*)
+         │               └── tract-nnef v0.23.0-dev.2 (*)
+         └── starknet-crypto v0.6.2
+             └── stwo v2.2.0
+                 ├── llm-provable-computer v0.1.0 (*)
+                 └── stwo-constraint-framework v2.2.0
+                     └── llm-provable-computer v0.1.0 (*)
+   ├ cpufeatures v0.3.0
+     └── blake3 v1.8.4
+         └── stwo v2.2.0
+             ├── llm-provable-computer v0.1.0
+             └── stwo-constraint-framework v2.2.0
+                 └── llm-provable-computer v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'darling'
+   ┌─ <workspace>/Cargo.lock:94:1
+   │  
+94 │ ╭ darling 0.20.11 registry+https://github.com/rust-lang/crates.io-index
+95 │ │ darling 0.23.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ darling v0.20.11
+     └── macerator-macros v0.1.4
+         └── macerator v0.2.10
+             └── burn-ndarray v0.20.1
+                 └── burn v0.20.1
+                     └── llm-provable-computer v0.1.0
+   ├ darling v0.23.0
+     └── instability v0.3.12
+         └── ratatui v0.29.0
+             └── llm-provable-computer v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'darling_core'
+   ┌─ <workspace>/Cargo.lock:96:1
+   │  
+96 │ ╭ darling_core 0.20.11 registry+https://github.com/rust-lang/crates.io-index
+97 │ │ darling_core 0.23.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ darling_core v0.20.11
+     ├── darling v0.20.11
+     │   └── macerator-macros v0.1.4
+     │       └── macerator v0.2.10
+     │           └── burn-ndarray v0.20.1
+     │               └── burn v0.20.1
+     │                   └── llm-provable-computer v0.1.0
+     └── darling_macro v0.20.11
+         └── darling v0.20.11 (*)
+   ├ darling_core v0.23.0
+     ├── darling v0.23.0
+     │   └── instability v0.3.12
+     │       └── ratatui v0.29.0
+     │           └── llm-provable-computer v0.1.0
+     └── darling_macro v0.23.0
+         └── darling v0.23.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'darling_macro'
+   ┌─ <workspace>/Cargo.lock:98:1
+   │  
+98 │ ╭ darling_macro 0.20.11 registry+https://github.com/rust-lang/crates.io-index
+99 │ │ darling_macro 0.23.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰──────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ darling_macro v0.20.11
+     └── darling v0.20.11
+         └── macerator-macros v0.1.4
+             └── macerator v0.2.10
+                 └── burn-ndarray v0.20.1
+                     └── burn v0.20.1
+                         └── llm-provable-computer v0.1.0
+   ├ darling_macro v0.23.0
+     └── darling v0.23.0
+         └── instability v0.3.12
+             └── ratatui v0.29.0
+                 └── llm-provable-computer v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'derive-new'
+    ┌─ <workspace>/Cargo.lock:104:1
+    │  
+104 │ ╭ derive-new 0.5.9 registry+https://github.com/rust-lang/crates.io-index
+105 │ │ derive-new 0.7.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ derive-new v0.5.9
+      ├── tract-core v0.23.0-dev.2
+      │   ├── tract-hir v0.23.0-dev.2
+      │   │   └── tract-onnx v0.23.0-dev.2
+      │   │       └── llm-provable-computer v0.1.0
+      │   └── tract-nnef v0.23.0-dev.2
+      │       ├── tract-extra v0.23.0-dev.2
+      │       │   ├── tract-onnx v0.23.0-dev.2 (*)
+      │       │   └── tract-onnx-opl v0.23.0-dev.2
+      │       │       └── tract-onnx v0.23.0-dev.2 (*)
+      │       ├── tract-onnx v0.23.0-dev.2 (*)
+      │       ├── tract-onnx-opl v0.23.0-dev.2 (*)
+      │       └── tract-pulse-opl v0.23.0-dev.2
+      │           └── tract-pulse v0.23.0-dev.2
+      │               └── tract-extra v0.23.0-dev.2 (*)
+      ├── tract-hir v0.23.0-dev.2 (*)
+      ├── tract-linalg v0.23.0-dev.2
+      │   └── tract-core v0.23.0-dev.2 (*)
+      └── tract-onnx v0.23.0-dev.2 (*)
+    ├ derive-new v0.7.0
+      ├── burn-autodiff v0.20.1
+      │   └── burn-ndarray v0.20.1
+      │       └── burn v0.20.1
+      │           └── llm-provable-computer v0.1.0
+      ├── burn-backend v0.20.1
+      │   ├── burn-autodiff v0.20.1 (*)
+      │   ├── burn-ir v0.20.1
+      │   │   └── burn-ndarray v0.20.1 (*)
+      │   ├── burn-ndarray v0.20.1 (*)
+      │   └── burn-tensor v0.20.1
+      │       └── burn-core v0.20.1
+      │           ├── burn v0.20.1 (*)
+      │           ├── burn-nn v0.20.1
+      │           │   └── burn v0.20.1 (*)
+      │           └── burn-optim v0.20.1
+      │               └── burn v0.20.1 (*)
+      ├── burn-core v0.20.1 (*)
+      ├── burn-derive v0.20.1
+      │   └── burn-core v0.20.1 (*)
+      ├── burn-optim v0.20.1 (*)
+      ├── burn-tensor v0.20.1 (*)
+      └── cubecl-common v0.9.0
+          └── burn-std v0.20.1
+              ├── burn-autodiff v0.20.1 (*)
+              ├── burn-backend v0.20.1 (*)
+              ├── burn-core v0.20.1 (*)
+              ├── burn-ndarray v0.20.1 (*)
+              └── burn-tensor v0.20.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'educe'
+    ┌─ <workspace>/Cargo.lock:115:1
+    │  
+115 │ ╭ educe 0.5.11 registry+https://github.com/rust-lang/crates.io-index
+116 │ │ educe 0.6.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ educe v0.5.11
+      └── stwo v2.2.0
+          ├── llm-provable-computer v0.1.0
+          └── stwo-constraint-framework v2.2.0
+              └── llm-provable-computer v0.1.0 (*)
+    ├ educe v0.6.0
+      └── ark-ff v0.5.0
+          └── llm-provable-computer v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'embedded-hal'
+    ┌─ <workspace>/Cargo.lock:121:1
+    │  
+121 │ ╭ embedded-hal 0.2.7 registry+https://github.com/rust-lang/crates.io-index
+122 │ │ embedded-hal 1.0.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ embedded-hal v0.2.7
+      └── embassy-time v0.4.0
+          └── cubecl-common v0.9.0
+              └── burn-std v0.20.1
+                  ├── burn-autodiff v0.20.1
+                  │   └── burn-ndarray v0.20.1
+                  │       └── burn v0.20.1
+                  │           └── llm-provable-computer v0.1.0
+                  ├── burn-backend v0.20.1
+                  │   ├── burn-autodiff v0.20.1 (*)
+                  │   ├── burn-ir v0.20.1
+                  │   │   └── burn-ndarray v0.20.1 (*)
+                  │   ├── burn-ndarray v0.20.1 (*)
+                  │   └── burn-tensor v0.20.1
+                  │       └── burn-core v0.20.1
+                  │           ├── burn v0.20.1 (*)
+                  │           ├── burn-nn v0.20.1
+                  │           │   └── burn v0.20.1 (*)
+                  │           └── burn-optim v0.20.1
+                  │               └── burn v0.20.1 (*)
+                  ├── burn-core v0.20.1 (*)
+                  ├── burn-ndarray v0.20.1 (*)
+                  └── burn-tensor v0.20.1 (*)
+    ├ embedded-hal v1.0.0
+      ├── embassy-time v0.4.0
+      │   └── cubecl-common v0.9.0
+      │       └── burn-std v0.20.1
+      │           ├── burn-autodiff v0.20.1
+      │           │   └── burn-ndarray v0.20.1
+      │           │       └── burn v0.20.1
+      │           │           └── llm-provable-computer v0.1.0
+      │           ├── burn-backend v0.20.1
+      │           │   ├── burn-autodiff v0.20.1 (*)
+      │           │   ├── burn-ir v0.20.1
+      │           │   │   └── burn-ndarray v0.20.1 (*)
+      │           │   ├── burn-ndarray v0.20.1 (*)
+      │           │   └── burn-tensor v0.20.1
+      │           │       └── burn-core v0.20.1
+      │           │           ├── burn v0.20.1 (*)
+      │           │           ├── burn-nn v0.20.1
+      │           │           │   └── burn v0.20.1 (*)
+      │           │           └── burn-optim v0.20.1
+      │           │               └── burn v0.20.1 (*)
+      │           ├── burn-core v0.20.1 (*)
+      │           ├── burn-ndarray v0.20.1 (*)
+      │           └── burn-tensor v0.20.1 (*)
+      └── embedded-hal-async v1.0.0
+          └── embassy-time v0.4.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'foldhash'
+    ┌─ <workspace>/Cargo.lock:135:1
+    │  
+135 │ ╭ foldhash 0.1.5 registry+https://github.com/rust-lang/crates.io-index
+136 │ │ foldhash 0.2.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ foldhash v0.1.5
+      └── hashbrown v0.15.5
+          ├── cubecl-common v0.9.0
+          │   └── burn-std v0.20.1
+          │       ├── burn-autodiff v0.20.1
+          │       │   └── burn-ndarray v0.20.1
+          │       │       └── burn v0.20.1
+          │       │           └── llm-provable-computer v0.1.0
+          │       ├── burn-backend v0.20.1
+          │       │   ├── burn-autodiff v0.20.1 (*)
+          │       │   ├── burn-ir v0.20.1
+          │       │   │   └── burn-ndarray v0.20.1 (*)
+          │       │   ├── burn-ndarray v0.20.1 (*)
+          │       │   └── burn-tensor v0.20.1
+          │       │       └── burn-core v0.20.1
+          │       │           ├── burn v0.20.1 (*)
+          │       │           ├── burn-nn v0.20.1
+          │       │           │   └── burn v0.20.1 (*)
+          │       │           └── burn-optim v0.20.1
+          │       │               └── burn v0.20.1 (*)
+          │       ├── burn-core v0.20.1 (*)
+          │       ├── burn-ndarray v0.20.1 (*)
+          │       └── burn-tensor v0.20.1 (*)
+          └── lru v0.12.5
+              └── ratatui v0.29.0
+                  └── llm-provable-computer v0.1.0 (*)
+    ├ foldhash v0.2.0
+      └── hashbrown v0.16.1
+          ├── burn-autodiff v0.20.1
+          │   └── burn-ndarray v0.20.1
+          │       └── burn v0.20.1
+          │           └── llm-provable-computer v0.1.0
+          ├── burn-backend v0.20.1
+          │   ├── burn-autodiff v0.20.1 (*)
+          │   ├── burn-ir v0.20.1
+          │   │   └── burn-ndarray v0.20.1 (*)
+          │   ├── burn-ndarray v0.20.1 (*)
+          │   └── burn-tensor v0.20.1
+          │       └── burn-core v0.20.1
+          │           ├── burn v0.20.1 (*)
+          │           ├── burn-nn v0.20.1
+          │           │   └── burn v0.20.1 (*)
+          │           └── burn-optim v0.20.1
+          │               └── burn v0.20.1 (*)
+          ├── burn-core v0.20.1 (*)
+          ├── burn-ir v0.20.1 (*)
+          ├── burn-optim v0.20.1 (*)
+          ├── indexmap v2.13.0
+          │   └── stwo v2.2.0
+          │       ├── llm-provable-computer v0.1.0 (*)
+          │       └── stwo-constraint-framework v2.2.0
+          │           └── llm-provable-computer v0.1.0 (*)
+          ├── stwo v2.2.0 (*)
+          └── stwo-constraint-framework v2.2.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'getrandom'
+    ┌─ <workspace>/Cargo.lock:145:1
+    │  
+145 │ ╭ getrandom 0.2.17 registry+https://github.com/rust-lang/crates.io-index
+146 │ │ getrandom 0.3.4 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ getrandom v0.2.17
+      ├── const-random-macro v0.1.16
+      │   └── const-random v0.1.18
+      │       └── burn-ndarray v0.20.1
+      │           └── burn v0.20.1
+      │               └── llm-provable-computer v0.1.0
+      ├── jsonschema v0.17.1
+      │   └── (dev) llm-provable-computer v0.1.0 (*)
+      ├── rand_core v0.6.4
+      │   ├── rand v0.8.6
+      │   │   ├── ark-std v0.4.0
+      │   │   │   ├── ark-ff v0.4.2
+      │   │   │   │   └── starknet-ff v0.3.7
+      │   │   │   │       ├── starknet-crypto v0.6.2
+      │   │   │   │       │   └── stwo v2.2.0
+      │   │   │   │       │       ├── llm-provable-computer v0.1.0 (*)
+      │   │   │   │       │       └── stwo-constraint-framework v2.2.0
+      │   │   │   │       │           └── llm-provable-computer v0.1.0 (*)
+      │   │   │   │       ├── starknet-crypto-codegen v0.3.3
+      │   │   │   │       │   └── starknet-crypto v0.6.2 (*)
+      │   │   │   │       ├── starknet-curve v0.4.2
+      │   │   │   │       │   ├── starknet-crypto v0.6.2 (*)
+      │   │   │   │       │   └── starknet-crypto-codegen v0.3.3 (*)
+      │   │   │   │       └── stwo v2.2.0 (*)
+      │   │   │   └── ark-serialize v0.4.2
+      │   │   │       └── ark-ff v0.4.2 (*)
+      │   │   ├── ark-std v0.5.0
+      │   │   │   ├── ark-ff v0.5.0
+      │   │   │   │   └── llm-provable-computer v0.1.0 (*)
+      │   │   │   └── ark-serialize v0.5.0
+      │   │   │       └── ark-ff v0.5.0 (*)
+      │   │   ├── (dev) llm-provable-computer v0.1.0 (*)
+      │   │   ├── rand_distr v0.4.3
+      │   │   │   └── tract-onnx-opl v0.23.0-dev.2
+      │   │   │       └── tract-onnx v0.23.0-dev.2
+      │   │   │           └── llm-provable-computer v0.1.0 (*)
+      │   │   ├── stwo v2.2.0 (*)
+      │   │   ├── stwo-constraint-framework v2.2.0 (*)
+      │   │   └── tract-onnx-opl v0.23.0-dev.2 (*)
+      │   └── rand_chacha v0.3.1
+      │       └── rand v0.8.6 (*)
+      ├── starknet-ff v0.3.7 (*)
+      └── tract-onnx-opl v0.23.0-dev.2 (*)
+    ├ getrandom v0.3.4
+      ├── ahash v0.8.12
+      │   ├── burn-core v0.20.1
+      │   │   ├── burn v0.20.1
+      │   │   │   └── llm-provable-computer v0.1.0
+      │   │   ├── burn-nn v0.20.1
+      │   │   │   └── burn v0.20.1 (*)
+      │   │   └── burn-optim v0.20.1
+      │   │       └── burn v0.20.1 (*)
+      │   ├── hashbrown v0.14.5
+      │   │   ├── dashmap v6.1.0
+      │   │   │   └── stwo v2.2.0
+      │   │   │       ├── llm-provable-computer v0.1.0 (*)
+      │   │   │       └── stwo-constraint-framework v2.2.0
+      │   │   │           └── llm-provable-computer v0.1.0 (*)
+      │   │   └── string-interner v0.15.0
+      │   │       └── tract-data v0.23.0-dev.2
+      │   │           ├── tract-core v0.23.0-dev.2
+      │   │           │   ├── tract-hir v0.23.0-dev.2
+      │   │           │   │   └── tract-onnx v0.23.0-dev.2
+      │   │           │   │       └── llm-provable-computer v0.1.0 (*)
+      │   │           │   └── tract-nnef v0.23.0-dev.2
+      │   │           │       ├── tract-extra v0.23.0-dev.2
+      │   │           │       │   ├── tract-onnx v0.23.0-dev.2 (*)
+      │   │           │       │   └── tract-onnx-opl v0.23.0-dev.2
+      │   │           │       │       └── tract-onnx v0.23.0-dev.2 (*)
+      │   │           │       ├── tract-onnx v0.23.0-dev.2 (*)
+      │   │           │       ├── tract-onnx-opl v0.23.0-dev.2 (*)
+      │   │           │       └── tract-pulse-opl v0.23.0-dev.2
+      │   │           │           └── tract-pulse v0.23.0-dev.2
+      │   │           │               └── tract-extra v0.23.0-dev.2 (*)
+      │   │           └── tract-linalg v0.23.0-dev.2
+      │   │               └── tract-core v0.23.0-dev.2 (*)
+      │   └── jsonschema v0.17.1
+      │       └── (dev) llm-provable-computer v0.1.0 (*)
+      ├── rand_core v0.9.5
+      │   ├── rand v0.9.4
+      │   │   ├── burn-backend v0.20.1
+      │   │   │   ├── burn-autodiff v0.20.1
+      │   │   │   │   └── burn-ndarray v0.20.1
+      │   │   │   │       └── burn v0.20.1 (*)
+      │   │   │   ├── burn-ir v0.20.1
+      │   │   │   │   └── burn-ndarray v0.20.1 (*)
+      │   │   │   ├── burn-ndarray v0.20.1 (*)
+      │   │   │   └── burn-tensor v0.20.1
+      │   │   │       └── burn-core v0.20.1 (*)
+      │   │   ├── burn-core v0.20.1 (*)
+      │   │   ├── burn-ndarray v0.20.1 (*)
+      │   │   ├── cubecl-common v0.9.0
+      │   │   │   └── burn-std v0.20.1
+      │   │   │       ├── burn-autodiff v0.20.1 (*)
+      │   │   │       ├── burn-backend v0.20.1 (*)
+      │   │   │       ├── burn-core v0.20.1 (*)
+      │   │   │       ├── burn-ndarray v0.20.1 (*)
+      │   │   │       └── burn-tensor v0.20.1 (*)
+      │   │   ├── proptest v1.10.0
+      │   │   │   └── (dev) llm-provable-computer v0.1.0 (*)
+      │   │   └── rand_distr v0.5.1
+      │   │       └── burn-backend v0.20.1 (*)
+      │   ├── rand_chacha v0.9.0
+      │   │   ├── proptest v1.10.0 (*)
+      │   │   └── rand v0.9.4 (*)
+      │   └── rand_xorshift v0.4.0
+      │       └── proptest v1.10.0 (*)
+      └── tempfile v3.27.0
+          ├── (dev) llm-provable-computer v0.1.0 (*)
+          ├── proptest v1.10.0 (*)
+          └── rusty-fork v0.3.1
+              └── proptest v1.10.0 (*)
+
+warning[duplicate]: found 3 duplicate entries for crate 'hashbrown'
+    ┌─ <workspace>/Cargo.lock:149:1
+    │  
+149 │ ╭ hashbrown 0.14.5 registry+https://github.com/rust-lang/crates.io-index
+150 │ │ hashbrown 0.15.5 registry+https://github.com/rust-lang/crates.io-index
+151 │ │ hashbrown 0.16.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ hashbrown v0.14.5
+      ├── dashmap v6.1.0
+      │   └── stwo v2.2.0
+      │       ├── llm-provable-computer v0.1.0
+      │       └── stwo-constraint-framework v2.2.0
+      │           └── llm-provable-computer v0.1.0 (*)
+      └── string-interner v0.15.0
+          └── tract-data v0.23.0-dev.2
+              ├── tract-core v0.23.0-dev.2
+              │   ├── tract-hir v0.23.0-dev.2
+              │   │   └── tract-onnx v0.23.0-dev.2
+              │   │       └── llm-provable-computer v0.1.0 (*)
+              │   └── tract-nnef v0.23.0-dev.2
+              │       ├── tract-extra v0.23.0-dev.2
+              │       │   ├── tract-onnx v0.23.0-dev.2 (*)
+              │       │   └── tract-onnx-opl v0.23.0-dev.2
+              │       │       └── tract-onnx v0.23.0-dev.2 (*)
+              │       ├── tract-onnx v0.23.0-dev.2 (*)
+              │       ├── tract-onnx-opl v0.23.0-dev.2 (*)
+              │       └── tract-pulse-opl v0.23.0-dev.2
+              │           └── tract-pulse v0.23.0-dev.2
+              │               └── tract-extra v0.23.0-dev.2 (*)
+              └── tract-linalg v0.23.0-dev.2
+                  └── tract-core v0.23.0-dev.2 (*)
+    ├ hashbrown v0.15.5
+      ├── cubecl-common v0.9.0
+      │   └── burn-std v0.20.1
+      │       ├── burn-autodiff v0.20.1
+      │       │   └── burn-ndarray v0.20.1
+      │       │       └── burn v0.20.1
+      │       │           └── llm-provable-computer v0.1.0
+      │       ├── burn-backend v0.20.1
+      │       │   ├── burn-autodiff v0.20.1 (*)
+      │       │   ├── burn-ir v0.20.1
+      │       │   │   └── burn-ndarray v0.20.1 (*)
+      │       │   ├── burn-ndarray v0.20.1 (*)
+      │       │   └── burn-tensor v0.20.1
+      │       │       └── burn-core v0.20.1
+      │       │           ├── burn v0.20.1 (*)
+      │       │           ├── burn-nn v0.20.1
+      │       │           │   └── burn v0.20.1 (*)
+      │       │           └── burn-optim v0.20.1
+      │       │               └── burn v0.20.1 (*)
+      │       ├── burn-core v0.20.1 (*)
+      │       ├── burn-ndarray v0.20.1 (*)
+      │       └── burn-tensor v0.20.1 (*)
+      └── lru v0.12.5
+          └── ratatui v0.29.0
+              └── llm-provable-computer v0.1.0 (*)
+    ├ hashbrown v0.16.1
+      ├── burn-autodiff v0.20.1
+      │   └── burn-ndarray v0.20.1
+      │       └── burn v0.20.1
+      │           └── llm-provable-computer v0.1.0
+      ├── burn-backend v0.20.1
+      │   ├── burn-autodiff v0.20.1 (*)
+      │   ├── burn-ir v0.20.1
+      │   │   └── burn-ndarray v0.20.1 (*)
+      │   ├── burn-ndarray v0.20.1 (*)
+      │   └── burn-tensor v0.20.1
+      │       └── burn-core v0.20.1
+      │           ├── burn v0.20.1 (*)
+      │           ├── burn-nn v0.20.1
+      │           │   └── burn v0.20.1 (*)
+      │           └── burn-optim v0.20.1
+      │               └── burn v0.20.1 (*)
+      ├── burn-core v0.20.1 (*)
+      ├── burn-ir v0.20.1 (*)
+      ├── burn-optim v0.20.1 (*)
+      ├── indexmap v2.13.0
+      │   └── stwo v2.2.0
+      │       ├── llm-provable-computer v0.1.0 (*)
+      │       └── stwo-constraint-framework v2.2.0
+      │           └── llm-provable-computer v0.1.0 (*)
+      ├── stwo v2.2.0 (*)
+      └── stwo-constraint-framework v2.2.0 (*)
+
+warning[duplicate]: found 4 duplicate entries for crate 'itertools'
+    ┌─ <workspace>/Cargo.lock:173:1
+    │  
+173 │ ╭ itertools 0.10.5 registry+https://github.com/rust-lang/crates.io-index
+174 │ │ itertools 0.12.1 registry+https://github.com/rust-lang/crates.io-index
+175 │ │ itertools 0.13.0 registry+https://github.com/rust-lang/crates.io-index
+176 │ │ itertools 0.14.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ itertools v0.10.5
+      ├── ark-ff v0.4.2
+      │   └── starknet-ff v0.3.7
+      │       ├── starknet-crypto v0.6.2
+      │       │   └── stwo v2.2.0
+      │       │       ├── llm-provable-computer v0.1.0
+      │       │       └── stwo-constraint-framework v2.2.0
+      │       │           └── llm-provable-computer v0.1.0 (*)
+      │       ├── starknet-crypto-codegen v0.3.3
+      │       │   └── starknet-crypto v0.6.2 (*)
+      │       ├── starknet-curve v0.4.2
+      │       │   ├── starknet-crypto v0.6.2 (*)
+      │       │   └── starknet-crypto-codegen v0.3.3 (*)
+      │       └── stwo v2.2.0 (*)
+      ├── criterion v0.5.1
+      │   └── (dev) llm-provable-computer v0.1.0 (*)
+      ├── criterion-plot v0.5.0
+      │   └── criterion v0.5.1 (*)
+      └── prost-derive v0.11.9
+          └── prost v0.11.9
+              └── tract-onnx v0.23.0-dev.2
+                  └── llm-provable-computer v0.1.0 (*)
+    ├ itertools v0.12.1
+      ├── stwo v2.2.0
+      │   ├── llm-provable-computer v0.1.0
+      │   └── stwo-constraint-framework v2.2.0
+      │       └── llm-provable-computer v0.1.0 (*)
+      ├── stwo-constraint-framework v2.2.0 (*)
+      └── tract-data v0.23.0-dev.2
+          ├── tract-core v0.23.0-dev.2
+          │   ├── tract-hir v0.23.0-dev.2
+          │   │   └── tract-onnx v0.23.0-dev.2
+          │   │       └── llm-provable-computer v0.1.0 (*)
+          │   └── tract-nnef v0.23.0-dev.2
+          │       ├── tract-extra v0.23.0-dev.2
+          │       │   ├── tract-onnx v0.23.0-dev.2 (*)
+          │       │   └── tract-onnx-opl v0.23.0-dev.2
+          │       │       └── tract-onnx v0.23.0-dev.2 (*)
+          │       ├── tract-onnx v0.23.0-dev.2 (*)
+          │       ├── tract-onnx-opl v0.23.0-dev.2 (*)
+          │       └── tract-pulse-opl v0.23.0-dev.2
+          │           └── tract-pulse v0.23.0-dev.2
+          │               └── tract-extra v0.23.0-dev.2 (*)
+          └── tract-linalg v0.23.0-dev.2
+              └── tract-core v0.23.0-dev.2 (*)
+    ├ itertools v0.13.0
+      ├── ark-ff v0.5.0
+      │   └── llm-provable-computer v0.1.0
+      ├── ratatui v0.29.0
+      │   └── llm-provable-computer v0.1.0 (*)
+      └── unicode-truncate v1.1.0
+          └── ratatui v0.29.0 (*)
+    ├ itertools v0.14.0
+      ├── liquid-core v0.26.11
+      │   ├── liquid v0.26.11
+      │   │   ├── (build) tract-linalg v0.23.0-dev.2
+      │   │   │   └── tract-core v0.23.0-dev.2
+      │   │   │       ├── tract-hir v0.23.0-dev.2
+      │   │   │       │   └── tract-onnx v0.23.0-dev.2
+      │   │   │       │       └── llm-provable-computer v0.1.0
+      │   │   │       └── tract-nnef v0.23.0-dev.2
+      │   │   │           ├── tract-extra v0.23.0-dev.2
+      │   │   │           │   ├── tract-onnx v0.23.0-dev.2 (*)
+      │   │   │           │   └── tract-onnx-opl v0.23.0-dev.2
+      │   │   │           │       └── tract-onnx v0.23.0-dev.2 (*)
+      │   │   │           ├── tract-onnx v0.23.0-dev.2 (*)
+      │   │   │           ├── tract-onnx-opl v0.23.0-dev.2 (*)
+      │   │   │           └── tract-pulse-opl v0.23.0-dev.2
+      │   │   │               └── tract-pulse v0.23.0-dev.2
+      │   │   │                   └── tract-extra v0.23.0-dev.2 (*)
+      │   │   └── tract-nnef v0.23.0-dev.2 (*)
+      │   ├── liquid-lib v0.26.11
+      │   │   └── liquid v0.26.11 (*)
+      │   ├── (build) tract-linalg v0.23.0-dev.2 (*)
+      │   └── tract-nnef v0.23.0-dev.2 (*)
+      └── liquid-lib v0.26.11 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'linux-raw-sys'
+    ┌─ <workspace>/Cargo.lock:186:1
+    │  
+186 │ ╭ linux-raw-sys 0.4.15 registry+https://github.com/rust-lang/crates.io-index
+187 │ │ linux-raw-sys 0.12.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ linux-raw-sys v0.4.15
+      └── rustix v0.38.44
+          └── crossterm v0.28.1
+              ├── llm-provable-computer v0.1.0
+              └── ratatui v0.29.0
+                  └── llm-provable-computer v0.1.0 (*)
+    ├ linux-raw-sys v0.12.1
+      └── rustix v1.1.4
+          ├── tempfile v3.27.0
+          │   ├── (dev) llm-provable-computer v0.1.0
+          │   ├── proptest v1.10.0
+          │   │   └── (dev) llm-provable-computer v0.1.0 (*)
+          │   └── rusty-fork v0.3.1
+          │       └── proptest v1.10.0 (*)
+          └── xattr v1.6.1
+              └── tar v0.4.45
+                  └── tract-nnef v0.23.0-dev.2
+                      ├── tract-extra v0.23.0-dev.2
+                      │   ├── tract-onnx v0.23.0-dev.2
+                      │   │   └── llm-provable-computer v0.1.0 (*)
+                      │   └── tract-onnx-opl v0.23.0-dev.2
+                      │       └── tract-onnx v0.23.0-dev.2 (*)
+                      ├── tract-onnx v0.23.0-dev.2 (*)
+                      ├── tract-onnx-opl v0.23.0-dev.2 (*)
+                      └── tract-pulse-opl v0.23.0-dev.2
+                          └── tract-pulse v0.23.0-dev.2
+                              └── tract-extra v0.23.0-dev.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'ndarray'
+    ┌─ <workspace>/Cargo.lock:209:1
+    │  
+209 │ ╭ ndarray 0.16.1 registry+https://github.com/rust-lang/crates.io-index
+210 │ │ ndarray 0.17.2 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ ndarray v0.16.1
+      ├── tract-core v0.23.0-dev.2
+      │   ├── tract-hir v0.23.0-dev.2
+      │   │   └── tract-onnx v0.23.0-dev.2
+      │   │       └── llm-provable-computer v0.1.0
+      │   └── tract-nnef v0.23.0-dev.2
+      │       ├── tract-extra v0.23.0-dev.2
+      │       │   ├── tract-onnx v0.23.0-dev.2 (*)
+      │       │   └── tract-onnx-opl v0.23.0-dev.2
+      │       │       └── tract-onnx v0.23.0-dev.2 (*)
+      │       ├── tract-onnx v0.23.0-dev.2 (*)
+      │       ├── tract-onnx-opl v0.23.0-dev.2 (*)
+      │       └── tract-pulse-opl v0.23.0-dev.2
+      │           └── tract-pulse v0.23.0-dev.2
+      │               └── tract-extra v0.23.0-dev.2 (*)
+      └── tract-data v0.23.0-dev.2
+          ├── tract-core v0.23.0-dev.2 (*)
+          └── tract-linalg v0.23.0-dev.2
+              └── tract-core v0.23.0-dev.2 (*)
+    ├ ndarray v0.17.2
+      └── burn-ndarray v0.20.1
+          └── burn v0.20.1
+              └── llm-provable-computer v0.1.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'rand'
+    ┌─ <workspace>/Cargo.lock:261:1
+    │  
+261 │ ╭ rand 0.8.6 registry+https://github.com/rust-lang/crates.io-index
+262 │ │ rand 0.9.4 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rand v0.8.6
+      ├── ark-std v0.4.0
+      │   ├── ark-ff v0.4.2
+      │   │   └── starknet-ff v0.3.7
+      │   │       ├── starknet-crypto v0.6.2
+      │   │       │   └── stwo v2.2.0
+      │   │       │       ├── llm-provable-computer v0.1.0
+      │   │       │       └── stwo-constraint-framework v2.2.0
+      │   │       │           └── llm-provable-computer v0.1.0 (*)
+      │   │       ├── starknet-crypto-codegen v0.3.3
+      │   │       │   └── starknet-crypto v0.6.2 (*)
+      │   │       ├── starknet-curve v0.4.2
+      │   │       │   ├── starknet-crypto v0.6.2 (*)
+      │   │       │   └── starknet-crypto-codegen v0.3.3 (*)
+      │   │       └── stwo v2.2.0 (*)
+      │   └── ark-serialize v0.4.2
+      │       └── ark-ff v0.4.2 (*)
+      ├── ark-std v0.5.0
+      │   ├── ark-ff v0.5.0
+      │   │   └── llm-provable-computer v0.1.0 (*)
+      │   └── ark-serialize v0.5.0
+      │       └── ark-ff v0.5.0 (*)
+      ├── (dev) llm-provable-computer v0.1.0 (*)
+      ├── rand_distr v0.4.3
+      │   └── tract-onnx-opl v0.23.0-dev.2
+      │       └── tract-onnx v0.23.0-dev.2
+      │           └── llm-provable-computer v0.1.0 (*)
+      ├── stwo v2.2.0 (*)
+      ├── stwo-constraint-framework v2.2.0 (*)
+      └── tract-onnx-opl v0.23.0-dev.2 (*)
+    ├ rand v0.9.4
+      ├── burn-backend v0.20.1
+      │   ├── burn-autodiff v0.20.1
+      │   │   └── burn-ndarray v0.20.1
+      │   │       └── burn v0.20.1
+      │   │           └── llm-provable-computer v0.1.0
+      │   ├── burn-ir v0.20.1
+      │   │   └── burn-ndarray v0.20.1 (*)
+      │   ├── burn-ndarray v0.20.1 (*)
+      │   └── burn-tensor v0.20.1
+      │       └── burn-core v0.20.1
+      │           ├── burn v0.20.1 (*)
+      │           ├── burn-nn v0.20.1
+      │           │   └── burn v0.20.1 (*)
+      │           └── burn-optim v0.20.1
+      │               └── burn v0.20.1 (*)
+      ├── burn-core v0.20.1 (*)
+      ├── burn-ndarray v0.20.1 (*)
+      ├── cubecl-common v0.9.0
+      │   └── burn-std v0.20.1
+      │       ├── burn-autodiff v0.20.1 (*)
+      │       ├── burn-backend v0.20.1 (*)
+      │       ├── burn-core v0.20.1 (*)
+      │       ├── burn-ndarray v0.20.1 (*)
+      │       └── burn-tensor v0.20.1 (*)
+      ├── proptest v1.10.0
+      │   └── (dev) llm-provable-computer v0.1.0 (*)
+      └── rand_distr v0.5.1
+          └── burn-backend v0.20.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'rand_chacha'
+    ┌─ <workspace>/Cargo.lock:263:1
+    │  
+263 │ ╭ rand_chacha 0.3.1 registry+https://github.com/rust-lang/crates.io-index
+264 │ │ rand_chacha 0.9.0 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rand_chacha v0.3.1
+      └── rand v0.8.6
+          ├── ark-std v0.4.0
+          │   ├── ark-ff v0.4.2
+          │   │   └── starknet-ff v0.3.7
+          │   │       ├── starknet-crypto v0.6.2
+          │   │       │   └── stwo v2.2.0
+          │   │       │       ├── llm-provable-computer v0.1.0
+          │   │       │       └── stwo-constraint-framework v2.2.0
+          │   │       │           └── llm-provable-computer v0.1.0 (*)
+          │   │       ├── starknet-crypto-codegen v0.3.3
+          │   │       │   └── starknet-crypto v0.6.2 (*)
+          │   │       ├── starknet-curve v0.4.2
+          │   │       │   ├── starknet-crypto v0.6.2 (*)
+          │   │       │   └── starknet-crypto-codegen v0.3.3 (*)
+          │   │       └── stwo v2.2.0 (*)
+          │   └── ark-serialize v0.4.2
+          │       └── ark-ff v0.4.2 (*)
+          ├── ark-std v0.5.0
+          │   ├── ark-ff v0.5.0
+          │   │   └── llm-provable-computer v0.1.0 (*)
+          │   └── ark-serialize v0.5.0
+          │       └── ark-ff v0.5.0 (*)
+          ├── (dev) llm-provable-computer v0.1.0 (*)
+          ├── rand_distr v0.4.3
+          │   └── tract-onnx-opl v0.23.0-dev.2
+          │       └── tract-onnx v0.23.0-dev.2
+          │           └── llm-provable-computer v0.1.0 (*)
+          ├── stwo v2.2.0 (*)
+          ├── stwo-constraint-framework v2.2.0 (*)
+          └── tract-onnx-opl v0.23.0-dev.2 (*)
+    ├ rand_chacha v0.9.0
+      ├── proptest v1.10.0
+      │   └── (dev) llm-provable-computer v0.1.0
+      └── rand v0.9.4
+          ├── burn-backend v0.20.1
+          │   ├── burn-autodiff v0.20.1
+          │   │   └── burn-ndarray v0.20.1
+          │   │       └── burn v0.20.1
+          │   │           └── llm-provable-computer v0.1.0 (*)
+          │   ├── burn-ir v0.20.1
+          │   │   └── burn-ndarray v0.20.1 (*)
+          │   ├── burn-ndarray v0.20.1 (*)
+          │   └── burn-tensor v0.20.1
+          │       └── burn-core v0.20.1
+          │           ├── burn v0.20.1 (*)
+          │           ├── burn-nn v0.20.1
+          │           │   └── burn v0.20.1 (*)
+          │           └── burn-optim v0.20.1
+          │               └── burn v0.20.1 (*)
+          ├── burn-core v0.20.1 (*)
+          ├── burn-ndarray v0.20.1 (*)
+          ├── cubecl-common v0.9.0
+          │   └── burn-std v0.20.1
+          │       ├── burn-autodiff v0.20.1 (*)
+          │       ├── burn-backend v0.20.1 (*)
+          │       ├── burn-core v0.20.1 (*)
+          │       ├── burn-ndarray v0.20.1 (*)
+          │       └── burn-tensor v0.20.1 (*)
+          ├── proptest v1.10.0 (*)
+          └── rand_distr v0.5.1
+              └── burn-backend v0.20.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'rand_core'
+    ┌─ <workspace>/Cargo.lock:265:1
+    │  
+265 │ ╭ rand_core 0.6.4 registry+https://github.com/rust-lang/crates.io-index
+266 │ │ rand_core 0.9.5 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rand_core v0.6.4
+      ├── rand v0.8.6
+      │   ├── ark-std v0.4.0
+      │   │   ├── ark-ff v0.4.2
+      │   │   │   └── starknet-ff v0.3.7
+      │   │   │       ├── starknet-crypto v0.6.2
+      │   │   │       │   └── stwo v2.2.0
+      │   │   │       │       ├── llm-provable-computer v0.1.0
+      │   │   │       │       └── stwo-constraint-framework v2.2.0
+      │   │   │       │           └── llm-provable-computer v0.1.0 (*)
+      │   │   │       ├── starknet-crypto-codegen v0.3.3
+      │   │   │       │   └── starknet-crypto v0.6.2 (*)
+      │   │   │       ├── starknet-curve v0.4.2
+      │   │   │       │   ├── starknet-crypto v0.6.2 (*)
+      │   │   │       │   └── starknet-crypto-codegen v0.3.3 (*)
+      │   │   │       └── stwo v2.2.0 (*)
+      │   │   └── ark-serialize v0.4.2
+      │   │       └── ark-ff v0.4.2 (*)
+      │   ├── ark-std v0.5.0
+      │   │   ├── ark-ff v0.5.0
+      │   │   │   └── llm-provable-computer v0.1.0 (*)
+      │   │   └── ark-serialize v0.5.0
+      │   │       └── ark-ff v0.5.0 (*)
+      │   ├── (dev) llm-provable-computer v0.1.0 (*)
+      │   ├── rand_distr v0.4.3
+      │   │   └── tract-onnx-opl v0.23.0-dev.2
+      │   │       └── tract-onnx v0.23.0-dev.2
+      │   │           └── llm-provable-computer v0.1.0 (*)
+      │   ├── stwo v2.2.0 (*)
+      │   ├── stwo-constraint-framework v2.2.0 (*)
+      │   └── tract-onnx-opl v0.23.0-dev.2 (*)
+      └── rand_chacha v0.3.1
+          └── rand v0.8.6 (*)
+    ├ rand_core v0.9.5
+      ├── rand v0.9.4
+      │   ├── burn-backend v0.20.1
+      │   │   ├── burn-autodiff v0.20.1
+      │   │   │   └── burn-ndarray v0.20.1
+      │   │   │       └── burn v0.20.1
+      │   │   │           └── llm-provable-computer v0.1.0
+      │   │   ├── burn-ir v0.20.1
+      │   │   │   └── burn-ndarray v0.20.1 (*)
+      │   │   ├── burn-ndarray v0.20.1 (*)
+      │   │   └── burn-tensor v0.20.1
+      │   │       └── burn-core v0.20.1
+      │   │           ├── burn v0.20.1 (*)
+      │   │           ├── burn-nn v0.20.1
+      │   │           │   └── burn v0.20.1 (*)
+      │   │           └── burn-optim v0.20.1
+      │   │               └── burn v0.20.1 (*)
+      │   ├── burn-core v0.20.1 (*)
+      │   ├── burn-ndarray v0.20.1 (*)
+      │   ├── cubecl-common v0.9.0
+      │   │   └── burn-std v0.20.1
+      │   │       ├── burn-autodiff v0.20.1 (*)
+      │   │       ├── burn-backend v0.20.1 (*)
+      │   │       ├── burn-core v0.20.1 (*)
+      │   │       ├── burn-ndarray v0.20.1 (*)
+      │   │       └── burn-tensor v0.20.1 (*)
+      │   ├── proptest v1.10.0
+      │   │   └── (dev) llm-provable-computer v0.1.0 (*)
+      │   └── rand_distr v0.5.1
+      │       └── burn-backend v0.20.1 (*)
+      ├── rand_chacha v0.9.0
+      │   ├── proptest v1.10.0 (*)
+      │   └── rand v0.9.4 (*)
+      └── rand_xorshift v0.4.0
+          └── proptest v1.10.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'rand_distr'
+    ┌─ <workspace>/Cargo.lock:267:1
+    │  
+267 │ ╭ rand_distr 0.4.3 registry+https://github.com/rust-lang/crates.io-index
+268 │ │ rand_distr 0.5.1 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rand_distr v0.4.3
+      └── tract-onnx-opl v0.23.0-dev.2
+          └── tract-onnx v0.23.0-dev.2
+              └── llm-provable-computer v0.1.0
+    ├ rand_distr v0.5.1
+      └── burn-backend v0.20.1
+          ├── burn-autodiff v0.20.1
+          │   └── burn-ndarray v0.20.1
+          │       └── burn v0.20.1
+          │           └── llm-provable-computer v0.1.0
+          ├── burn-ir v0.20.1
+          │   └── burn-ndarray v0.20.1 (*)
+          ├── burn-ndarray v0.20.1 (*)
+          └── burn-tensor v0.20.1
+              └── burn-core v0.20.1
+                  ├── burn v0.20.1 (*)
+                  ├── burn-nn v0.20.1
+                  │   └── burn v0.20.1 (*)
+                  └── burn-optim v0.20.1
+                      └── burn v0.20.1 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'redox_syscall'
+    ┌─ <workspace>/Cargo.lock:274:1
+    │  
+274 │ ╭ redox_syscall 0.5.18 registry+https://github.com/rust-lang/crates.io-index
+275 │ │ redox_syscall 0.7.3 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ redox_syscall v0.5.18
+      └── parking_lot_core v0.9.12
+          ├── dashmap v6.1.0
+          │   └── stwo v2.2.0
+          │       ├── llm-provable-computer v0.1.0
+          │       └── stwo-constraint-framework v2.2.0
+          │           └── llm-provable-computer v0.1.0 (*)
+          └── parking_lot v0.12.5
+              ├── crossterm v0.28.1
+              │   ├── llm-provable-computer v0.1.0 (*)
+              │   └── ratatui v0.29.0
+              │       └── llm-provable-computer v0.1.0 (*)
+              ├── cubecl-common v0.9.0
+              │   └── burn-std v0.20.1
+              │       ├── burn-autodiff v0.20.1
+              │       │   └── burn-ndarray v0.20.1
+              │       │       └── burn v0.20.1
+              │       │           └── llm-provable-computer v0.1.0 (*)
+              │       ├── burn-backend v0.20.1
+              │       │   ├── burn-autodiff v0.20.1 (*)
+              │       │   ├── burn-ir v0.20.1
+              │       │   │   └── burn-ndarray v0.20.1 (*)
+              │       │   ├── burn-ndarray v0.20.1 (*)
+              │       │   └── burn-tensor v0.20.1
+              │       │       └── burn-core v0.20.1
+              │       │           ├── burn v0.20.1 (*)
+              │       │           ├── burn-nn v0.20.1
+              │       │           │   └── burn v0.20.1 (*)
+              │       │           └── burn-optim v0.20.1
+              │       │               └── burn v0.20.1 (*)
+              │       ├── burn-core v0.20.1 (*)
+              │       ├── burn-ndarray v0.20.1 (*)
+              │       └── burn-tensor v0.20.1 (*)
+              ├── jsonschema v0.17.1
+              │   └── (dev) llm-provable-computer v0.1.0 (*)
+              └── tract-data v0.23.0-dev.2
+                  ├── tract-core v0.23.0-dev.2
+                  │   ├── tract-hir v0.23.0-dev.2
+                  │   │   └── tract-onnx v0.23.0-dev.2
+                  │   │       └── llm-provable-computer v0.1.0 (*)
+                  │   └── tract-nnef v0.23.0-dev.2
+                  │       ├── tract-extra v0.23.0-dev.2
+                  │       │   ├── tract-onnx v0.23.0-dev.2 (*)
+                  │       │   └── tract-onnx-opl v0.23.0-dev.2
+                  │       │       └── tract-onnx v0.23.0-dev.2 (*)
+                  │       ├── tract-onnx v0.23.0-dev.2 (*)
+                  │       ├── tract-onnx-opl v0.23.0-dev.2 (*)
+                  │       └── tract-pulse-opl v0.23.0-dev.2
+                  │           └── tract-pulse v0.23.0-dev.2
+                  │               └── tract-extra v0.23.0-dev.2 (*)
+                  └── tract-linalg v0.23.0-dev.2
+                      └── tract-core v0.23.0-dev.2 (*)
+    ├ redox_syscall v0.7.3
+      └── libredox v0.1.14
+          └── filetime v0.2.27
+              └── tar v0.4.45
+                  └── tract-nnef v0.23.0-dev.2
+                      ├── tract-extra v0.23.0-dev.2
+                      │   ├── tract-onnx v0.23.0-dev.2
+                      │   │   └── llm-provable-computer v0.1.0
+                      │   └── tract-onnx-opl v0.23.0-dev.2
+                      │       └── tract-onnx v0.23.0-dev.2 (*)
+                      ├── tract-onnx v0.23.0-dev.2 (*)
+                      ├── tract-onnx-opl v0.23.0-dev.2 (*)
+                      └── tract-pulse-opl v0.23.0-dev.2
+                          └── tract-pulse v0.23.0-dev.2
+                              └── tract-extra v0.23.0-dev.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'rustix'
+    ┌─ <workspace>/Cargo.lock:285:1
+    │  
+285 │ ╭ rustix 0.38.44 registry+https://github.com/rust-lang/crates.io-index
+286 │ │ rustix 1.1.4 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ rustix v0.38.44
+      └── crossterm v0.28.1
+          ├── llm-provable-computer v0.1.0
+          └── ratatui v0.29.0
+              └── llm-provable-computer v0.1.0 (*)
+    ├ rustix v1.1.4
+      ├── tempfile v3.27.0
+      │   ├── (dev) llm-provable-computer v0.1.0
+      │   ├── proptest v1.10.0
+      │   │   └── (dev) llm-provable-computer v0.1.0 (*)
+      │   └── rusty-fork v0.3.1
+      │       └── proptest v1.10.0 (*)
+      └── xattr v1.6.1
+          └── tar v0.4.45
+              └── tract-nnef v0.23.0-dev.2
+                  ├── tract-extra v0.23.0-dev.2
+                  │   ├── tract-onnx v0.23.0-dev.2
+                  │   │   └── llm-provable-computer v0.1.0 (*)
+                  │   └── tract-onnx-opl v0.23.0-dev.2
+                  │       └── tract-onnx v0.23.0-dev.2 (*)
+                  ├── tract-onnx v0.23.0-dev.2 (*)
+                  ├── tract-onnx-opl v0.23.0-dev.2 (*)
+                  └── tract-pulse-opl v0.23.0-dev.2
+                      └── tract-pulse v0.23.0-dev.2
+                          └── tract-extra v0.23.0-dev.2 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'syn'
+    ┌─ <workspace>/Cargo.lock:325:1
+    │  
+325 │ ╭ syn 1.0.109 registry+https://github.com/rust-lang/crates.io-index
+326 │ │ syn 2.0.117 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ syn v1.0.109
+      ├── ark-ff-asm v0.4.2
+      │   └── ark-ff v0.4.2
+      │       └── starknet-ff v0.3.7
+      │           ├── starknet-crypto v0.6.2
+      │           │   └── stwo v2.2.0
+      │           │       ├── llm-provable-computer v0.1.0
+      │           │       └── stwo-constraint-framework v2.2.0
+      │           │           └── llm-provable-computer v0.1.0 (*)
+      │           ├── starknet-crypto-codegen v0.3.3
+      │           │   └── starknet-crypto v0.6.2 (*)
+      │           ├── starknet-curve v0.4.2
+      │           │   ├── starknet-crypto v0.6.2 (*)
+      │           │   └── starknet-crypto-codegen v0.3.3 (*)
+      │           └── stwo v2.2.0 (*)
+      ├── ark-ff-macros v0.4.2
+      │   └── ark-ff v0.4.2 (*)
+      ├── derivative v2.2.0
+      │   └── ark-ff v0.4.2 (*)
+      ├── derive-new v0.5.9
+      │   ├── tract-core v0.23.0-dev.2
+      │   │   ├── tract-hir v0.23.0-dev.2
+      │   │   │   └── tract-onnx v0.23.0-dev.2
+      │   │   │       └── llm-provable-computer v0.1.0 (*)
+      │   │   └── tract-nnef v0.23.0-dev.2
+      │   │       ├── tract-extra v0.23.0-dev.2
+      │   │       │   ├── tract-onnx v0.23.0-dev.2 (*)
+      │   │       │   └── tract-onnx-opl v0.23.0-dev.2
+      │   │       │       └── tract-onnx v0.23.0-dev.2 (*)
+      │   │       ├── tract-onnx v0.23.0-dev.2 (*)
+      │   │       ├── tract-onnx-opl v0.23.0-dev.2 (*)
+      │   │       └── tract-pulse-opl v0.23.0-dev.2
+      │   │           └── tract-pulse v0.23.0-dev.2
+      │   │               └── tract-extra v0.23.0-dev.2 (*)
+      │   ├── tract-hir v0.23.0-dev.2 (*)
+      │   ├── tract-linalg v0.23.0-dev.2
+      │   │   └── tract-core v0.23.0-dev.2 (*)
+      │   └── tract-onnx v0.23.0-dev.2 (*)
+      └── prost-derive v0.11.9
+          └── prost v0.11.9
+              └── tract-onnx v0.23.0-dev.2 (*)
+    ├ syn v2.0.117
+      ├── ark-ff-asm v0.5.0
+      │   └── ark-ff v0.5.0
+      │       └── llm-provable-computer v0.1.0
+      ├── ark-ff-macros v0.5.0
+      │   └── ark-ff v0.5.0 (*)
+      ├── burn-derive v0.20.1
+      │   └── burn-core v0.20.1
+      │       ├── burn v0.20.1
+      │       │   └── llm-provable-computer v0.1.0 (*)
+      │       ├── burn-nn v0.20.1
+      │       │   └── burn v0.20.1 (*)
+      │       └── burn-optim v0.20.1
+      │           └── burn v0.20.1 (*)
+      ├── bytemuck_derive v1.10.2
+      │   └── bytemuck v1.25.0
+      │       ├── burn-backend v0.20.1
+      │       │   ├── burn-autodiff v0.20.1
+      │       │   │   └── burn-ndarray v0.20.1
+      │       │   │       └── burn v0.20.1 (*)
+      │       │   ├── burn-ir v0.20.1
+      │       │   │   └── burn-ndarray v0.20.1 (*)
+      │       │   ├── burn-ndarray v0.20.1 (*)
+      │       │   └── burn-tensor v0.20.1
+      │       │       └── burn-core v0.20.1 (*)
+      │       ├── burn-std v0.20.1
+      │       │   ├── burn-autodiff v0.20.1 (*)
+      │       │   ├── burn-backend v0.20.1 (*)
+      │       │   ├── burn-core v0.20.1 (*)
+      │       │   ├── burn-ndarray v0.20.1 (*)
+      │       │   └── burn-tensor v0.20.1 (*)
+      │       ├── cubecl-common v0.9.0
+      │       │   └── burn-std v0.20.1 (*)
+      │       ├── half v2.7.1
+      │       │   ├── burn-core v0.20.1 (*)
+      │       │   ├── burn-std v0.20.1 (*)
+      │       │   ├── ciborium-ll v0.2.2
+      │       │   │   └── ciborium v0.2.2
+      │       │   │       └── criterion v0.5.1
+      │       │   │           └── (dev) llm-provable-computer v0.1.0 (*)
+      │       │   ├── cubecl-common v0.9.0 (*)
+      │       │   ├── macerator v0.2.10
+      │       │   │   └── burn-ndarray v0.20.1 (*)
+      │       │   ├── tract-data v0.23.0-dev.2
+      │       │   │   ├── tract-core v0.23.0-dev.2
+      │       │   │   │   ├── tract-hir v0.23.0-dev.2
+      │       │   │   │   │   └── tract-onnx v0.23.0-dev.2
+      │       │   │   │   │       └── llm-provable-computer v0.1.0 (*)
+      │       │   │   │   └── tract-nnef v0.23.0-dev.2
+      │       │   │   │       ├── tract-extra v0.23.0-dev.2
+      │       │   │   │       │   ├── tract-onnx v0.23.0-dev.2 (*)
+      │       │   │   │       │   └── tract-onnx-opl v0.23.0-dev.2
+      │       │   │   │       │       └── tract-onnx v0.23.0-dev.2 (*)
+      │       │   │   │       ├── tract-onnx v0.23.0-dev.2 (*)
+      │       │   │   │       ├── tract-onnx-opl v0.23.0-dev.2 (*)
+      │       │   │   │       └── tract-pulse-opl v0.23.0-dev.2
+      │       │   │   │           └── tract-pulse v0.23.0-dev.2
+      │       │   │   │               └── tract-extra v0.23.0-dev.2 (*)
+      │       │   │   └── tract-linalg v0.23.0-dev.2
+      │       │   │       └── tract-core v0.23.0-dev.2 (*)
+      │       │   └── (build) tract-linalg v0.23.0-dev.2 (*)
+      │       ├── macerator v0.2.10 (*)
+      │       └── stwo v2.2.0
+      │           ├── llm-provable-computer v0.1.0 (*)
+      │           └── stwo-constraint-framework v2.2.0
+      │               └── llm-provable-computer v0.1.0 (*)
+      ├── clap_derive v4.6.0
+      │   └── clap v4.6.0
+      │       ├── criterion v0.5.1 (*)
+      │       └── llm-provable-computer v0.1.0 (*)
+      ├── darling_core v0.20.11
+      │   ├── darling v0.20.11
+      │   │   └── macerator-macros v0.1.4
+      │   │       └── macerator v0.2.10 (*)
+      │   └── darling_macro v0.20.11
+      │       └── darling v0.20.11 (*)
+      ├── darling_core v0.23.0
+      │   ├── darling v0.23.0
+      │   │   └── instability v0.3.12
+      │   │       └── ratatui v0.29.0
+      │   │           └── llm-provable-computer v0.1.0 (*)
+      │   └── darling_macro v0.23.0
+      │       └── darling v0.23.0 (*)
+      ├── darling_macro v0.20.11 (*)
+      ├── darling_macro v0.23.0 (*)
+      ├── derive-new v0.7.0
+      │   ├── burn-autodiff v0.20.1 (*)
+      │   ├── burn-backend v0.20.1 (*)
+      │   ├── burn-core v0.20.1 (*)
+      │   ├── burn-derive v0.20.1 (*)
+      │   ├── burn-optim v0.20.1 (*)
+      │   ├── burn-tensor v0.20.1 (*)
+      │   └── cubecl-common v0.9.0 (*)
+      ├── derive_more-impl v2.1.1
+      │   └── derive_more v2.1.1
+      │       └── cubecl-common v0.9.0 (*)
+      ├── displaydoc v0.2.5
+      │   ├── icu_collections v2.1.1
+      │   │   ├── icu_normalizer v2.1.1
+      │   │   │   └── idna_adapter v1.2.1
+      │   │   │       └── idna v1.1.0
+      │   │   │           └── url v2.5.8
+      │   │   │               └── jsonschema v0.17.1
+      │   │   │                   └── (dev) llm-provable-computer v0.1.0 (*)
+      │   │   └── icu_properties v2.1.2
+      │   │       └── idna_adapter v1.2.1 (*)
+      │   ├── icu_locale_core v2.1.1
+      │   │   ├── icu_properties v2.1.2 (*)
+      │   │   └── icu_provider v2.1.1
+      │   │       ├── icu_normalizer v2.1.1 (*)
+      │   │       └── icu_properties v2.1.2 (*)
+      │   ├── icu_provider v2.1.1 (*)
+      │   ├── tinystr v0.8.2
+      │   │   └── icu_locale_core v2.1.1 (*)
+      │   └── zerotrie v0.2.3
+      │       ├── icu_properties v2.1.2 (*)
+      │       └── icu_provider v2.1.1 (*)
+      ├── educe v0.5.11
+      │   └── stwo v2.2.0 (*)
+      ├── educe v0.6.0
+      │   └── ark-ff v0.5.0 (*)
+      ├── enum-ordinalize-derive v4.3.2
+      │   └── enum-ordinalize v4.3.2
+      │       ├── educe v0.5.11 (*)
+      │       └── educe v0.6.0 (*)
+      ├── instability v0.3.12 (*)
+      ├── liquid-derive v0.26.10
+      │   ├── liquid v0.26.11
+      │   │   ├── (build) tract-linalg v0.23.0-dev.2 (*)
+      │   │   └── tract-nnef v0.23.0-dev.2 (*)
+      │   ├── liquid-core v0.26.11
+      │   │   ├── liquid v0.26.11 (*)
+      │   │   ├── liquid-lib v0.26.11
+      │   │   │   └── liquid v0.26.11 (*)
+      │   │   ├── (build) tract-linalg v0.23.0-dev.2 (*)
+      │   │   └── tract-nnef v0.23.0-dev.2 (*)
+      │   └── (build) tract-linalg v0.23.0-dev.2 (*)
+      ├── macerator-macros v0.1.4 (*)
+      ├── pest_generator v2.8.6
+      │   └── pest_derive v2.8.6
+      │       └── liquid-core v0.26.11 (*)
+      ├── serde_derive v1.0.228
+      │   ├── criterion v0.5.1 (*)
+      │   └── serde v1.0.228
+      │       ├── ahash v0.8.12
+      │       │   ├── burn-core v0.20.1 (*)
+      │       │   ├── hashbrown v0.14.5
+      │       │   │   ├── dashmap v6.1.0
+      │       │   │   │   └── stwo v2.2.0 (*)
+      │       │   │   └── string-interner v0.15.0
+      │       │   │       └── tract-data v0.23.0-dev.2 (*)
+      │       │   └── jsonschema v0.17.1 (*)
+      │       ├── bincode v2.0.1
+      │       │   └── burn-core v0.20.1 (*)
+      │       ├── burn-backend v0.20.1 (*)
+      │       ├── burn-core v0.20.1 (*)
+      │       ├── burn-ir v0.20.1 (*)
+      │       ├── burn-optim v0.20.1 (*)
+      │       ├── burn-std v0.20.1 (*)
+      │       ├── burn-tensor v0.20.1 (*)
+      │       ├── ciborium v0.2.2 (*)
+      │       ├── criterion v0.5.1 (*)
+      │       ├── cubecl-common v0.9.0 (*)
+      │       ├── half v2.7.1 (*)
+      │       ├── jsonschema v0.17.1 (*)
+      │       ├── kstring v2.0.2
+      │       │   └── liquid-core v0.26.11 (*)
+      │       ├── liquid v0.26.11 (*)
+      │       ├── liquid-core v0.26.11 (*)
+      │       ├── llm-provable-computer v0.1.0 (*)
+      │       ├── portable-atomic v1.13.1
+      │       │   ├── burn-autodiff v0.20.1 (*)
+      │       │   ├── burn-core v0.20.1 (*)
+      │       │   ├── burn-ndarray v0.20.1 (*)
+      │       │   ├── bytes v1.11.1
+      │       │   │   ├── burn-std v0.20.1 (*)
+      │       │   │   ├── cubecl-common v0.9.0 (*)
+      │       │   │   ├── prost v0.11.9
+      │       │   │   │   └── tract-onnx v0.23.0-dev.2 (*)
+      │       │   │   └── tract-onnx v0.23.0-dev.2 (*)
+      │       │   ├── cubecl-common v0.9.0 (*)
+      │       │   ├── ndarray v0.16.1
+      │       │   │   ├── tract-core v0.23.0-dev.2 (*)
+      │       │   │   └── tract-data v0.23.0-dev.2 (*)
+      │       │   ├── ndarray v0.17.2
+      │       │   │   └── burn-ndarray v0.20.1 (*)
+      │       │   ├── portable-atomic-util v0.2.6
+      │       │   │   ├── burn-core v0.20.1 (*)
+      │       │   │   ├── burn-ndarray v0.20.1 (*)
+      │       │   │   ├── cubecl-common v0.9.0 (*)
+      │       │   │   ├── ndarray v0.16.1 (*)
+      │       │   │   └── ndarray v0.17.2 (*)
+      │       │   └── spin v0.10.0
+      │       │       ├── burn-autodiff v0.20.1 (*)
+      │       │       ├── burn-core v0.20.1 (*)
+      │       │       └── cubecl-common v0.9.0 (*)
+      │       ├── rmp-serde v1.3.1
+      │       │   └── burn-core v0.20.1 (*)
+      │       ├── safetensors v0.6.2
+      │       │   └── tract-nnef v0.23.0-dev.2 (*)
+      │       ├── starknet-ff v0.3.7
+      │       │   ├── starknet-crypto v0.6.2
+      │       │   │   └── stwo v2.2.0 (*)
+      │       │   ├── starknet-crypto-codegen v0.3.3
+      │       │   │   └── starknet-crypto v0.6.2 (*)
+      │       │   ├── starknet-curve v0.4.2
+      │       │   │   ├── starknet-crypto v0.6.2 (*)
+      │       │   │   └── starknet-crypto-codegen v0.3.3 (*)
+      │       │   └── stwo v2.2.0 (*)
+      │       ├── string-interner v0.15.0 (*)
+      │       ├── stwo v2.2.0 (*)
+      │       └── tinytemplate v1.2.1
+      │           └── criterion v0.5.1 (*)
+      ├── starknet-crypto-codegen v0.3.3 (*)
+      ├── strum_macros v0.26.4
+      │   └── strum v0.26.3
+      │       └── ratatui v0.29.0 (*)
+      ├── synstructure v0.13.2
+      │   ├── yoke-derive v0.8.1
+      │   │   └── yoke v0.8.1
+      │   │       ├── icu_collections v2.1.1 (*)
+      │   │       ├── icu_provider v2.1.1 (*)
+      │   │       ├── zerotrie v0.2.3 (*)
+      │   │       └── zerovec v0.11.5
+      │   │           ├── icu_collections v2.1.1 (*)
+      │   │           ├── icu_locale_core v2.1.1 (*)
+      │   │           ├── icu_normalizer v2.1.1 (*)
+      │   │           ├── icu_properties v2.1.2 (*)
+      │   │           ├── icu_provider v2.1.1 (*)
+      │   │           ├── potential_utf v0.1.4
+      │   │           │   └── icu_collections v2.1.1 (*)
+      │   │           └── tinystr v0.8.2 (*)
+      │   └── zerofrom-derive v0.1.6
+      │       └── zerofrom v0.1.6
+      │           ├── icu_collections v2.1.1 (*)
+      │           ├── icu_provider v2.1.1 (*)
+      │           ├── yoke v0.8.1 (*)
+      │           ├── zerotrie v0.2.3 (*)
+      │           └── zerovec v0.11.5 (*)
+      ├── thiserror-impl v1.0.69
+      │   └── thiserror v1.0.69
+      │       ├── protobuf v3.7.2
+      │       │   ├── llm-provable-computer v0.1.0 (*)
+      │       │   └── onnx-protobuf v0.2.3
+      │       │       └── llm-provable-computer v0.1.0 (*)
+      │       └── protobuf-support v3.7.2
+      │           └── protobuf v3.7.2 (*)
+      ├── thiserror-impl v2.0.18
+      │   └── thiserror v2.0.18
+      │       ├── burn-backend v0.20.1 (*)
+      │       ├── llm-provable-computer v0.1.0 (*)
+      │       └── stwo v2.2.0 (*)
+      ├── tracing-attributes v0.1.31
+      │   └── tracing v0.1.44
+      │       ├── stwo v2.2.0 (*)
+      │       └── stwo-constraint-framework v2.2.0 (*)
+      ├── wasm-bindgen-macro-support v0.2.114
+      │   └── wasm-bindgen-macro v0.2.114
+      │       └── wasm-bindgen v0.2.114
+      │           ├── getrandom v0.2.17
+      │           │   ├── const-random-macro v0.1.16
+      │           │   │   └── const-random v0.1.18
+      │           │   │       └── burn-ndarray v0.20.1 (*)
+      │           │   ├── jsonschema v0.17.1 (*)
+      │           │   ├── rand_core v0.6.4
+      │           │   │   ├── rand v0.8.6
+      │           │   │   │   ├── ark-std v0.4.0
+      │           │   │   │   │   ├── ark-ff v0.4.2
+      │           │   │   │   │   │   └── starknet-ff v0.3.7 (*)
+      │           │   │   │   │   └── ark-serialize v0.4.2
+      │           │   │   │   │       └── ark-ff v0.4.2 (*)
+      │           │   │   │   ├── ark-std v0.5.0
+      │           │   │   │   │   ├── ark-ff v0.5.0 (*)
+      │           │   │   │   │   └── ark-serialize v0.5.0
+      │           │   │   │   │       └── ark-ff v0.5.0 (*)
+      │           │   │   │   ├── (dev) llm-provable-computer v0.1.0 (*)
+      │           │   │   │   ├── rand_distr v0.4.3
+      │           │   │   │   │   └── tract-onnx-opl v0.23.0-dev.2 (*)
+      │           │   │   │   ├── stwo v2.2.0 (*)
+      │           │   │   │   ├── stwo-constraint-framework v2.2.0 (*)
+      │           │   │   │   └── tract-onnx-opl v0.23.0-dev.2 (*)
+      │           │   │   └── rand_chacha v0.3.1
+      │           │   │       └── rand v0.8.6 (*)
+      │           │   ├── starknet-ff v0.3.7 (*)
+      │           │   └── tract-onnx-opl v0.23.0-dev.2 (*)
+      │           ├── js-sys v0.3.91
+      │           │   ├── getrandom v0.2.17 (*)
+      │           │   ├── wasm-bindgen-futures v0.4.64
+      │           │   │   └── cubecl-common v0.9.0 (*)
+      │           │   ├── web-sys v0.3.91
+      │           │   │   ├── plotters v0.3.7
+      │           │   │   │   └── criterion v0.5.1 (*)
+      │           │   │   └── wasm-bindgen-futures v0.4.64 (*)
+      │           │   └── web-time v1.1.0
+      │           │       └── cubecl-common v0.9.0 (*)
+      │           ├── plotters v0.3.7 (*)
+      │           ├── wasm-bindgen-futures v0.4.64 (*)
+      │           ├── web-sys v0.3.91 (*)
+      │           └── web-time v1.1.0 (*)
+      ├── yoke-derive v0.8.1 (*)
+      ├── zerocopy-derive v0.8.42
+      │   └── zerocopy v0.8.42
+      │       ├── ahash v0.8.12 (*)
+      │       ├── half v2.7.1 (*)
+      │       └── ppv-lite86 v0.2.21
+      │           ├── rand_chacha v0.3.1 (*)
+      │           └── rand_chacha v0.9.0
+      │               ├── proptest v1.10.0
+      │               │   └── (dev) llm-provable-computer v0.1.0 (*)
+      │               └── rand v0.9.4
+      │                   ├── burn-backend v0.20.1 (*)
+      │                   ├── burn-core v0.20.1 (*)
+      │                   ├── burn-ndarray v0.20.1 (*)
+      │                   ├── cubecl-common v0.9.0 (*)
+      │                   ├── proptest v1.10.0 (*)
+      │                   └── rand_distr v0.5.1
+      │                       └── burn-backend v0.20.1 (*)
+      ├── zerofrom-derive v0.1.6 (*)
+      ├── zeroize_derive v1.4.3
+      │   └── zeroize v1.8.2
+      │       ├── ark-ff v0.4.2 (*)
+      │       ├── ark-ff v0.5.0 (*)
+      │       ├── crypto-bigint v0.5.5
+      │       │   ├── starknet-crypto v0.6.2 (*)
+      │       │   └── starknet-ff v0.3.7 (*)
+      │       └── starknet-crypto v0.6.2 (*)
+      └── zerovec-derive v0.11.2
+          └── zerovec v0.11.5 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'thiserror'
+    ┌─ <workspace>/Cargo.lock:331:1
+    │  
+331 │ ╭ thiserror 1.0.69 registry+https://github.com/rust-lang/crates.io-index
+332 │ │ thiserror 2.0.18 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ thiserror v1.0.69
+      ├── protobuf v3.7.2
+      │   ├── llm-provable-computer v0.1.0
+      │   └── onnx-protobuf v0.2.3
+      │       └── llm-provable-computer v0.1.0 (*)
+      └── protobuf-support v3.7.2
+          └── protobuf v3.7.2 (*)
+    ├ thiserror v2.0.18
+      ├── burn-backend v0.20.1
+      │   ├── burn-autodiff v0.20.1
+      │   │   └── burn-ndarray v0.20.1
+      │   │       └── burn v0.20.1
+      │   │           └── llm-provable-computer v0.1.0
+      │   ├── burn-ir v0.20.1
+      │   │   └── burn-ndarray v0.20.1 (*)
+      │   ├── burn-ndarray v0.20.1 (*)
+      │   └── burn-tensor v0.20.1
+      │       └── burn-core v0.20.1
+      │           ├── burn v0.20.1 (*)
+      │           ├── burn-nn v0.20.1
+      │           │   └── burn v0.20.1 (*)
+      │           └── burn-optim v0.20.1
+      │               └── burn v0.20.1 (*)
+      ├── llm-provable-computer v0.1.0 (*)
+      └── stwo v2.2.0
+          ├── llm-provable-computer v0.1.0 (*)
+          └── stwo-constraint-framework v2.2.0
+              └── llm-provable-computer v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'thiserror-impl'
+    ┌─ <workspace>/Cargo.lock:333:1
+    │  
+333 │ ╭ thiserror-impl 1.0.69 registry+https://github.com/rust-lang/crates.io-index
+334 │ │ thiserror-impl 2.0.18 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰───────────────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ thiserror-impl v1.0.69
+      └── thiserror v1.0.69
+          ├── protobuf v3.7.2
+          │   ├── llm-provable-computer v0.1.0
+          │   └── onnx-protobuf v0.2.3
+          │       └── llm-provable-computer v0.1.0 (*)
+          └── protobuf-support v3.7.2
+              └── protobuf v3.7.2 (*)
+    ├ thiserror-impl v2.0.18
+      └── thiserror v2.0.18
+          ├── burn-backend v0.20.1
+          │   ├── burn-autodiff v0.20.1
+          │   │   └── burn-ndarray v0.20.1
+          │   │       └── burn v0.20.1
+          │   │           └── llm-provable-computer v0.1.0
+          │   ├── burn-ir v0.20.1
+          │   │   └── burn-ndarray v0.20.1 (*)
+          │   ├── burn-ndarray v0.20.1 (*)
+          │   └── burn-tensor v0.20.1
+          │       └── burn-core v0.20.1
+          │           ├── burn v0.20.1 (*)
+          │           ├── burn-nn v0.20.1
+          │           │   └── burn v0.20.1 (*)
+          │           └── burn-optim v0.20.1
+          │               └── burn v0.20.1 (*)
+          ├── llm-provable-computer v0.1.0 (*)
+          └── stwo v2.2.0
+              ├── llm-provable-computer v0.1.0 (*)
+              └── stwo-constraint-framework v2.2.0
+                  └── llm-provable-computer v0.1.0 (*)
+
+warning[advisory-not-detected]: advisory was not encountered
+   ┌─ <workspace>/deny.toml:23:11
+   │
+23 │   { id = "RUSTSEC-2026-0002", reason = "Temporary scoped allowlist: lru 0.12.5 IterMut Stacked-Borrows soundness issue is reachable only via ratatui 0.29.0; the TUI surface is not used in proving, verification, or evidence generation paths. Remove via issue #628 when ratatui removes lru 0.12.5 or upgrades to lru >= 0.16.3." },
+   │           ━━━━━━━━━━━━━━━━━             ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ignore reason
+   │           │                              
+   │           no crate matched advisory criteria
+
+advisories ok, bans ok, licenses ok, sources ok
+[dependency-audit] cargo audit: fuzz (fuzz/Cargo.lock)
+[dependency-audit] allowed advisories: RUSTSEC-2024-0388, RUSTSEC-2024-0436, RUSTSEC-2026-0002
+[dependency-audit] cargo deny: fuzz (fuzz/Cargo.toml)
+warning[license-not-encountered]: license was not encountered
+   ┌─ <workspace>/deny.toml:34:4
+   │
+34 │   "MPL-2.0",
+   │    ━━━━━━━ unmatched license allowance
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-ff'
+   ┌─ <workspace>/fuzz/Cargo.lock:9:1
+   │  
+ 9 │ ╭ ark-ff 0.4.2 registry+https://github.com/rust-lang/crates.io-index
+10 │ │ ark-ff 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰──────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-ff v0.4.2
+     └── starknet-ff v0.3.7
+         ├── starknet-crypto v0.6.2
+         │   └── stwo v2.2.0
+         │       ├── llm-provable-computer v0.1.0
+         │       │   └── llm-provable-computer-fuzz v0.0.0
+         │       └── stwo-constraint-framework v2.2.0
+         │           └── llm-provable-computer v0.1.0 (*)
+         ├── starknet-crypto-codegen v0.3.3
+         │   └── starknet-crypto v0.6.2 (*)
+         ├── starknet-curve v0.4.2
+         │   ├── starknet-crypto v0.6.2 (*)
+         │   └── starknet-crypto-codegen v0.3.3 (*)
+         └── stwo v2.2.0 (*)
+   ├ ark-ff v0.5.0
+     └── llm-provable-computer v0.1.0
+         └── llm-provable-computer-fuzz v0.0.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-ff-asm'
+   ┌─ <workspace>/fuzz/Cargo.lock:11:1
+   │  
+11 │ ╭ ark-ff-asm 0.4.2 registry+https://github.com/rust-lang/crates.io-index
+12 │ │ ark-ff-asm 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-ff-asm v0.4.2
+     └── ark-ff v0.4.2
+         └── starknet-ff v0.3.7
+             ├── starknet-crypto v0.6.2
+             │   └── stwo v2.2.0
+             │       ├── llm-provable-computer v0.1.0
+             │       │   └── llm-provable-computer-fuzz v0.0.0
+             │       └── stwo-constraint-framework v2.2.0
+             │           └── llm-provable-computer v0.1.0 (*)
+             ├── starknet-crypto-codegen v0.3.3
+             │   └── starknet-crypto v0.6.2 (*)
+             ├── starknet-curve v0.4.2
+             │   ├── starknet-crypto v0.6.2 (*)
+             │   └── starknet-crypto-codegen v0.3.3 (*)
+             └── stwo v2.2.0 (*)
+   ├ ark-ff-asm v0.5.0
+     └── ark-ff v0.5.0
+         └── llm-provable-computer v0.1.0
+             └── llm-provable-computer-fuzz v0.0.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-ff-macros'
+   ┌─ <workspace>/fuzz/Cargo.lock:13:1
+   │  
+13 │ ╭ ark-ff-macros 0.4.2 registry+https://github.com/rust-lang/crates.io-index
+14 │ │ ark-ff-macros 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-ff-macros v0.4.2
+     └── ark-ff v0.4.2
+         └── starknet-ff v0.3.7
+             ├── starknet-crypto v0.6.2
+             │   └── stwo v2.2.0
+             │       ├── llm-provable-computer v0.1.0
+             │       │   └── llm-provable-computer-fuzz v0.0.0
+             │       └── stwo-constraint-framework v2.2.0
+             │           └── llm-provable-computer v0.1.0 (*)
+             ├── starknet-crypto-codegen v0.3.3
+             │   └── starknet-crypto v0.6.2 (*)
+             ├── starknet-curve v0.4.2
+             │   ├── starknet-crypto v0.6.2 (*)
+             │   └── starknet-crypto-codegen v0.3.3 (*)
+             └── stwo v2.2.0 (*)
+   ├ ark-ff-macros v0.5.0
+     └── ark-ff v0.5.0
+         └── llm-provable-computer v0.1.0
+             └── llm-provable-computer-fuzz v0.0.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-serialize'
+   ┌─ <workspace>/fuzz/Cargo.lock:15:1
+   │  
+15 │ ╭ ark-serialize 0.4.2 registry+https://github.com/rust-lang/crates.io-index
+16 │ │ ark-serialize 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-serialize v0.4.2
+     └── ark-ff v0.4.2
+         └── starknet-ff v0.3.7
+             ├── starknet-crypto v0.6.2
+             │   └── stwo v2.2.0
+             │       ├── llm-provable-computer v0.1.0
+             │       │   └── llm-provable-computer-fuzz v0.0.0
+             │       └── stwo-constraint-framework v2.2.0
+             │           └── llm-provable-computer v0.1.0 (*)
+             ├── starknet-crypto-codegen v0.3.3
+             │   └── starknet-crypto v0.6.2 (*)
+             ├── starknet-curve v0.4.2
+             │   ├── starknet-crypto v0.6.2 (*)
+             │   └── starknet-crypto-codegen v0.3.3 (*)
+             └── stwo v2.2.0 (*)
+   ├ ark-serialize v0.5.0
+     └── ark-ff v0.5.0
+         └── llm-provable-computer v0.1.0
+             └── llm-provable-computer-fuzz v0.0.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'ark-std'
+   ┌─ <workspace>/fuzz/Cargo.lock:17:1
+   │  
+17 │ ╭ ark-std 0.4.0 registry+https://github.com/rust-lang/crates.io-index
+18 │ │ ark-std 0.5.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ ark-std v0.4.0
+     ├── ark-ff v0.4.2
+     │   └── starknet-ff v0.3.7
+     │       ├── starknet-crypto v0.6.2
+     │       │   └── stwo v2.2.0
+     │       │       ├── llm-provable-computer v0.1.0
+     │       │       │   └── llm-provable-computer-fuzz v0.0.0
+     │       │       └── stwo-constraint-framework v2.2.0
+     │       │           └── llm-provable-computer v0.1.0 (*)
+     │       ├── starknet-crypto-codegen v0.3.3
+     │       │   └── starknet-crypto v0.6.2 (*)
+     │       ├── starknet-curve v0.4.2
+     │       │   ├── starknet-crypto v0.6.2 (*)
+     │       │   └── starknet-crypto-codegen v0.3.3 (*)
+     │       └── stwo v2.2.0 (*)
+     └── ark-serialize v0.4.2
+         └── ark-ff v0.4.2 (*)
+   ├ ark-std v0.5.0
+     ├── ark-ff v0.5.0
+     │   └── llm-provable-computer v0.1.0
+     │       └── llm-provable-computer-fuzz v0.0.0
+     └── ark-serialize v0.5.0
+         └── ark-ff v0.5.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'cpufeatures'
+   ┌─ <workspace>/fuzz/Cargo.lock:40:1
+   │  
+40 │ ╭ cpufeatures 0.2.17 registry+https://github.com/rust-lang/crates.io-index
+41 │ │ cpufeatures 0.3.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰───────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ cpufeatures v0.2.17
+     ├── keccak v0.1.6
+     │   └── sha3 v0.10.8
+     │       └── llm-provable-computer v0.1.0
+     │           └── llm-provable-computer-fuzz v0.0.0
+     └── sha2 v0.10.9
+         ├── llm-provable-computer v0.1.0 (*)
+         └── starknet-crypto v0.6.2
+             └── stwo v2.2.0
+                 ├── llm-provable-computer v0.1.0 (*)
+                 └── stwo-constraint-framework v2.2.0
+                     └── llm-provable-computer v0.1.0 (*)
+   ├ cpufeatures v0.3.0
+     └── blake3 v1.8.4
+         └── stwo v2.2.0
+             ├── llm-provable-computer v0.1.0
+             │   └── llm-provable-computer-fuzz v0.0.0
+             └── stwo-constraint-framework v2.2.0
+                 └── llm-provable-computer v0.1.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'educe'
+   ┌─ <workspace>/fuzz/Cargo.lock:54:1
+   │  
+54 │ ╭ educe 0.5.11 registry+https://github.com/rust-lang/crates.io-index
+55 │ │ educe 0.6.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ educe v0.5.11
+     └── stwo v2.2.0
+         ├── llm-provable-computer v0.1.0
+         │   └── llm-provable-computer-fuzz v0.0.0
+         └── stwo-constraint-framework v2.2.0
+             └── llm-provable-computer v0.1.0 (*)
+   ├ educe v0.6.0
+     └── ark-ff v0.5.0
+         └── llm-provable-computer v0.1.0
+             └── llm-provable-computer-fuzz v0.0.0
+
+warning[duplicate]: found 2 duplicate entries for crate 'foldhash'
+   ┌─ <workspace>/fuzz/Cargo.lock:64:1
+   │  
+64 │ ╭ foldhash 0.1.5 registry+https://github.com/rust-lang/crates.io-index
+65 │ │ foldhash 0.2.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ foldhash v0.1.5
+     └── hashbrown v0.15.5
+         └── lru v0.12.5
+             └── ratatui v0.29.0
+                 └── llm-provable-computer v0.1.0
+                     └── llm-provable-computer-fuzz v0.0.0
+   ├ foldhash v0.2.0
+     └── hashbrown v0.16.1
+         ├── indexmap v2.13.1
+         │   └── stwo v2.2.0
+         │       ├── llm-provable-computer v0.1.0
+         │       │   └── llm-provable-computer-fuzz v0.0.0
+         │       └── stwo-constraint-framework v2.2.0
+         │           └── llm-provable-computer v0.1.0 (*)
+         ├── stwo v2.2.0 (*)
+         └── stwo-constraint-framework v2.2.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'getrandom'
+   ┌─ <workspace>/fuzz/Cargo.lock:67:1
+   │  
+67 │ ╭ getrandom 0.2.17 registry+https://github.com/rust-lang/crates.io-index
+68 │ │ getrandom 0.3.4 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰─────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ getrandom v0.2.17
+     └── starknet-ff v0.3.7
+         ├── starknet-crypto v0.6.2
+         │   └── stwo v2.2.0
+         │       ├── llm-provable-computer v0.1.0
+         │       │   └── llm-provable-computer-fuzz v0.0.0
+         │       └── stwo-constraint-framework v2.2.0
+         │           └── llm-provable-computer v0.1.0 (*)
+         ├── starknet-crypto-codegen v0.3.3
+         │   └── starknet-crypto v0.6.2 (*)
+         ├── starknet-curve v0.4.2
+         │   ├── starknet-crypto v0.6.2 (*)
+         │   └── starknet-crypto-codegen v0.3.3 (*)
+         └── stwo v2.2.0 (*)
+   ├ getrandom v0.3.4
+     └── jobserver v0.1.34
+         └── cc v1.2.59
+             ├── (build) blake3 v1.8.4
+             │   └── stwo v2.2.0
+             │       ├── llm-provable-computer v0.1.0
+             │       │   └── llm-provable-computer-fuzz v0.0.0
+             │       └── stwo-constraint-framework v2.2.0
+             │           └── llm-provable-computer v0.1.0 (*)
+             └── (build) libfuzzer-sys v0.4.12
+                 └── llm-provable-computer-fuzz v0.0.0 (*)
+
+warning[duplicate]: found 3 duplicate entries for crate 'hashbrown'
+   ┌─ <workspace>/fuzz/Cargo.lock:69:1
+   │  
+69 │ ╭ hashbrown 0.14.5 registry+https://github.com/rust-lang/crates.io-index
+70 │ │ hashbrown 0.15.5 registry+https://github.com/rust-lang/crates.io-index
+71 │ │ hashbrown 0.16.1 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ hashbrown v0.14.5
+     └── dashmap v6.1.0
+         └── stwo v2.2.0
+             ├── llm-provable-computer v0.1.0
+             │   └── llm-provable-computer-fuzz v0.0.0
+             └── stwo-constraint-framework v2.2.0
+                 └── llm-provable-computer v0.1.0 (*)
+   ├ hashbrown v0.15.5
+     └── lru v0.12.5
+         └── ratatui v0.29.0
+             └── llm-provable-computer v0.1.0
+                 └── llm-provable-computer-fuzz v0.0.0
+   ├ hashbrown v0.16.1
+     ├── indexmap v2.13.1
+     │   └── stwo v2.2.0
+     │       ├── llm-provable-computer v0.1.0
+     │       │   └── llm-provable-computer-fuzz v0.0.0
+     │       └── stwo-constraint-framework v2.2.0
+     │           └── llm-provable-computer v0.1.0 (*)
+     ├── stwo v2.2.0 (*)
+     └── stwo-constraint-framework v2.2.0 (*)
+
+warning[duplicate]: found 3 duplicate entries for crate 'itertools'
+   ┌─ <workspace>/fuzz/Cargo.lock:80:1
+   │  
+80 │ ╭ itertools 0.10.5 registry+https://github.com/rust-lang/crates.io-index
+81 │ │ itertools 0.12.1 registry+https://github.com/rust-lang/crates.io-index
+82 │ │ itertools 0.13.0 registry+https://github.com/rust-lang/crates.io-index
+   │ ╰──────────────────────────────────────────────────────────────────────┘ lock entries
+   │  
+   ├ itertools v0.10.5
+     └── ark-ff v0.4.2
+         └── starknet-ff v0.3.7
+             ├── starknet-crypto v0.6.2
+             │   └── stwo v2.2.0
+             │       ├── llm-provable-computer v0.1.0
+             │       │   └── llm-provable-computer-fuzz v0.0.0
+             │       └── stwo-constraint-framework v2.2.0
+             │           └── llm-provable-computer v0.1.0 (*)
+             ├── starknet-crypto-codegen v0.3.3
+             │   └── starknet-crypto v0.6.2 (*)
+             ├── starknet-curve v0.4.2
+             │   ├── starknet-crypto v0.6.2 (*)
+             │   └── starknet-crypto-codegen v0.3.3 (*)
+             └── stwo v2.2.0 (*)
+   ├ itertools v0.12.1
+     ├── stwo v2.2.0
+     │   ├── llm-provable-computer v0.1.0
+     │   │   └── llm-provable-computer-fuzz v0.0.0
+     │   └── stwo-constraint-framework v2.2.0
+     │       └── llm-provable-computer v0.1.0 (*)
+     └── stwo-constraint-framework v2.2.0 (*)
+   ├ itertools v0.13.0
+     ├── ark-ff v0.5.0
+     │   └── llm-provable-computer v0.1.0
+     │       └── llm-provable-computer-fuzz v0.0.0
+     ├── ratatui v0.29.0
+     │   └── llm-provable-computer v0.1.0 (*)
+     └── unicode-truncate v1.1.0
+         └── ratatui v0.29.0 (*)
+
+warning[duplicate]: found 2 duplicate entries for crate 'syn'
+    ┌─ <workspace>/fuzz/Cargo.lock:147:1
+    │  
+147 │ ╭ syn 1.0.109 registry+https://github.com/rust-lang/crates.io-index
+148 │ │ syn 2.0.117 registry+https://github.com/rust-lang/crates.io-index
+    │ ╰─────────────────────────────────────────────────────────────────┘ lock entries
+    │  
+    ├ syn v1.0.109
+      ├── ark-ff-asm v0.4.2
+      │   └── ark-ff v0.4.2
+      │       └── starknet-ff v0.3.7
+      │           ├── starknet-crypto v0.6.2
+      │           │   └── stwo v2.2.0
+      │           │       ├── llm-provable-computer v0.1.0
+      │           │       │   └── llm-provable-computer-fuzz v0.0.0
+      │           │       └── stwo-constraint-framework v2.2.0
+      │           │           └── llm-provable-computer v0.1.0 (*)
+      │           ├── starknet-crypto-codegen v0.3.3
+      │           │   └── starknet-crypto v0.6.2 (*)
+      │           ├── starknet-curve v0.4.2
+      │           │   ├── starknet-crypto v0.6.2 (*)
+      │           │   └── starknet-crypto-codegen v0.3.3 (*)
+      │           └── stwo v2.2.0 (*)
+      ├── ark-ff-macros v0.4.2
+      │   └── ark-ff v0.4.2 (*)
+      └── derivative v2.2.0
+          └── ark-ff v0.4.2 (*)
+    ├ syn v2.0.117
+      ├── ark-ff-asm v0.5.0
+      │   └── ark-ff v0.5.0
+      │       └── llm-provable-computer v0.1.0
+      │           └── llm-provable-computer-fuzz v0.0.0
+      ├── ark-ff-macros v0.5.0
+      │   └── ark-ff v0.5.0 (*)
+      ├── bytemuck_derive v1.10.2
+      │   └── bytemuck v1.25.0
+      │       └── stwo v2.2.0
+      │           ├── llm-provable-computer v0.1.0 (*)
+      │           └── stwo-constraint-framework v2.2.0
+      │               └── llm-provable-computer v0.1.0 (*)
+      ├── clap_derive v4.6.0
+      │   └── clap v4.6.0
+      │       └── llm-provable-computer v0.1.0 (*)
+      ├── darling_core v0.23.0
+      │   ├── darling v0.23.0
+      │   │   └── instability v0.3.12
+      │   │       └── ratatui v0.29.0
+      │   │           └── llm-provable-computer v0.1.0 (*)
+      │   └── darling_macro v0.23.0
+      │       └── darling v0.23.0 (*)
+      ├── darling_macro v0.23.0 (*)
+      ├── educe v0.5.11
+      │   └── stwo v2.2.0 (*)
+      ├── educe v0.6.0
+      │   └── ark-ff v0.5.0 (*)
+      ├── enum-ordinalize-derive v4.3.2
+      │   └── enum-ordinalize v4.3.2
+      │       ├── educe v0.5.11 (*)
+      │       └── educe v0.6.0 (*)
+      ├── instability v0.3.12 (*)
+      ├── serde_derive v1.0.228
+      │   └── serde v1.0.228
+      │       ├── llm-provable-computer v0.1.0 (*)
+      │       ├── llm-provable-computer-fuzz v0.0.0 (*)
+      │       ├── starknet-ff v0.3.7
+      │       │   ├── starknet-crypto v0.6.2
+      │       │   │   └── stwo v2.2.0 (*)
+      │       │   ├── starknet-crypto-codegen v0.3.3
+      │       │   │   └── starknet-crypto v0.6.2 (*)
+      │       │   ├── starknet-curve v0.4.2
+      │       │   │   ├── starknet-crypto v0.6.2 (*)
+      │       │   │   └── starknet-crypto-codegen v0.3.3 (*)
+      │       │   └── stwo v2.2.0 (*)
+      │       └── stwo v2.2.0 (*)
+      ├── starknet-crypto-codegen v0.3.3 (*)
+      ├── strum_macros v0.26.4
+      │   └── strum v0.26.3
+      │       └── ratatui v0.29.0 (*)
+      ├── thiserror-impl v2.0.18
+      │   └── thiserror v2.0.18
+      │       ├── llm-provable-computer v0.1.0 (*)
+      │       └── stwo v2.2.0 (*)
+      ├── tracing-attributes v0.1.31
+      │   └── tracing v0.1.44
+      │       ├── stwo v2.2.0 (*)
+      │       └── stwo-constraint-framework v2.2.0 (*)
+      ├── wasm-bindgen-macro-support v0.2.117
+      │   └── wasm-bindgen-macro v0.2.117
+      │       └── wasm-bindgen v0.2.117
+      │           ├── getrandom v0.2.17
+      │           │   └── starknet-ff v0.3.7 (*)
+      │           └── js-sys v0.3.94
+      │               └── getrandom v0.2.17 (*)
+      └── zeroize_derive v1.4.3
+          └── zeroize v1.8.2
+              ├── ark-ff v0.4.2
+              │   └── starknet-ff v0.3.7 (*)
+              ├── ark-ff v0.5.0 (*)
+              ├── crypto-bigint v0.5.5
+              │   ├── starknet-crypto v0.6.2 (*)
+              │   └── starknet-ff v0.3.7 (*)
+              └── starknet-crypto v0.6.2 (*)
+
+warning[advisory-not-detected]: advisory was not encountered
+   ┌─ <workspace>/deny.toml:20:11
+   │
+20 │   { id = "RUSTSEC-2025-0141", reason = "burn 0.20.1 still depends on bincode 2.0.1; no compatible patch release is available and the burn-model surface remains optional." },
+   │           ━━━━━━━━━━━━━━━━━             ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ignore reason
+   │           │                              
+   │           no crate matched advisory criteria
+
+warning[advisory-not-detected]: advisory was not encountered
+   ┌─ <workspace>/deny.toml:23:11
+   │
+23 │   { id = "RUSTSEC-2026-0002", reason = "Temporary scoped allowlist: lru 0.12.5 IterMut Stacked-Borrows soundness issue is reachable only via ratatui 0.29.0; the TUI surface is not used in proving, verification, or evidence generation paths. Remove via issue #628 when ratatui removes lru 0.12.5 or upgrades to lru >= 0.16.3." },
+   │           ━━━━━━━━━━━━━━━━━             ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ignore reason
+   │           │                              
+   │           no crate matched advisory criteria
+
+advisories ok, bans ok, licenses ok, sources ok

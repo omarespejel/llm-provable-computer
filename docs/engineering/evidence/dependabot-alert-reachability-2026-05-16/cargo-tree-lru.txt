@@ -1,0 +1,5 @@
+lru v0.12.5
+└── ratatui v0.29.0
+    └── llm-provable-computer v0.1.0 (<workspace>)
+
+exit_status=0

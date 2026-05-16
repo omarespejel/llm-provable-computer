@@ -16,14 +16,14 @@ The dependency audit gate is intentionally strict:
 Any new advisory must fail the gate unless it is added here with a specific
 reason, an owning surface, and an exit condition.
 
-## Current accepted exceptions
+## Current Scoped Exceptions
 
 | Advisory | Tooling surface | Current owner | Why it is still present | Exit condition |
 | --- | --- | --- | --- | --- |
 | `RUSTSEC-2025-0141` (`bincode 2.0.1`) | `cargo-audit root`, `cargo-deny` | optional Burn model/runtime surface | `burn 0.20.1` still depends on `bincode 2.0.1`; no compatible patch release is available in the current graph | Upgrade Burn to a release that removes `bincode 2.0.1`, or fence the optional Burn surface behind a separate workspace/package |
 | `RUSTSEC-2024-0388` (`derivative 2.2.0`) | `cargo-audit`, `cargo-deny` | `stwo` / Starknet finite-field chain | `stwo 2.2.0` transitively depends on `derivative 2.2.0` via `starknet-ff 0.3.7`; no compatible patch release is available | Upgrade the `stwo` / `starknet-ff` chain once a compatible maintained replacement lands |
 | `RUSTSEC-2024-0436` (`paste 1.0.15`) | `cargo-audit`, `cargo-deny` | `ark-ff 0.5.0`, `ratatui 0.29.0`, MLIR/Burn support chain | Several transitive chains still pull `paste 1.0.15`; no compatible patch release is available without broader dependency churn | Upgrade the affected upstream chains or remove the optional surfaces that require them |
-| `RUSTSEC-2026-0002` (`lru 0.12.5`) | `cargo-audit` | TUI surface via `ratatui 0.29.0` | `ratatui 0.29.0` still depends on `lru 0.12.5`; `cargo-deny` does not currently surface this advisory on this graph, so `cargo-audit` is the enforcement point | Migrate the TUI surface to a `ratatui` release that removes `lru 0.12.5` |
+| `RUSTSEC-2026-0002` (`lru 0.12.5`) | `cargo-audit` | TUI surface via `ratatui 0.29.0`; blocker/target [#628](https://github.com/omarespejel/provable-transformer-vm/issues/628) | `ratatui 0.29.0` still depends on `lru 0.12.5`; `cargo-deny` does not currently surface this advisory on this graph, so `cargo-audit` is the enforcement point; the TUI is not used in proving, verification, or evidence generation paths | Migrate the TUI surface to a `ratatui` release that removes `lru 0.12.5` or depends on `lru >= 0.16.3`, then remove this exception from `deny.toml`, this file, `docs/engineering/release-gates/dependency-floors.md`, and the local audit-script allowlist |
 
 ## Review rule
 

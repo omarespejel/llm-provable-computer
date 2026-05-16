@@ -39,7 +39,7 @@ which keeps stale ignores from accumulating.
 | `RUSTSEC-2025-0141` (bincode)| `burn` 0.20.1 transitive            | upstream `burn` upgrade off bincode 2.0.1|
 | `RUSTSEC-2024-0388` (derivative)| `stwo` 2.2.0 → `starknet-ff` chain | upstream `starknet-ff` upgrade        |
 | `RUSTSEC-2024-0436` (paste) | `ark-ff` 0.5.0 + `ratatui` 0.29.0   | upstream `ark-ff` / `ratatui` upgrade |
-| `RUSTSEC-2026-0002` (lru)   | `ratatui` 0.29.0 → lru 0.12.5       | upstream `ratatui` upgrade off lru 0.12 |
+| `RUSTSEC-2026-0002` (lru)   | temporary scoped allowlist: `ratatui` 0.29.0 -> lru 0.12.5; blocker/target [#628](https://github.com/omarespejel/provable-transformer-vm/issues/628) | upstream `ratatui` graph that removes lru 0.12.5 or moves to lru >= 0.16.3 |
 
 `RUSTSEC-2026-0104` (rustls-webpki) is not in the ignore list because the
 lockfile pins crate versions that carry the upstream fix. Re-introducing the
