@@ -90,6 +90,27 @@ class NativeAttentionMlpAdapterCompressionAblationGateTests(unittest.TestCase):
             self.assertRegex(artifact["sha256"], r"^[0-9a-f]{64}$")
             self.assertRegex(artifact["payload_sha256"], r"^[0-9a-f]{64}$")
 
+    def test_current_source_validation_pins_adapter_route_boundary(self) -> None:
+        sources = gate.load_sources()
+        gate.validate_current_sources(sources)
+
+        mutated = copy.deepcopy(sources)
+        mutated["gate"]["routes"]["adapter_boundary"]["native_adapter_air_proven"] = False
+        with self.assertRaisesRegex(gate.AdapterCompressionAblationError, "adapter route native AIR proof drift"):
+            gate.validate_current_sources(mutated)
+
+        mutated = copy.deepcopy(sources)
+        mutated["gate"]["routes"]["adapter_boundary"]["adapter_trace_cells"] += 1
+        with self.assertRaisesRegex(gate.AdapterCompressionAblationError, "adapter route adapter_trace_cells mismatch"):
+            gate.validate_current_sources(mutated)
+
+    def test_current_source_validation_pins_raw_artifact_hashes(self) -> None:
+        sources = gate.load_sources()
+        mutated = copy.deepcopy(sources)
+        mutated["source_artifacts"][0]["sha256"] = "00" * 32
+        with self.assertRaisesRegex(gate.AdapterCompressionAblationError, "current_single_proof_gate hash drift"):
+            gate.validate_current_sources(mutated)
+
     def test_tsv_round_trips_from_validated_payload(self) -> None:
         payload = self.fresh_payload()
         tsv = gate.to_tsv(payload)
