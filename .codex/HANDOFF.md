@@ -34,8 +34,8 @@ envelope, and binary accounting artifacts over the derived input commitment.
 Reproducibility metadata:
 
 - Backend binary/version:
-  `zkai_d128_down_projection_proof` with
-  `stwo-d128-down-projection-air-proof-v1`.
+  `zkai_d128_residual_add_proof` with
+  `stwo-d128-residual-add-air-proof-v1`.
 - Timing mode: proof-size/count and verifier-result evidence only, no timing
   claim.
 - Evidence paths:

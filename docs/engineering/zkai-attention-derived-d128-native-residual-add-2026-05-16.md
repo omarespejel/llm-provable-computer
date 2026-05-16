@@ -44,9 +44,9 @@ RMSNorm-MLP proof over the derived input.
 - residual-add row commitment:
   `blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf`
 - statement commitment:
-  `blake2b-256:0916313384f68227850286254909473f9efa232bdca3c1c5ee0e3c4f666644ab`
+  `blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d`
 - public instance commitment:
-  `blake2b-256:0f5f90a32b53ea1274eac93e60665d2595cafde5ec53e57e3598fedbe6d2f195`
+  `blake2b-256:35d93e7086d773fdba30b455374533df6271b1d98d6b35418f1af0d250be8ee8`
 
 ## Correctness Guards
 

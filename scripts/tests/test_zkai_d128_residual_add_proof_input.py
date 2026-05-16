@@ -77,6 +77,16 @@ class ZkAiD128ResidualAddProofInputTests(unittest.TestCase):
         self.assertEqual(payload["output_q8"][:5], [-10093, -4003, 4639, 7311, 5365])
         self.assertEqual(payload["validation_commands"], D128_RESIDUAL.DERIVED_VALIDATION_COMMANDS)
 
+    def test_statement_commitment_binds_source_proof_versions(self) -> None:
+        payload = self.fresh_derived_payload()
+        drifted_rmsnorm = copy.deepcopy(payload)
+        drifted_rmsnorm["source_rmsnorm_proof_version"] = D128_RESIDUAL.SOURCE_RMSNORM_PROOF_VERSION
+        self.assertNotEqual(D128_RESIDUAL.statement_commitment(drifted_rmsnorm), payload["statement_commitment"])
+
+        drifted_down = copy.deepcopy(payload)
+        drifted_down["source_down_projection_proof_version"] = "wrong-down-proof-version"
+        self.assertNotEqual(D128_RESIDUAL.statement_commitment(drifted_down), payload["statement_commitment"])
+
     def test_payload_rejects_mixed_attention_derived_input_and_synthetic_down_source(self) -> None:
         with self.assertRaisesRegex(D128_RESIDUAL.D128ResidualAddInputError, "anchors are mixed"):
             D128_RESIDUAL.build_payload(

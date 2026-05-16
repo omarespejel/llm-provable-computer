@@ -284,7 +284,7 @@
     "bounded proof bytes before JSON deserialization",
     "commitment-vector length check before commitment indexing"
   ],
-  "public_instance_commitment": "blake2b-256:0f5f90a32b53ea1274eac93e60665d2595cafde5ec53e57e3598fedbe6d2f195",
+  "public_instance_commitment": "blake2b-256:35d93e7086d773fdba30b455374533df6271b1d98d6b35418f1af0d250be8ee8",
   "range_policy": "input_activation_q8_semantic_bound_1024; residual_delta_and_output_signed_m31",
   "required_backend_version": "stwo-rmsnorm-swiglu-residual-d128-v1",
   "residual_add_row_commitment": "blake2b-256:e1128497a36a68aa3c1a769c7368b3d7b302140ca4535f03e02c5084b54fffcf",
@@ -1328,7 +1328,7 @@
   "source_down_projection_statement_commitment": "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e",
   "source_rmsnorm_proof_version": "zkai-attention-derived-d128-input-gate-v1",
   "source_rmsnorm_statement_commitment": "blake2b-256:7d75ce774597ed9ac2a022b954647f685350aa82b70438cb37e57b915f16c79b",
-  "statement_commitment": "blake2b-256:0916313384f68227850286254909473f9efa232bdca3c1c5ee0e3c4f666644ab",
+  "statement_commitment": "blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d",
   "target_id": "rmsnorm-swiglu-residual-d128-v1",
   "validation_commands": [
     "python3 scripts/zkai_d128_residual_add_proof_input.py --rmsnorm-source-json docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json --down-source-json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.tsv",
