@@ -1,0 +1,6 @@
+variant_id	status	typed_bytes	proof_json_bytes	envelope_bytes	adapter_base_trace_columns	adapter_trace_cells	typed_delta_vs_current_frontier	typed_delta_vs_label_control	gap_to_two_proof_typed_bytes	gap_to_nanozk_reported_bytes	frontier_safe
+current_duplicate_adapter_v1_frontier	CURRENT_FRONTIER_DO_NOT_REPLACE_IN_THIS_GATE	41932	119790	1253874	12	1536	0	-1296	1232	35032	True
+compact_base_legacy_label_microprobe	LOCAL_ABLATION_GO_BUT_LABEL_NOT_BUMPED	41228	117416	1234882	8	1024	-704	-2000	528	34328	False
+duplicate_adapter_v2_label_control	LOCAL_LABEL_CONTROL	43228	124492	1291514	12	1536	1296	0	2528	36328	False
+compact_base_v2_referenced_fixed_columns	LOCAL_ABLATION_GO_STRUCTURAL_SAVING_BUT_NOT_FRONTIER	42492	121841	1270449	8	1024	560	-736	1792	35592	False
+compact_base_v2_unconstrained_fixed_columns	LOCAL_ABLATION_NO_GO_WEAKER_SAVING	43116	124192	1289257	8	1024	1184	-112	2416	36216	False

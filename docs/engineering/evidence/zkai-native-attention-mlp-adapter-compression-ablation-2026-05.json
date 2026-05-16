@@ -1,0 +1,292 @@
+{
+  "all_mutations_rejected": true,
+  "case_count": 10,
+  "cases": [
+    {
+      "accepted": false,
+      "error": "result drift",
+      "name": "result_promoted_to_frontier",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary drift",
+      "name": "frontier_replacement_promoted",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary drift",
+      "name": "nanozk_win_promoted",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "deltas drift",
+      "name": "remaining_gap_erased",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "deltas drift",
+      "name": "v2_compact_saving_inflated",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "variants drift",
+      "name": "legacy_probe_marked_frontier_safe",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "variant count drift",
+      "name": "label_control_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source_artifacts drift",
+      "name": "source_artifact_hash_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "non-claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload commitment drift",
+      "name": "payload_commitment_drift",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "COMPACT_BASE_ADAPTER_ABLATION_FOR_THE_D8_ATTENTION_TO_D128_MLP_NATIVE_ROUTE_WITHOUT_REPLACING_THE_CURRENT_FRONTIER_OR_CLAIMING_NANOZK_COMPARABILITY",
+  "decision": "NARROW_CLAIM_COMPACT_BASE_ADAPTER_ABLATION",
+  "deltas": {
+    "best_local_ablation_typed_bytes": 41228,
+    "best_safe_frontier_replacement_typed_bytes": 41932,
+    "current_frontier_gap_to_nanozk_reported_bytes": 35032,
+    "current_frontier_gap_to_two_proof_bytes": 1232,
+    "legacy_microprobe_json_saving_vs_current_bytes": 2374,
+    "legacy_microprobe_recovered_current_overhead_share": 0.571429,
+    "legacy_microprobe_remaining_gap_to_two_proof_bytes": 528,
+    "legacy_microprobe_typed_saving_vs_current_bytes": 704,
+    "v2_compact_json_saving_vs_duplicate_label_control_bytes": 2651,
+    "v2_compact_trace_cell_saving_vs_duplicate_label_control": 512,
+    "v2_compact_typed_saving_vs_duplicate_label_control_bytes": 736,
+    "v2_unconstrained_fixed_column_typed_regression_vs_referenced_bytes": 624
+  },
+  "interpretation": {
+    "human_result": "Compact-base adapter representation is a real structural lead: it cuts adapter base trace cells from 1536 to 1024 and saved 736 typed bytes against the duplicate-adapter v2 label control. It is not yet a new frontier because the existing checked artifact remains 41932 typed bytes.",
+    "research_decision": "Continue attacking adapter compression, but first add a stable comparison harness that prevents metadata churn from looking like proof-size progress.",
+    "why_not_promoted": "Changing statement/version labels changes Fiat-Shamir query positions and Merkle path overlap, so the ablation must be treated as mechanism evidence until a transcript-stable benchmark is added."
+  },
+  "issue": "https://github.com/omarespejel/provable-transformer-vm/issues/631",
+  "mutation_inventory": [
+    "result_promoted_to_frontier",
+    "frontier_replacement_promoted",
+    "nanozk_win_promoted",
+    "remaining_gap_erased",
+    "v2_compact_saving_inflated",
+    "legacy_probe_marked_frontier_safe",
+    "label_control_removed",
+    "source_artifact_hash_drift",
+    "non_claim_removed",
+    "payload_commitment_drift"
+  ],
+  "non_claims": [
+    "not a replacement for the current native attention+MLP frontier",
+    "not proof that compact-base adapter is always smaller after label changes",
+    "not a NANOZK proof-size win",
+    "not a matched NANOZK workload or benchmark",
+    "not a full transformer block proof",
+    "not timing evidence",
+    "not recursion or proof-carrying data",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "blake2b-256:e893cd162bb97e22b9613e36ef30f4a4fe74a26c7614ff4a73dae0f965467c27",
+  "result": "GO_STRUCTURAL_SAVING_NO_GO_FRONTIER_REPLACEMENT",
+  "schema": "zkai-native-attention-mlp-adapter-compression-ablation-gate-v1",
+  "source_artifacts": [
+    {
+      "id": "current_single_proof_gate",
+      "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json",
+      "payload_sha256": "5d09a1afd4c6926932b7c9a4234dcd10c893ab11fff14f1d72188b381dcd5d34",
+      "sha256": "7e68dac61d177b61b98468d1ad788756af7e06890585fa726fa3a5fdfbaade4c"
+    },
+    {
+      "id": "current_single_proof_binary_accounting",
+      "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json",
+      "payload_sha256": "a8a6a23e3fb08223a8ca631095d89ccc26c69d8930ec77fde9d69e8b940f1189",
+      "sha256": "96073160916177a2dad18aff8b85616774cac60bdc8734f50d59848c315bdb9a"
+    }
+  ],
+  "summary": {
+    "compact_base_legacy_microprobe_saving_bytes": 704,
+    "compact_base_legacy_microprobe_typed_bytes": 41228,
+    "compact_base_reduces_adapter_trace_cells": true,
+    "compact_base_v2_saving_vs_label_control_bytes": 736,
+    "compact_base_v2_typed_bytes": 42492,
+    "current_frontier_proof_json_bytes": 119790,
+    "current_frontier_typed_bytes": 41932,
+    "duplicate_adapter_v2_label_control_typed_bytes": 43228,
+    "frontier_replacement_status": "NO_GO_TRANSCRIPT_STABLE_FRONTIER_NOT_ESTABLISHED",
+    "nanozk_win_claimed": false,
+    "next_attack": "make proof-size measurement transcript-stable, then retry compact adapter or reduce query/opening pressure"
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_native_attention_mlp_adapter_compression_ablation_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-adapter-compression-ablation-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-adapter-compression-ablation-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_native_attention_mlp_adapter_compression_ablation_gate.py scripts/tests/test_zkai_native_attention_mlp_adapter_compression_ablation_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_adapter_compression_ablation_gate",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ],
+  "variants": [
+    {
+      "adapter_base_trace_columns": 12,
+      "adapter_preprocessed_columns": 12,
+      "adapter_trace_cells": 1536,
+      "envelope_bytes": 1253874,
+      "frontier_safe": true,
+      "gap_to_nanozk_reported_bytes": 35032,
+      "gap_to_two_proof_typed_bytes": 1232,
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 13184,
+        "fri_samples": 800,
+        "oods_samples": 12240,
+        "queries_values": 9132,
+        "trace_decommitments": 6528
+      },
+      "id": "current_duplicate_adapter_v1_frontier",
+      "notes": "checked current route; native adapter is duplicated in base and preprocessed traces",
+      "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-v1",
+      "proof_json_bytes": 119790,
+      "statement_version": "zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1",
+      "status": "CURRENT_FRONTIER_DO_NOT_REPLACE_IN_THIS_GATE",
+      "typed_bytes": 41932,
+      "typed_delta_vs_current_frontier": 0,
+      "typed_delta_vs_label_control": -1296,
+      "typed_ratio_vs_nanozk_reported": 6.077101,
+      "typed_ratio_vs_two_proof": 1.03027
+    },
+    {
+      "adapter_base_trace_columns": 8,
+      "adapter_preprocessed_columns": 12,
+      "adapter_trace_cells": 1024,
+      "envelope_bytes": 1234882,
+      "frontier_safe": false,
+      "gap_to_nanozk_reported_bytes": 34328,
+      "gap_to_two_proof_typed_bytes": 528,
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 12736,
+        "fri_samples": 784,
+        "oods_samples": 12176,
+        "queries_values": 9084,
+        "trace_decommitments": 6400
+      },
+      "id": "compact_base_legacy_label_microprobe",
+      "notes": "local compact-base probe under legacy labels; useful for mechanism, not safe as a published frontier",
+      "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-native-adapter-v1",
+      "proof_json_bytes": 117416,
+      "statement_version": "zkai-native-attention-mlp-single-proof-object-native-adapter-statement-v1",
+      "status": "LOCAL_ABLATION_GO_BUT_LABEL_NOT_BUMPED",
+      "typed_bytes": 41228,
+      "typed_delta_vs_current_frontier": -704,
+      "typed_delta_vs_label_control": -2000,
+      "typed_ratio_vs_nanozk_reported": 5.975072,
+      "typed_ratio_vs_two_proof": 1.012973
+    },
+    {
+      "adapter_base_trace_columns": 12,
+      "adapter_preprocessed_columns": 12,
+      "adapter_trace_cells": 1536,
+      "envelope_bytes": 1291514,
+      "frontier_safe": false,
+      "gap_to_nanozk_reported_bytes": 36328,
+      "gap_to_two_proof_typed_bytes": 2528,
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 14176,
+        "fri_samples": 848,
+        "oods_samples": 12240,
+        "queries_values": 9132,
+        "trace_decommitments": 6784
+      },
+      "id": "duplicate_adapter_v2_label_control",
+      "notes": "duplicate adapter with bumped labels; controls for transcript-label drift",
+      "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-duplicate-adapter-v2",
+      "proof_json_bytes": 124492,
+      "statement_version": "zkai-native-attention-mlp-single-proof-object-duplicate-adapter-statement-v2",
+      "status": "LOCAL_LABEL_CONTROL",
+      "typed_bytes": 43228,
+      "typed_delta_vs_current_frontier": 1296,
+      "typed_delta_vs_label_control": 0,
+      "typed_ratio_vs_nanozk_reported": 6.264928,
+      "typed_ratio_vs_two_proof": 1.062113
+    },
+    {
+      "adapter_base_trace_columns": 8,
+      "adapter_preprocessed_columns": 12,
+      "adapter_trace_cells": 1024,
+      "envelope_bytes": 1270449,
+      "frontier_safe": false,
+      "gap_to_nanozk_reported_bytes": 35592,
+      "gap_to_two_proof_typed_bytes": 1792,
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 13696,
+        "fri_samples": 832,
+        "oods_samples": 12176,
+        "queries_values": 9084,
+        "trace_decommitments": 6656
+      },
+      "id": "compact_base_v2_referenced_fixed_columns",
+      "notes": "compact base with deterministic fixed columns still referenced by the AIR evaluator",
+      "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-compact-adapter-v1",
+      "proof_json_bytes": 121841,
+      "statement_version": "zkai-native-attention-mlp-single-proof-object-compact-adapter-statement-v1",
+      "status": "LOCAL_ABLATION_GO_STRUCTURAL_SAVING_BUT_NOT_FRONTIER",
+      "typed_bytes": 42492,
+      "typed_delta_vs_current_frontier": 560,
+      "typed_delta_vs_label_control": -736,
+      "typed_ratio_vs_nanozk_reported": 6.158261,
+      "typed_ratio_vs_two_proof": 1.044029
+    },
+    {
+      "adapter_base_trace_columns": 8,
+      "adapter_preprocessed_columns": 12,
+      "adapter_trace_cells": 1024,
+      "envelope_bytes": 1289257,
+      "frontier_safe": false,
+      "gap_to_nanozk_reported_bytes": 36216,
+      "gap_to_two_proof_typed_bytes": 2416,
+      "grouped": {
+        "fixed_overhead": 48,
+        "fri_decommitments": 14176,
+        "fri_samples": 848,
+        "oods_samples": 12176,
+        "queries_values": 9084,
+        "trace_decommitments": 6784
+      },
+      "id": "compact_base_v2_unconstrained_fixed_columns",
+      "notes": "reading fixed columns without zero constraints verifies but gives weaker savings",
+      "proof_backend_version": "stwo-native-attention-mlp-single-proof-object-compact-adapter-v1",
+      "proof_json_bytes": 124192,
+      "statement_version": "zkai-native-attention-mlp-single-proof-object-compact-adapter-statement-v1",
+      "status": "LOCAL_ABLATION_NO_GO_WEAKER_SAVING",
+      "typed_bytes": 43116,
+      "typed_delta_vs_current_frontier": 1184,
+      "typed_delta_vs_label_control": -112,
+      "typed_ratio_vs_nanozk_reported": 6.248696,
+      "typed_ratio_vs_two_proof": 1.059361
+    }
+  ]
+}

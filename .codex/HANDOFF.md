@@ -99,18 +99,28 @@ AIR, query-value/opening reduction, or a different component boundary. See
 `docs/engineering/zkai-native-attention-mlp-lifting-ablation-2026-05-16.md`.
 
 Latest native adapter-AIR frontier: the attention-output-to-d128-input adapter
-now has a pinned native AIR candidate surface, but not yet a regenerated Stwo
-proof with that component included. The candidate has `128` rows, `9` value
-columns plus `3` remainder-bit columns, `1,536` trace cells, and `10` checked
-constraints over the fixed public projection policy. The adapter outputs match
-the d128 RMSNorm input commitment
-`blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35`,
-and all floor remainders fit in `3` bits. The key budget is strict: the current
-single proof is `40,668` typed bytes versus the `40,700` typed-byte two-proof
-frontier, so there are only `32` typed bytes of slack before native adapter AIR
-loses the current tiny size win. Treat the next implementation as a correctness
-gate first, not a proof-size breakthrough. See
-`docs/engineering/zkai-native-attention-mlp-adapter-air-frontier-2026-05-16.md`.
+is now proved inside the native attention-plus-MLP Stwo object. The current
+checked artifact verifies locally at `119,790` JSON proof bytes and `41,932`
+local typed bytes, with `1,536` adapter trace cells. This closes the correctness
+objection but is a size NO-GO versus the `40,700` typed-byte two-proof frontier:
+the stricter proof is `1,232` typed bytes larger and remains `35,032` typed
+bytes above NANOZK's paper-reported `6,900` byte d128 row. Do not describe this
+as proof-size savings or NANOZK-comparable. See
+`docs/engineering/zkai-native-attention-mlp-adapter-air-frontier-2026-05-16.md`
+and `docs/engineering/zkai-native-attention-mlp-single-proof-object-2026-05-16.md`.
+
+Latest adapter-compression ablation: compacting the adapter base trace from
+`12` columns to `8` columns is a real mechanism lead but not a promoted
+frontier. The legacy-label microprobe was `41,228` typed bytes, recovering
+`704 / 1,232` typed bytes of the current adapter overhead and leaving a `528`
+typed-byte gap to the two-proof frontier. Under a bumped-label control, compact
+base saved `736` typed bytes versus duplicate base (`42,492` vs `43,228`), but
+the experiment also showed transcript-label churn can change Fiat-Shamir query
+positions and Merkle path overlap enough to swamp small wins. Next attack:
+build transcript-stable proof-size measurement, then retry compact adapter or
+query/opening reduction. See
+`docs/engineering/zkai-native-attention-mlp-adapter-compression-ablation-2026-05-16.md`;
+follow-up issue `#633` tracks the transcript-stable harness.
 
 Single-proof object reproducibility metadata:
 
@@ -1413,6 +1423,13 @@ Validate with
     bytes even after removing all current positive grouped-field deltas, still
     `33,496` bytes above NANOZK's paper-reported `6,900` byte row. Follow-up
     issue `#631` tracks the adapter-compression attack.
+16. The adapter-compression ablation found a real but unpromoted mechanism:
+    compact base trace saved `736` typed bytes against the duplicate-adapter
+    bumped-label control and the legacy-label microprobe recovered `704 / 1,232`
+    typed bytes of the current overhead. Do not replace the frontier until a
+    transcript-stable proof-size harness prevents metadata churn from moving
+    Fiat-Shamir query positions enough to fake wins or regressions. Follow-up
+    issue `#633` tracks that harness.
 
 ## Resume protocol
 
