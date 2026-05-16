@@ -131,6 +131,7 @@ fn read_bounded_utf8(path: &Path, max_bytes: usize, label: &str) -> Result<Strin
 
 #[cfg(feature = "stwo-backend")]
 fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u8>, String> {
+    reject_symlinked_ancestors(path, label)?;
     #[cfg(unix)]
     let file = {
         use std::os::unix::fs::OpenOptionsExt;
@@ -184,9 +185,11 @@ fn read_bounded_file(path: &Path, max_bytes: usize, label: &str) -> Result<Vec<u
 
 #[cfg(feature = "stwo-backend")]
 fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), String> {
+    reject_symlinked_ancestors(path, label)?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .map_err(|error| format!("failed to create {}: {error}", parent.display()))?;
+        reject_symlinked_ancestors(path, label)?;
     }
     let metadata = fs::symlink_metadata(path).ok();
     if metadata
@@ -217,6 +220,41 @@ fn atomic_write_file(path: &Path, bytes: &[u8], label: &str) -> Result<(), Strin
             .map_err(|error| format!("failed to sync {}: {error}", tmp_path.display()))?;
     }
     publish_temp_file(&tmp_path, path, label)
+}
+
+#[cfg(feature = "stwo-backend")]
+fn reject_symlinked_ancestors(path: &Path, label: &str) -> Result<(), String> {
+    #[cfg(not(unix))]
+    {
+        let _ = path;
+        let _ = label;
+        Ok(())
+    }
+    #[cfg(unix)]
+    {
+        for ancestor in path.ancestors().skip(1) {
+            if ancestor.as_os_str().is_empty() {
+                continue;
+            }
+            match fs::symlink_metadata(ancestor) {
+                Ok(metadata) if metadata.file_type().is_symlink() => {
+                    return Err(format!(
+                        "refusing symlinked parent for {label}: {}",
+                        ancestor.display()
+                    ));
+                }
+                Ok(_) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => {
+                    return Err(format!(
+                        "failed to inspect parent {} for {label}: {error}",
+                        ancestor.display()
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(feature = "stwo-backend")]
@@ -257,10 +295,17 @@ mod tests {
     #[cfg(unix)]
     use std::os::unix::fs::symlink;
 
+    fn local_tempdir() -> tempfile::TempDir {
+        tempfile::Builder::new()
+            .prefix("zkai-d128-rmsnorm-bridge-test-")
+            .tempdir_in(std::env::current_dir().expect("current dir"))
+            .expect("temp dir")
+    }
+
     #[cfg(unix)]
     #[test]
     fn read_bounded_file_rejects_symlink_input() {
-        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = local_tempdir();
         let target = dir.path().join("target.json");
         let link = dir.path().join("input.json");
         fs::write(&target, b"{}").expect("write target");
@@ -273,9 +318,27 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn read_bounded_file_rejects_symlink_parent() {
+        let dir = local_tempdir();
+        let real = dir.path().join("real");
+        let link = dir.path().join("link");
+        fs::create_dir(&real).expect("create real dir");
+        symlink(&real, &link).expect("create parent symlink");
+        fs::write(real.join("input.json"), b"{}").expect("write target");
+
+        let error = read_bounded_file(&link.join("input.json"), 1024, "test input")
+            .expect_err("symlinked parent must reject");
+        assert!(
+            error.contains("symlinked parent"),
+            "unexpected error: {error}"
+        );
+    }
+
     #[test]
     fn read_bounded_file_enforces_post_read_limit() {
-        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = local_tempdir();
         let target = dir.path().join("input.json");
         fs::write(&target, b"0123456789").expect("write target");
 
@@ -290,7 +353,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn atomic_write_file_rejects_symlink_target() {
-        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = local_tempdir();
         let target = dir.path().join("target.json");
         let link = dir.path().join("output.json");
         fs::write(&target, b"{}").expect("write target");
@@ -302,5 +365,24 @@ mod tests {
             error.contains("refusing to overwrite symlink"),
             "unexpected error: {error}"
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn atomic_write_file_rejects_symlink_parent() {
+        let dir = local_tempdir();
+        let real = dir.path().join("real");
+        let link = dir.path().join("link");
+        fs::create_dir(&real).expect("create real dir");
+        symlink(&real, &link).expect("create parent symlink");
+
+        let output = link.join("output.json");
+        let error = atomic_write_file(&output, b"{}", "test output")
+            .expect_err("symlinked parent must reject");
+        assert!(
+            error.contains("symlinked parent"),
+            "unexpected error: {error}"
+        );
+        assert!(!real.join("output.json").exists());
     }
 }
