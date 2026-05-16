@@ -52,12 +52,21 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
         payload = self.fresh_payload()
         input_payload = self.context["envelope"]["input"]
         self.assertEqual(payload["validation_commands"], input_payload["validation_commands"])
+        self.assertEqual(payload["validation_commands"], list(gate.EXPECTED_VALIDATION_COMMANDS))
         self.assertNotIn("py_compile", "\n".join(payload["validation_commands"]))
         payload["validation_commands"] = list(payload["validation_commands"])
         payload["validation_commands"].append("python3 -m py_compile scripts/zkai_native_attention_mlp_single_proof_gate.py")
         gate.refresh_routes_and_payload(payload)
         with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "validation_commands drift"):
             gate.validate_payload(payload, context=self.context)
+
+    def test_input_validation_command_drift_rejects(self) -> None:
+        context = copy.deepcopy(self.context)
+        context["envelope"]["input"]["validation_commands"].append(
+            "python3 -m py_compile scripts/zkai_native_attention_mlp_single_proof_gate.py"
+        )
+        with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "input validation commands drift"):
+            gate.validate_context(context)
 
     def test_all_mutations_reject(self) -> None:
         payload = self.fresh_payload()
