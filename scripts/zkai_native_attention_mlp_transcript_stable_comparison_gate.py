@@ -285,6 +285,10 @@ PINNED_INPUT_PATHS = {
     EVIDENCE_DIR.resolve() / path.name
     for path in (ABLATION_PATH, CURRENT_GATE_PATH, CURRENT_ENVELOPE_PATH, CURRENT_ACCOUNTING_PATH)
 }
+PINNED_INPUT_LEAF_NAMES_CASEFOLD = {
+    path.name.casefold()
+    for path in (ABLATION_PATH, CURRENT_GATE_PATH, CURRENT_ENVELOPE_PATH, CURRENT_ACCOUNTING_PATH)
+}
 
 
 def open_evidence_dir() -> int:
@@ -827,14 +831,14 @@ def require_output_path(path: pathlib.Path | None, suffix: str) -> pathlib.Path 
     resolved = EVIDENCE_DIR.resolve() / leaf_name
     if pathlib.Path(leaf_name).suffix != suffix:
         raise TranscriptStableComparisonError(f"output path must end with {suffix}")
-    if resolved in PINNED_INPUT_PATHS:
+    if resolved in PINNED_INPUT_PATHS or leaf_name.casefold() in PINNED_INPUT_LEAF_NAMES_CASEFOLD:
         raise TranscriptStableComparisonError("output path must not overwrite pinned input evidence")
     return resolved
 
 
 def write_text_atomic(path: pathlib.Path, text: str) -> None:
     leaf_name = evidence_leaf_name(path, "output")
-    if EVIDENCE_DIR.resolve() / leaf_name in PINNED_INPUT_PATHS:
+    if EVIDENCE_DIR.resolve() / leaf_name in PINNED_INPUT_PATHS or leaf_name.casefold() in PINNED_INPUT_LEAF_NAMES_CASEFOLD:
         raise TranscriptStableComparisonError("output path must not overwrite pinned input evidence")
     directory_fd = -1
     temp_name: str | None = None

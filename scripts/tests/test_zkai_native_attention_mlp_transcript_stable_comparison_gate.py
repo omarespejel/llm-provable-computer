@@ -236,6 +236,13 @@ class NativeAttentionMlpTranscriptStableComparisonGateTests(unittest.TestCase):
     def test_write_outputs_rejects_pinned_input_overwrite(self) -> None:
         with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "pinned input evidence"):
             gate.require_output_path(gate.ABLATION_PATH, ".json")
+        case_variant = gate.EVIDENCE_DIR / f"Z{gate.ABLATION_PATH.name[1:]}"
+        self.assertNotEqual(case_variant.name, gate.ABLATION_PATH.name)
+        self.assertEqual(case_variant.name.casefold(), gate.ABLATION_PATH.name.casefold())
+        with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "pinned input evidence"):
+            gate.require_output_path(case_variant, ".json")
+        with self.assertRaisesRegex(gate.TranscriptStableComparisonError, "pinned input evidence"):
+            gate.write_text_atomic(case_variant, "{}\n")
 
     def test_write_outputs_does_not_remove_stale_deterministic_temp(self) -> None:
         payload = self.fresh_payload()
