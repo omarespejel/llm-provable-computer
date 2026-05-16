@@ -98,10 +98,15 @@ cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native
 cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- verify docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json
 cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json
 python3 scripts/zkai_native_attention_mlp_single_proof_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.tsv
-python3 -m py_compile scripts/zkai_native_attention_mlp_single_proof_gate.py scripts/tests/test_zkai_native_attention_mlp_single_proof_gate.py
 python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_single_proof_gate
 cargo +nightly-2025-07-14 test --locked --features stwo-backend native_attention_mlp_single_proof --lib
 git diff --check
 just gate-fast
 just gate
 ```
+
+The proof-pinned `validation_commands` list intentionally excludes optional
+local syntax checks. During review, `python3 -m py_compile
+scripts/zkai_native_attention_mlp_single_proof_gate.py
+scripts/tests/test_zkai_native_attention_mlp_single_proof_gate.py` was also run
+as an extra local check, but it is not part of the statement-bound command list.

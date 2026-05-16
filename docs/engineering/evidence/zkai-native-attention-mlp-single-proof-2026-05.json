@@ -24,32 +24,32 @@
     "cases": [
       {
         "name": "single_typed_bytes_drift",
-        "reason": "summary drift",
+        "reason": "summary.single_proof_typed_bytes drift",
         "rejected": true
       },
       {
         "name": "two_proof_frontier_drift",
-        "reason": "summary drift",
+        "reason": "summary.two_proof_frontier_typed_bytes drift",
         "rejected": true
       },
       {
         "name": "proof_json_bytes_drift",
-        "reason": "summary drift",
+        "reason": "summary.single_proof_json_bytes drift",
         "rejected": true
       },
       {
         "name": "adapter_promoted_to_native_air",
-        "reason": "routes drift",
+        "reason": "routes.adapter_boundary.native_adapter_air_proven drift",
         "rejected": true
       },
       {
         "name": "pcs_lifting_log_size_drift",
-        "reason": "summary drift",
+        "reason": "summary.pcs_lifting_log_size drift",
         "rejected": true
       },
       {
         "name": "nanozk_win_promoted",
-        "reason": "routes drift",
+        "reason": "routes.nanozk_comparison_boundary.proof_size_win_claimed drift",
         "rejected": true
       },
       {
@@ -80,7 +80,7 @@
     "not timing evidence",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:fb48bfde6147202dc70c20e800c828c44d4d1d7de075638ece45443119f338c0",
+  "payload_commitment": "sha256:2d43a0791fcf91a1477ad85fdef6e282f28f81699b679be156b763d3c08c3b94",
   "result": "NARROW_CLAIM_SINGLE_PROOF_OBJECT_BARELY_BEATS_TWO_PROOF_FRONTIER",
   "route_commitment": "blake2b-256:6adb099b3cafb4f1eff4131f767d46bf6d694bf5f5033ffc1ba8963f9fcd60d9",
   "routes": {

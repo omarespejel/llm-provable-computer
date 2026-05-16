@@ -68,6 +68,30 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "input validation commands drift"):
             gate.validate_context(context)
 
+    def test_source_artifact_paths_are_posix(self) -> None:
+        payload = self.fresh_payload()
+        self.assertEqual(
+            [artifact["path"] for artifact in payload["source_artifacts"]],
+            [
+                gate.ENVELOPE_PATH.relative_to(gate.ROOT).as_posix(),
+                gate.ACCOUNTING_PATH.relative_to(gate.ROOT).as_posix(),
+                gate.ROUTE_BUDGET_PATH.relative_to(gate.ROOT).as_posix(),
+            ],
+        )
+
+    def test_type_coercion_drift_rejects(self) -> None:
+        payload = self.fresh_payload()
+        payload["summary"]["pcs_lifting_log_size"] = 19.0
+        gate.refresh_routes_and_payload(payload)
+        with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "summary"):
+            gate.validate_payload(payload, context=self.context)
+
+        payload = self.fresh_payload()
+        payload["routes"]["adapter_boundary"]["native_adapter_air_proven"] = 0
+        gate.refresh_routes_and_payload(payload)
+        with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "routes"):
+            gate.validate_payload(payload, context=self.context)
+
     def test_all_mutations_reject(self) -> None:
         payload = self.fresh_payload()
         cases = payload["mutation_result"]["cases"]
@@ -83,7 +107,7 @@ class NativeAttentionMlpSingleProofGateTests(unittest.TestCase):
         payload = self.fresh_payload()
         payload["routes"]["nanozk_comparison_boundary"]["proof_size_win_claimed"] = True
         gate.refresh_routes_and_payload(payload)
-        with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "routes drift"):
+        with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofGateError, "proof_size_win_claimed drift"):
             gate.validate_payload(payload, context=self.context)
 
     def test_payload_commitment_drift_rejects(self) -> None:
