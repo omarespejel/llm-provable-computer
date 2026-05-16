@@ -1,0 +1,214 @@
+{
+  "adapter_air_candidate": {
+    "column_count": 9,
+    "columns": [
+      "row_index",
+      "primary_source_index",
+      "mix_source_index",
+      "primary_q8",
+      "mix_q8",
+      "bias_q8",
+      "numerator_q8",
+      "output_q8",
+      "floor_remainder_q8"
+    ],
+    "constraint_count": 10,
+    "constraints": [
+      "row_index_equals_public_column",
+      "primary_source_index_equals_i_mod_64",
+      "mix_source_index_equals_17i_plus_11_mod_64",
+      "primary_q8_equals_selected_attention_output",
+      "mix_q8_equals_selected_attention_output",
+      "bias_q8_equals_7i_plus_3_mod_9_minus_4",
+      "numerator_q8_equals_9_primary_plus_5_mix_plus_bias",
+      "numerator_q8_equals_8_output_plus_floor_remainder",
+      "floor_remainder_q8_decomposes_into_three_boolean_bits",
+      "output_q8_commitment_equals_d128_rmsnorm_input_activation_commitment"
+    ],
+    "log_size": 7,
+    "native_adapter_air_proven_in_current_artifact": false,
+    "output_d128_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+    "policy_id": "fixed_public_two_source_q8_projection_v1",
+    "projection_row_summary": {
+      "all_remainders_fit_three_bits": true,
+      "max_floor_remainder_q8": 7,
+      "min_floor_remainder_q8": 0,
+      "output_max_q8": 5,
+      "output_min_q8": -4,
+      "output_sum_q8": 104,
+      "remainder_bits": 3,
+      "row_count": 128
+    },
+    "remainder_bit_columns": 3,
+    "rows": 128,
+    "source_attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+    "status": "READY_FOR_NATIVE_AIR_IMPLEMENTATION",
+    "trace_cells": 1536
+  },
+  "all_mutations_rejected": true,
+  "budget": {
+    "correctness_next_step": "implement the adapter component in the one-proof Stwo object even if typed bytes increase",
+    "current_gap_to_nanozk_reported_bytes": 33768,
+    "max_adapter_overhead_for_size_win_bytes": 32,
+    "nanozk_reported_d128_block_proof_bytes": 6900,
+    "native_adapter_air_size_breakthrough_gate": "NO_GO_UNTIL_REPROVEN_OVERHEAD_IS_AT_MOST_32_TYPED_BYTES",
+    "projected_gap_after_lifting_only_bytes": 33128,
+    "single_proof_typed_bytes": 40668,
+    "two_proof_frontier_typed_bytes": 40700,
+    "typed_slack_vs_two_proof_bytes": 32
+  },
+  "case_count": 12,
+  "cases": [
+    {
+      "accepted": false,
+      "error": "decision drift",
+      "name": "decision_promoted_to_full_block",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary drift",
+      "name": "adapter_air_marked_proven",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary drift",
+      "name": "adapter_size_breakthrough_overclaim",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "budget drift",
+      "name": "adapter_slack_inflated",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter_air_candidate drift",
+      "name": "source_attention_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter_air_candidate drift",
+      "name": "output_commitment_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter_air_candidate drift",
+      "name": "constraint_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "adapter_air_candidate drift",
+      "name": "remainder_bits_weakened",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "summary drift",
+      "name": "nanozk_gap_erased",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "source_artifacts drift",
+      "name": "source_artifact_hash_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "non-claims drift",
+      "name": "non_claim_removed",
+      "rejected": true
+    },
+    {
+      "accepted": false,
+      "error": "payload commitment drift",
+      "name": "payload_commitment_drift",
+      "rejected": true
+    }
+  ],
+  "claim_boundary": "PINS_THE_EXACT_NATIVE_AIR_CONSTRAINT_SURFACE_FOR_THE_ATTENTION_OUTPUT_TO_D128_INPUT_ADAPTER_WITHOUT_REGENERATING_A_STWO_PROOF_OR_CLAIMING_PROOF_SIZE_IMPROVEMENT",
+  "decision": "NARROW_CLAIM_NATIVE_ADAPTER_AIR_FRONTIER_PINNED",
+  "issue": "https://github.com/omarespejel/provable-transformer-vm/issues/603",
+  "mutation_inventory": [
+    "decision_promoted_to_full_block",
+    "adapter_air_marked_proven",
+    "adapter_size_breakthrough_overclaim",
+    "adapter_slack_inflated",
+    "source_attention_commitment_drift",
+    "output_commitment_drift",
+    "constraint_removed",
+    "remainder_bits_weakened",
+    "nanozk_gap_erased",
+    "source_artifact_hash_drift",
+    "non_claim_removed",
+    "payload_commitment_drift"
+  ],
+  "non_claims": [
+    "not a regenerated Stwo proof with the adapter component included",
+    "not proof-size savings",
+    "not a NANOZK proof-size win",
+    "not a matched NANOZK workload or benchmark",
+    "not exact real-valued Softmax",
+    "not full transformer block inference",
+    "not timing evidence",
+    "not recursion or proof-carrying data",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "blake2b-256:06c19b60f22722e3c058423eaf27f5b453c1e324109bcd4ccd55f1cbc4ca623c",
+  "result": "GO_CONSTRAINT_SURFACE_READY_NO_GO_SIZE_BREAKTHROUGH",
+  "route_id": "native_attention_mlp_adapter_air_frontier_v1",
+  "schema": "zkai-native-attention-mlp-adapter-air-frontier-gate-v1",
+  "source_artifacts": [
+    {
+      "id": "attention_derived_d128_input_gate",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json",
+      "payload_sha256": "4687a6728c0979e9f260535072958d2ea077f3ddb59b0f558284732494c1627e",
+      "sha256": "969abf1e934f3ce391b26d2f3053e4fca9027269e6618e8490e4e460ae72c4c9"
+    },
+    {
+      "id": "native_attention_mlp_single_proof_gate",
+      "path": "docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json",
+      "payload_sha256": "0331b1d7e6984876269d75767541766ad47f195106c2efda9cde1b3219341549",
+      "sha256": "573b223c31251434d2587078a7fdcf3ba6c962400cbc39eb2badb055f93b64ac"
+    },
+    {
+      "id": "native_attention_mlp_lifting_ablation_gate",
+      "path": "docs/engineering/evidence/zkai-native-attention-mlp-lifting-ablation-2026-05.json",
+      "payload_sha256": "d969d3deb4402fc986d231e6c877e4a9a9aae201f196a3aa84aaf9d17298e14c",
+      "sha256": "9a3223c8e6979b094e9ae14071ecf5c50a3cc16a4b7901dd1a8bf1156f0d7e5e"
+    }
+  ],
+  "summary": {
+    "adapter_columns": 9,
+    "adapter_outputs_match_d128_input_commitment": true,
+    "adapter_rows": 128,
+    "adapter_trace_cells": 1536,
+    "all_remainders_fit_three_bits": true,
+    "constraint_count": 10,
+    "current_gap_to_nanozk_reported_bytes": 33768,
+    "max_adapter_overhead_for_size_win_bytes": 32,
+    "nanozk_reported_d128_block_proof_bytes": 6900,
+    "native_adapter_air_proven_in_current_artifact": false,
+    "native_adapter_air_size_breakthrough_status": "NO_GO",
+    "native_adapter_air_status": "READY_FOR_NATIVE_AIR_IMPLEMENTATION",
+    "next_attack": "implement_adapter_air_then_measure_real_typed_overhead",
+    "single_proof_typed_bytes": 40668,
+    "two_proof_frontier_typed_bytes": 40700,
+    "typed_slack_vs_two_proof_bytes": 32
+  },
+  "validation_commands": [
+    "python3 scripts/zkai_native_attention_mlp_adapter_air_frontier_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-adapter-air-frontier-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-adapter-air-frontier-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_native_attention_mlp_adapter_air_frontier_gate.py scripts/tests/test_zkai_native_attention_mlp_adapter_air_frontier_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_adapter_air_frontier_gate",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast"
+  ]
+}
