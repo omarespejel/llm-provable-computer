@@ -90,6 +90,11 @@ class NativeAttentionMlpAdapterCompressionAblationGateTests(unittest.TestCase):
             self.assertRegex(artifact["sha256"], r"^[0-9a-f]{64}$")
             self.assertRegex(artifact["payload_sha256"], r"^[0-9a-f]{64}$")
 
+    def test_current_source_validation_is_artifact_order_independent(self) -> None:
+        sources = gate.load_sources()
+        sources["source_artifacts"].reverse()
+        gate.validate_current_sources(sources)
+
     def test_current_source_validation_pins_adapter_route_boundary(self) -> None:
         sources = gate.load_sources()
         gate.validate_current_sources(sources)
@@ -124,6 +129,13 @@ class NativeAttentionMlpAdapterCompressionAblationGateTests(unittest.TestCase):
         mutated["source_artifacts"][0] = "not-an-artifact"
         with self.assertRaisesRegex(gate.AdapterCompressionAblationError, "source artifact 0 must be object"):
             gate.validate_current_sources(mutated)
+
+    def test_source_artifact_hash_mutation_is_order_independent(self) -> None:
+        payload = self.fresh_payload()
+        payload["source_artifacts"].reverse()
+        gate._source_artifact_hash_drift(payload)
+        artifacts_by_id = {artifact["id"]: artifact for artifact in payload["source_artifacts"]}
+        self.assertEqual(artifacts_by_id["current_single_proof_gate"]["sha256"], "22" * 32)
 
     def test_tsv_round_trips_from_validated_payload(self) -> None:
         payload = self.fresh_payload()
