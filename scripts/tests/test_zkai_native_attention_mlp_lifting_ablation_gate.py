@@ -35,6 +35,18 @@ class NativeAttentionMlpLiftingAblationGateTests(unittest.TestCase):
         self.assertEqual(positives, {"fri_decommitments": 1_088, "oods_samples": 256, "queries_values": 192})
         self.assertEqual(sum(value["single_minus_two_proof_delta_bytes"] for value in deltas.values()), 1_232)
 
+    def test_summary_from_groups_rejects_positive_overhang_drift(self) -> None:
+        groups = copy.deepcopy(gate.EXPECTED_GROUP_DELTAS)
+        groups["queries_values"]["single_minus_two_proof_delta_bytes"] += 1
+        with self.assertRaisesRegex(gate.LiftingAblationError, "positive overhang drift"):
+            gate.summary_from_groups(groups)
+
+    def test_summary_from_groups_rejects_grouped_projection_drift(self) -> None:
+        groups = copy.deepcopy(gate.EXPECTED_GROUP_DELTAS)
+        groups["trace_decommitments"]["single_minus_two_proof_delta_bytes"] -= 1
+        with self.assertRaisesRegex(gate.LiftingAblationError, "summary drift"):
+            gate.summary_from_groups(groups)
+
     def test_mutations_reject(self) -> None:
         payload = gate.build_payload()
         result = gate.run_mutations(payload)
