@@ -59,6 +59,20 @@ class NativeAttentionMlpAdapterAirFrontierGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.AdapterAirFrontierError, "bias policy drift"):
             gate.validate_projection_rows(derived)
 
+    def test_projection_rows_reject_floor_remainder_drift(self) -> None:
+        sources = gate.load_sources()
+        derived = copy.deepcopy(sources["derived"])
+        derived["derived_input"]["projection_rows"][0]["floor_remainder_q8"] += 1
+        with self.assertRaisesRegex(gate.AdapterAirFrontierError, "adapter floor remainder drift"):
+            gate.validate_projection_rows(derived)
+
+    def test_derived_input_commitment_is_bound_to_values(self) -> None:
+        sources = gate.load_sources()
+        mutated = copy.deepcopy(sources)
+        mutated["derived"]["derived_input"]["values_q8"][0] += 1
+        with self.assertRaisesRegex(gate.AdapterAirFrontierError, "derived input activation commitment mismatch"):
+            gate.validate_expected_sources(mutated)
+
     def test_candidate_constraints_include_commitment_boundary(self) -> None:
         payload = self.fresh_payload()
         candidate = payload["adapter_air_candidate"]

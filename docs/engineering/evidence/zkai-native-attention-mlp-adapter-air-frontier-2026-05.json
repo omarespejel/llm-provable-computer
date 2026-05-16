@@ -160,7 +160,7 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "blake2b-256:06c19b60f22722e3c058423eaf27f5b453c1e324109bcd4ccd55f1cbc4ca623c",
+  "payload_commitment": "blake2b-256:1ed780078d95025c2d0a791dd55bd4b83f0dbc6ddeac4d6a335097367666cfbf",
   "result": "GO_CONSTRAINT_SURFACE_READY_NO_GO_SIZE_BREAKTHROUGH",
   "route_id": "native_attention_mlp_adapter_air_frontier_v1",
   "schema": "zkai-native-attention-mlp-adapter-air-frontier-gate-v1",
@@ -168,8 +168,8 @@
     {
       "id": "attention_derived_d128_input_gate",
       "path": "docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json",
-      "payload_sha256": "4687a6728c0979e9f260535072958d2ea077f3ddb59b0f558284732494c1627e",
-      "sha256": "969abf1e934f3ce391b26d2f3053e4fca9027269e6618e8490e4e460ae72c4c9"
+      "payload_sha256": "1cfbe8ce2c67f0e34fdd2b64d1c0b7d2a74eb66800f52a9e5a597e1b683e45f4",
+      "sha256": "cd73627189d9d4f90e7a1c21a61d774c29f3d3c51051363fbf4dc0ca181ecb01"
     },
     {
       "id": "native_attention_mlp_single_proof_gate",

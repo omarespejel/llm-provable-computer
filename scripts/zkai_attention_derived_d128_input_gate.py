@@ -298,6 +298,7 @@ def project_attention_to_d128(attention_outputs: list[list[int]]) -> tuple[list[
         bias = bias_for_index(index)
         numerator = PRIMARY_COEFF * primary_value + MIX_COEFF * mix_value + bias
         output_q8 = numerator // DENOMINATOR
+        floor_remainder_q8 = numerator - DENOMINATOR * output_q8
         rows.append(
             {
                 "index": index,
@@ -311,6 +312,7 @@ def project_attention_to_d128(attention_outputs: list[list[int]]) -> tuple[list[
                 "denominator": DENOMINATOR,
                 "numerator_q8": numerator,
                 "output_q8": output_q8,
+                "floor_remainder_q8": floor_remainder_q8,
             }
         )
         outputs.append(output_q8)

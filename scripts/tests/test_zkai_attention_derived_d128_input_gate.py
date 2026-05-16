@@ -60,6 +60,7 @@ class AttentionDerivedD128InputGateTests(unittest.TestCase):
             )
             self.assertEqual(row["numerator_q8"], numerator)
             self.assertEqual(row["output_q8"], numerator // row["denominator"])
+            self.assertEqual(row["floor_remainder_q8"], numerator - row["denominator"] * row["output_q8"])
 
     def test_uses_d128_rmsnorm_input_commitment_domain(self) -> None:
         payload = self.fresh_payload()
