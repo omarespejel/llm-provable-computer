@@ -84,6 +84,7 @@ use super::d128_native_rmsnorm_public_row_proof::{
     zkai_d128_rmsnorm_public_row_input_from_json_str,
     zkai_d128_rmsnorm_public_row_preprocessed_column_ids, zkai_d128_rmsnorm_public_row_trace,
     ZkAiD128RmsnormPublicRowProofInput, ZKAI_D128_RMSNORM_PUBLIC_ROW_PROOF_VERSION,
+    ZKAI_D128_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT,
     ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
 };
 use super::d128_native_rmsnorm_to_projection_bridge_proof::{
@@ -198,9 +199,6 @@ const ZKAI_D128_ATTENTION_DERIVED_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT:
     "blake2b-256:21316dfa0e32f91879bf13b85f99e16db0aa4c6e5f91c0dfc106f300c0c50fff";
 const ZKAI_D128_ATTENTION_DERIVED_RMSNORM_OUTPUT_ROW_COMMITMENT: &str =
     "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9";
-const ZKAI_D128_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT: &str =
-    "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72";
-
 #[derive(Clone, Copy)]
 struct FusedSourceProfile {
     residual_source_proof_version: &'static str,
