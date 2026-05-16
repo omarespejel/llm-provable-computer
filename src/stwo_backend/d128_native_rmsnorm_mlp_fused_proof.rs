@@ -198,6 +198,8 @@ const ZKAI_D128_ATTENTION_DERIVED_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT:
     "blake2b-256:21316dfa0e32f91879bf13b85f99e16db0aa4c6e5f91c0dfc106f300c0c50fff";
 const ZKAI_D128_ATTENTION_DERIVED_RMSNORM_OUTPUT_ROW_COMMITMENT: &str =
     "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9";
+const ZKAI_D128_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT: &str =
+    "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72";
 
 #[derive(Clone, Copy)]
 struct FusedSourceProfile {
@@ -531,7 +533,7 @@ fn fused_source_profiles() -> [FusedSourceProfile; 2] {
             residual_source_statement_commitment: ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
             rmsnorm_statement_commitment: ZKAI_D128_RMSNORM_PUBLIC_ROW_STATEMENT_COMMITMENT,
             rmsnorm_public_instance_commitment:
-                "blake2b-256:2dfa2ceffd67f95059b3d6cd639a82577f2bbd7be43e99c25814feb703a8fd72",
+                ZKAI_D128_RMSNORM_PUBLIC_ROW_PUBLIC_INSTANCE_COMMITMENT,
             input_activation_commitment: ZKAI_D128_INPUT_ACTIVATION_COMMITMENT,
             rmsnorm_output_row_commitment: ZKAI_D128_RMSNORM_OUTPUT_ROW_COMMITMENT,
             projection_bridge_statement_commitment:
