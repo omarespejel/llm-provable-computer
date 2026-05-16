@@ -113,6 +113,10 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.assertEqual(summary["derived_native_activation_proof_bytes"], 24_455)
         self.assertEqual(summary["derived_native_activation_envelope_bytes"], 227_031)
         self.assertEqual(
+            summary["derived_native_activation_statement_version"],
+            "zkai-d128-activation-swiglu-statement-v1",
+        )
+        self.assertEqual(
             summary["derived_native_activation_hidden_commitment"],
             "blake2b-256:8603048df50e0249baaae9a5be031a09a05c5df8152a8a4df61809f0d9568cd4",
         )
@@ -121,6 +125,10 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         summary = self.payload["summary"]
         self.assertEqual(summary["derived_native_down_proof_bytes"], 58_151)
         self.assertEqual(summary["derived_native_down_envelope_bytes"], 480_346)
+        self.assertEqual(
+            summary["derived_native_down_statement_version"],
+            "zkai-d128-down-projection-statement-v1",
+        )
         self.assertEqual(
             summary["derived_native_down_residual_delta_commitment"],
             "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
@@ -134,6 +142,10 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         summary = self.payload["summary"]
         self.assertEqual(summary["derived_native_residual_proof_bytes"], 16_042)
         self.assertEqual(summary["derived_native_residual_envelope_bytes"], 155_655)
+        self.assertEqual(
+            summary["derived_native_residual_statement_version"],
+            "zkai-d128-residual-add-statement-v1",
+        )
         self.assertEqual(
             summary["derived_native_residual_output_commitment"],
             "blake2b-256:25feb3aa6a2a092602c86d10c767f71cdae3c60eade0254a2d121124b712bcf9",
@@ -163,6 +175,23 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
             with self.assertRaisesRegex(
                 GATE.NativeMlpProofRouteError,
                 "derived native residual statement_commitment drift",
+            ):
+                GATE.build_context()
+
+    def test_rejects_derived_native_residual_statement_version_drift(self) -> None:
+        original_load_json = GATE._load_json
+
+        def load_with_statement_version_drift(path: pathlib.Path, label: str):
+            payload, raw = original_load_json(path, label)
+            if path == GATE.DERIVED_NATIVE_RESIDUAL_ENVELOPE:
+                payload = dict(payload)
+                payload["statement_version"] = "zkai-d128-residual-add-statement-v0"
+            return payload, raw
+
+        with mock.patch.object(GATE, "_load_json", side_effect=load_with_statement_version_drift):
+            with self.assertRaisesRegex(
+                GATE.NativeMlpProofRouteError,
+                "derived native residual statement version drift",
             ):
                 GATE.build_context()
 
@@ -282,6 +311,7 @@ class AttentionDerivedD128NativeMlpProofRouteGateTest(unittest.TestCase):
         self.assertTrue(self.payload["all_mutations_rejected"])
         self.assertEqual(self.payload["case_count"], len(GATE.EXPECTED_MUTATIONS))
         self.assertEqual([case["name"] for case in self.payload["cases"]], list(GATE.EXPECTED_MUTATIONS))
+        self.assertIn("derived_native_residual_statement_version_drift", GATE.EXPECTED_MUTATIONS)
         self.assertTrue(all(case["rejected"] and not case["accepted"] for case in self.payload["cases"]))
 
     def test_rejects_current_proof_reuse_overclaim(self) -> None:

@@ -596,18 +596,24 @@ def build_context() -> dict[str, Any]:
         raise NativeMlpProofRouteError("derived native activation envelope/input mismatch")
     if native_activation_envelope.get("proof_backend_version") != "stwo-d128-activation-swiglu-air-proof-v1":
         raise NativeMlpProofRouteError("derived native activation proof backend version drift")
+    if native_activation_envelope.get("statement_version") != "zkai-d128-activation-swiglu-statement-v1":
+        raise NativeMlpProofRouteError("derived native activation statement version drift")
     if native_activation_envelope.get("decision") != "GO_D128_ACTIVATION_SWIGLU_AIR_PROOF":
         raise NativeMlpProofRouteError("derived native activation proof decision drift")
     if _dict(native_down_envelope.get("input"), "derived native down envelope input") != native_down:
         raise NativeMlpProofRouteError("derived native down envelope/input mismatch")
     if native_down_envelope.get("proof_backend_version") != "stwo-d128-down-projection-air-proof-v1":
         raise NativeMlpProofRouteError("derived native down proof backend version drift")
+    if native_down_envelope.get("statement_version") != "zkai-d128-down-projection-statement-v1":
+        raise NativeMlpProofRouteError("derived native down statement version drift")
     if native_down_envelope.get("decision") != "GO_D128_DOWN_PROJECTION_AIR_PROOF":
         raise NativeMlpProofRouteError("derived native down proof decision drift")
     if _dict(native_residual_envelope.get("input"), "derived native residual envelope input") != native_residual:
         raise NativeMlpProofRouteError("derived native residual envelope/input mismatch")
     if native_residual_envelope.get("proof_backend_version") != "stwo-d128-residual-add-air-proof-v1":
         raise NativeMlpProofRouteError("derived native residual proof backend version drift")
+    if native_residual_envelope.get("statement_version") != "zkai-d128-residual-add-statement-v1":
+        raise NativeMlpProofRouteError("derived native residual statement version drift")
     if native_residual_envelope.get("decision") != "GO_D128_RESIDUAL_ADD_AIR_PROOF":
         raise NativeMlpProofRouteError("derived native residual proof decision drift")
     expected_commitments = (
@@ -1051,6 +1057,10 @@ def build_context() -> dict[str, Any]:
                 native_activation_envelope.get("proof_backend_version"),
                 "derived native activation proof backend version",
             ),
+            "derived_native_activation_statement_version": _str(
+                native_activation_envelope.get("statement_version"),
+                "derived native activation statement version",
+            ),
             "derived_native_activation_proof_bytes": len(activation_proof),
             "derived_native_activation_envelope_bytes": len(raw_by_path[DERIVED_NATIVE_ACTIVATION_ENVELOPE]),
             "derived_native_down_statement_commitment": _commitment(
@@ -1073,6 +1083,10 @@ def build_context() -> dict[str, Any]:
                 native_down_envelope.get("proof_backend_version"),
                 "derived native down proof backend version",
             ),
+            "derived_native_down_statement_version": _str(
+                native_down_envelope.get("statement_version"),
+                "derived native down statement version",
+            ),
             "derived_native_down_proof_bytes": len(down_proof),
             "derived_native_down_envelope_bytes": len(raw_by_path[DERIVED_NATIVE_DOWN_ENVELOPE]),
             "derived_native_residual_statement_commitment": _commitment(
@@ -1094,6 +1108,10 @@ def build_context() -> dict[str, Any]:
             "derived_native_residual_proof_backend_version": _str(
                 native_residual_envelope.get("proof_backend_version"),
                 "derived native residual proof backend version",
+            ),
+            "derived_native_residual_statement_version": _str(
+                native_residual_envelope.get("statement_version"),
+                "derived native residual statement version",
             ),
             "derived_native_residual_proof_bytes": len(residual_proof),
             "derived_native_residual_envelope_bytes": len(raw_by_path[DERIVED_NATIVE_RESIDUAL_ENVELOPE]),
@@ -1233,6 +1251,9 @@ def build_core_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
             "derived_native_activation_proof_backend_version": comparison[
                 "derived_native_activation_proof_backend_version"
             ],
+            "derived_native_activation_statement_version": comparison[
+                "derived_native_activation_statement_version"
+            ],
             "derived_native_activation_proof_bytes": comparison[
                 "derived_native_activation_proof_bytes"
             ],
@@ -1254,6 +1275,7 @@ def build_core_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
             "derived_native_down_proof_backend_version": comparison[
                 "derived_native_down_proof_backend_version"
             ],
+            "derived_native_down_statement_version": comparison["derived_native_down_statement_version"],
             "derived_native_down_proof_bytes": comparison["derived_native_down_proof_bytes"],
             "derived_native_down_envelope_bytes": comparison["derived_native_down_envelope_bytes"],
             "derived_native_residual_statement_commitment": comparison[
@@ -1270,6 +1292,9 @@ def build_core_payload(context: dict[str, Any] | None = None) -> dict[str, Any]:
             ],
             "derived_native_residual_proof_backend_version": comparison[
                 "derived_native_residual_proof_backend_version"
+            ],
+            "derived_native_residual_statement_version": comparison[
+                "derived_native_residual_statement_version"
             ],
             "derived_native_residual_proof_bytes": comparison[
                 "derived_native_residual_proof_bytes"
@@ -1486,6 +1511,14 @@ MUTATION_BUILDERS: tuple[tuple[str, MutationFn, bool], ...] = (
         "exact_baseline_proof_byte_saving_smuggled",
         lambda p: p["comparison"].__setitem__(
             "derived_fused_proof_bytes", p["comparison"]["available_separate_proof_bytes"] + 1
+        ),
+        True,
+    ),
+    (
+        "derived_native_residual_statement_version_drift",
+        lambda p: p["comparison"].__setitem__(
+            "derived_native_residual_statement_version",
+            "zkai-d128-residual-add-statement-v0",
         ),
         True,
     ),

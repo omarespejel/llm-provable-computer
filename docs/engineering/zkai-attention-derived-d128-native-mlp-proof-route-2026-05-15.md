@@ -55,7 +55,7 @@ native proof object.
 - required fused artifacts present: `3 / 3`
 - missing matched six-separate derived envelopes: `0`
 - native-compatible attention-derived component inputs: `6 / 6`
-- mutation gate: `17 / 17` mutations rejected
+- mutation gate: `18 / 18` mutations rejected
 
 The separate comparison now includes all six derived MLP-side envelopes:
 RMSNorm public rows, RMSNorm-to-projection bridge, gate/value projection,
@@ -81,7 +81,8 @@ The gate checks:
 - derived fused envelope/input equality
 - derived fused input commitment is the attention-derived commitment, not the
   older synthetic MLP commitment
-- proof backend version and statement version
+- proof backend version and statement version for the fused and separate
+  component envelopes
 - fused statement and public-instance commitments
 - derived RMSNorm, bridge, gate/value, activation, down, and residual
   envelope/input equality
@@ -92,8 +93,8 @@ The gate checks:
 - binary accounting path order and fused proof-byte equality
 - required fused artifact presence
 - exact matched six-envelope baseline boundary
-- mutation rejection for overclaims, relabeling, metric drift, and commitment
-  drift
+- mutation rejection for overclaims, relabeling, metric drift, commitment drift,
+  and statement-version drift
 
 ## Non-Claims
 

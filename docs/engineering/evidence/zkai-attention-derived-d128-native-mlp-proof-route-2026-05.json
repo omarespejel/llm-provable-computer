@@ -1,6 +1,6 @@
 {
   "all_mutations_rejected": true,
-  "case_count": 17,
+  "case_count": 18,
   "cases": [
     {
       "accepted": false,
@@ -88,6 +88,12 @@
     },
     {
       "accepted": false,
+      "error": "payload content drift",
+      "name": "derived_native_residual_statement_version_drift",
+      "rejected": true
+    },
+    {
+      "accepted": false,
       "error": "non-claims drift",
       "name": "non_claim_removed",
       "rejected": true
@@ -132,6 +138,7 @@
     "derived_native_activation_proof_bytes": 24455,
     "derived_native_activation_public_instance_commitment": "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb",
     "derived_native_activation_statement_commitment": "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738",
+    "derived_native_activation_statement_version": "zkai-d128-activation-swiglu-statement-v1",
     "derived_native_bridge_envelope_bytes": 130319,
     "derived_native_bridge_projection_input_row_commitment": "blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba",
     "derived_native_bridge_proof_backend_version": "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1",
@@ -145,6 +152,7 @@
     "derived_native_down_public_instance_commitment": "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735",
     "derived_native_down_residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
     "derived_native_down_statement_commitment": "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e",
+    "derived_native_down_statement_version": "zkai-d128-down-projection-statement-v1",
     "derived_native_gate_value_envelope_bytes": 537646,
     "derived_native_gate_value_output_commitment": "blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2",
     "derived_native_gate_value_proof_backend_version": "stwo-d128-gate-value-projection-air-proof-v1",
@@ -158,6 +166,7 @@
     "derived_native_residual_proof_bytes": 16042,
     "derived_native_residual_public_instance_commitment": "blake2b-256:35d93e7086d773fdba30b455374533df6271b1d98d6b35418f1af0d250be8ee8",
     "derived_native_residual_statement_commitment": "blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d",
+    "derived_native_residual_statement_version": "zkai-d128-residual-add-statement-v1",
     "derived_native_rmsnorm_envelope_bytes": 210079,
     "derived_native_rmsnorm_output_row_commitment": "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9",
     "derived_native_rmsnorm_proof_backend_version": "stwo-d128-rmsnorm-public-row-air-proof-v3",
@@ -345,6 +354,7 @@
     "matched_six_separate_component_count_drift",
     "exact_baseline_saving_smuggled",
     "exact_baseline_proof_byte_saving_smuggled",
+    "derived_native_residual_statement_version_drift",
     "non_claim_removed",
     "validation_command_removed",
     "payload_commitment_drift"
@@ -359,7 +369,7 @@
     "not recursion or proof-carrying data",
     "not production-ready zkML"
   ],
-  "payload_commitment": "sha256:2ffc6fa2285589815d9a933d04ff6d66ff37f3d236ae14549c5eb36e25939e93",
+  "payload_commitment": "sha256:300c8be337daffc62817937ee15538973f5ee1d11091b0b228e9c93b6e9db8c1",
   "required_derived_fused_artifacts": [
     {
       "exists": true,
@@ -533,6 +543,7 @@
     "derived_native_activation_proof_bytes": 24455,
     "derived_native_activation_public_instance_commitment": "blake2b-256:c1848a2bbdb4d8f897cd4a6764bc8b74c1db0bcd8441828ab2cde1e68310b4fb",
     "derived_native_activation_statement_commitment": "blake2b-256:6fe34d1b0da8ad503ee3ac83b42199fc242110f0e81cd9353f7ba71ceea90738",
+    "derived_native_activation_statement_version": "zkai-d128-activation-swiglu-statement-v1",
     "derived_native_bridge_envelope_bytes": 130319,
     "derived_native_bridge_projection_input_row_commitment": "blake2b-256:17cee19d55e1280536ba3e884359c2728e07b7302a9992802b48db98657cc9ba",
     "derived_native_bridge_proof_backend_version": "stwo-d128-rmsnorm-to-projection-bridge-air-proof-v1",
@@ -546,6 +557,7 @@
     "derived_native_down_public_instance_commitment": "blake2b-256:a4c0e39d34dce67783230532ee7031449b1d2aec9add232ef40f43073e372735",
     "derived_native_down_residual_delta_commitment": "blake2b-256:0f4e5de46d06f4ad106b777f53c820f62c6db6742ad2d4530616e29db8ab02ec",
     "derived_native_down_statement_commitment": "blake2b-256:3ca2a06054a8ae8a9526bce62a4bc3a91e6f302fc3cb4866d7e2dc2afbf5f23e",
+    "derived_native_down_statement_version": "zkai-d128-down-projection-statement-v1",
     "derived_native_gate_value_envelope_bytes": 537646,
     "derived_native_gate_value_output_commitment": "blake2b-256:77bb1125d76d7463222d396271f4f7314036351dc93acf209f8f75da433ebca2",
     "derived_native_gate_value_proof_backend_version": "stwo-d128-gate-value-projection-air-proof-v1",
@@ -559,6 +571,7 @@
     "derived_native_residual_proof_bytes": 16042,
     "derived_native_residual_public_instance_commitment": "blake2b-256:35d93e7086d773fdba30b455374533df6271b1d98d6b35418f1af0d250be8ee8",
     "derived_native_residual_statement_commitment": "blake2b-256:106bf2581e2588d8ed28f31d93438ba0f546a752d743bea533df8640a6048c5d",
+    "derived_native_residual_statement_version": "zkai-d128-residual-add-statement-v1",
     "derived_native_rmsnorm_envelope_bytes": 210079,
     "derived_native_rmsnorm_output_row_commitment": "blake2b-256:fbc611c011d2209476aca2055f5f9abe0d6cda12bd0f6fabeec7d1657ce1e1f9",
     "derived_native_rmsnorm_proof_backend_version": "stwo-d128-rmsnorm-public-row-air-proof-v3",
