@@ -67,8 +67,11 @@ class AttentionDerivedD128MlpFusionAttributionGateTests(unittest.TestCase):
 
     def test_read_json_open_error_is_structured(self) -> None:
         with mock.patch.object(gate.os, "open", side_effect=OSError("boom")):
-            with self.assertRaises(gate.MlpFusionAttributionError):
+            with self.assertRaises(gate.MlpFusionAttributionError) as cm:
                 gate.read_json(gate.ACCOUNTING_PATH, 16 * 1024 * 1024, "accounting JSON")
+        message = str(cm.exception)
+        self.assertIn("accounting JSON", message)
+        self.assertIn("boom", message)
 
     def test_attribution_output_rejects_symlink(self) -> None:
         payload = gate.build_payload()
