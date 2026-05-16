@@ -175,6 +175,19 @@ class NativeAttentionMlpAdapterCompressionAblationGateTests(unittest.TestCase):
             with self.assertRaisesRegex(gate.AdapterCompressionAblationError, "symlink"):
                 gate.write_outputs(payload, link, None)
 
+    def test_write_outputs_does_not_remove_stale_deterministic_temp(self) -> None:
+        payload = self.fresh_payload()
+        with tempfile.TemporaryDirectory(dir=gate.EVIDENCE_DIR) as temp_dir:
+            temp_path = gate.pathlib.Path(temp_dir)
+            out = temp_path / "out.json"
+            stale = temp_path / f".{out.name}.tmp-{gate.os.getpid()}"
+            stale.write_text("keep", encoding="utf-8")
+
+            gate.write_outputs(payload, out, None)
+
+            self.assertEqual(stale.read_text(encoding="utf-8"), "keep")
+            self.assertTrue(out.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

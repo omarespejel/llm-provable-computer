@@ -12,6 +12,7 @@ import json
 import os
 import pathlib
 import stat
+import tempfile
 from collections.abc import Callable
 from typing import Any
 
@@ -732,23 +733,31 @@ def write_text_atomic(path: pathlib.Path, text: str) -> None:
         raise AdapterCompressionAblationError("refusing to write through symlink")
     parent = path.parent
     parent.mkdir(parents=True, exist_ok=True)
-    temp_path = parent / f".{path.name}.tmp-{os.getpid()}"
+    temp_path: pathlib.Path | None = None
+    fd = -1
     try:
-        with open(temp_path, "x", encoding="utf-8") as handle:
+        fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.tmp-", dir=parent)
+        temp_path = pathlib.Path(temp_name)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            fd = -1
             handle.write(text)
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temp_path, path)
+        temp_path = None
         parent_fd = os.open(parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
         try:
             os.fsync(parent_fd)
         finally:
             os.close(parent_fd)
     finally:
-        try:
-            temp_path.unlink()
-        except FileNotFoundError:
-            pass
+        if fd != -1:
+            os.close(fd)
+        if temp_path is not None:
+            try:
+                temp_path.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def write_outputs(payload: dict[str, Any], json_path: pathlib.Path | None, tsv_path: pathlib.Path | None) -> None:
