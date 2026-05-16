@@ -9,7 +9,9 @@ import csv
 import hashlib
 import io
 import json
+import os
 import pathlib
+import stat
 import sys
 from typing import Any, Callable
 
@@ -151,6 +153,48 @@ def canonical_json_bytes(value: Any) -> bytes:
         raise NativeAttentionMlpSingleProofRouteError(f"invalid JSON value: {err}") from err
 
 
+def reject_json_constant(value: str) -> None:
+    raise NativeAttentionMlpSingleProofRouteError(f"non-finite JSON constant rejected: {value}")
+
+
+def read_json_and_raw_bytes(path: pathlib.Path, label: str) -> tuple[Any, bytes]:
+    if path.is_symlink():
+        raise NativeAttentionMlpSingleProofRouteError(f"{label} must not be a symlink: {path}")
+    resolved = path.resolve(strict=False)
+    try:
+        resolved.relative_to(EVIDENCE_DIR.resolve())
+    except ValueError as err:
+        raise NativeAttentionMlpSingleProofRouteError(f"{label} escapes evidence directory: {path}") from err
+    try:
+        pre = resolved.lstat()
+    except OSError as err:
+        raise NativeAttentionMlpSingleProofRouteError(f"failed to stat {label}: {err}") from err
+    if not stat.S_ISREG(pre.st_mode):
+        raise NativeAttentionMlpSingleProofRouteError(f"{label} is not a regular file: {path}")
+    try:
+        fd: int | None = os.open(resolved, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    except OSError as err:
+        raise NativeAttentionMlpSingleProofRouteError(f"failed to open {label}: {err}") from err
+    try:
+        post = os.fstat(fd)
+        if (pre.st_dev, pre.st_ino) != (post.st_dev, post.st_ino):
+            raise NativeAttentionMlpSingleProofRouteError(f"{label} changed while opening: {path}")
+        if post.st_size > MAX_SOURCE_BYTES:
+            raise NativeAttentionMlpSingleProofRouteError(f"{label} exceeds max size: got {post.st_size} bytes")
+        raw = os.read(fd, MAX_SOURCE_BYTES + 1)
+    finally:
+        if fd is not None:
+            os.close(fd)
+    if len(raw) > MAX_SOURCE_BYTES:
+        raise NativeAttentionMlpSingleProofRouteError(f"{label} exceeds max size: got at least {len(raw)} bytes")
+    if len(raw) != post.st_size:
+        raise NativeAttentionMlpSingleProofRouteError(f"{label} changed while reading: {path}")
+    try:
+        return json.loads(raw.decode("utf-8"), parse_constant=reject_json_constant), raw
+    except (UnicodeDecodeError, json.JSONDecodeError) as err:
+        raise NativeAttentionMlpSingleProofRouteError(f"{label} is not JSON: {err}") from err
+
+
 def ratio(numerator: int | float, denominator: int | float) -> float:
     if denominator == 0:
         raise NativeAttentionMlpSingleProofRouteError("ratio denominator is zero")
@@ -216,17 +260,13 @@ def _bool(value: Any, label: str) -> bool:
 
 
 def load_json(path: pathlib.Path, label: str) -> dict[str, Any]:
-    try:
-        return boundary_frontier_gate.load_json(path, label)
-    except Exception as err:  # noqa: BLE001 - normalize imported gate errors.
-        raise NativeAttentionMlpSingleProofRouteError(f"failed loading {label}: {err}") from err
+    payload, _raw = read_json_and_raw_bytes(path, label)
+    return _dict(payload, label)
 
 
 def source_artifact(artifact_id: str, path: pathlib.Path) -> tuple[dict[str, Any], dict[str, Any]]:
-    payload = load_json(path, artifact_id)
-    raw = path.read_bytes()
-    if len(raw) > MAX_SOURCE_BYTES:
-        raise NativeAttentionMlpSingleProofRouteError(f"{artifact_id} too large: {len(raw)} bytes")
+    payload, raw = read_json_and_raw_bytes(path, artifact_id)
+    payload = _dict(payload, artifact_id)
     return (
         payload,
         {

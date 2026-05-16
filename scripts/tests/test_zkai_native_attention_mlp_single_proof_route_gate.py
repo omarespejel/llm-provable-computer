@@ -1,4 +1,5 @@
 import copy
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -82,6 +83,39 @@ class NativeAttentionMlpSingleProofRouteGateTests(unittest.TestCase):
             outside = Path(tmp) / "route.json"
             with self.assertRaises(gate.attribution_gate.MlpFusionAttributionError):
                 gate.attribution_gate.resolve_evidence_output_path(outside, "route JSON")
+
+    def test_source_artifact_read_binds_payload_and_raw_bytes_once(self) -> None:
+        path = gate.EVIDENCE_DIR / ".tmp-native-attention-mlp-route-source.json"
+        raw = b'{ "answer": 7, "nested": [1, 2, 3] }\n'
+        try:
+            path.write_bytes(raw)
+            payload, loaded_raw = gate.read_json_and_raw_bytes(path, "route source")
+            self.assertEqual(payload, {"answer": 7, "nested": [1, 2, 3]})
+            self.assertEqual(loaded_raw, raw)
+        finally:
+            path.unlink(missing_ok=True)
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symlink support required")
+    def test_source_artifact_read_rejects_symlink_source(self) -> None:
+        target = gate.EVIDENCE_DIR / ".tmp-native-attention-mlp-route-target.json"
+        link = gate.EVIDENCE_DIR / ".tmp-native-attention-mlp-route-link.json"
+        try:
+            target.write_text('{"ok": true}\n', encoding="utf-8")
+            link.symlink_to(target)
+            with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofRouteError, "symlink"):
+                gate.read_json_and_raw_bytes(link, "linked route source")
+        except OSError as err:
+            self.skipTest(f"symlink creation unavailable: {err}")
+        finally:
+            link.unlink(missing_ok=True)
+            target.unlink(missing_ok=True)
+
+    def test_source_artifact_read_rejects_path_escape(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = Path(tmp) / "source.json"
+            outside.write_text('{"ok": true}\n', encoding="utf-8")
+            with self.assertRaisesRegex(gate.NativeAttentionMlpSingleProofRouteError, "escapes evidence directory"):
+                gate.read_json_and_raw_bytes(outside, "outside route source")
 
 
 if __name__ == "__main__":
