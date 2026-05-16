@@ -1,0 +1,215 @@
+{
+  "claim_boundary": "PINS_CURRENT_D8_ATTENTION_PROOF_PLUS_DERIVED_D128_RMSNORM_MLP_FUSED_PROOF_TARGET_WITHOUT_CLAIMING_ONE_NATIVE_BLOCK_PROOF_OR_NANOZK_COMPARABILITY",
+  "decision": "NARROW_CLAIM_ATTENTION_PLUS_DERIVED_MLP_BOUNDARY_FRONTIER_PINNED",
+  "issue": "https://github.com/omarespejel/provable-transformer-vm/issues/603",
+  "mechanism": {
+    "current_blocker": "the comparable frontier is still two proof objects, not one native attention plus MLP proof",
+    "current_interesting_signal": "MLP fusion still removes 36,768 typed bytes after attention is included as a separate proof object",
+    "next_attack": "native value-connected attention plus RMSNorm-MLP proof object or a deliberately typed boundary",
+    "why_not_nanozk_win": "the current two-proof frontier is 40,700 local typed bytes and the workload/object class is not matched"
+  },
+  "mutation_inventory": {
+    "all_mutations_rejected": true,
+    "case_count": 10,
+    "cases": [
+      "decision_promoted",
+      "claim_boundary_overclaim",
+      "two_proof_typed_bytes_reduced",
+      "nanozk_gap_zeroed",
+      "single_native_status_promoted",
+      "handoff_artifact_promoted_to_proof",
+      "attention_typed_bytes_drift",
+      "source_artifact_hash_drift",
+      "non_claim_removed",
+      "payload_commitment_drift"
+    ]
+  },
+  "mutation_result": {
+    "all_mutations_rejected": true,
+    "cases": [
+      {
+        "accepted": false,
+        "error": "decision drift",
+        "name": "decision_promoted",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "claim boundary drift",
+        "name": "claim_boundary_overclaim",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "summary drift",
+        "name": "two_proof_typed_bytes_reduced",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "summary drift",
+        "name": "nanozk_gap_zeroed",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "route drift",
+        "name": "single_native_status_promoted",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "route drift",
+        "name": "handoff_artifact_promoted_to_proof",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "route drift",
+        "name": "attention_typed_bytes_drift",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "source artifact drift",
+        "name": "source_artifact_hash_drift",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "non-claims drift",
+        "name": "non_claim_removed",
+        "rejected": true
+      },
+      {
+        "accepted": false,
+        "error": "payload commitment drift",
+        "name": "payload_commitment_drift",
+        "rejected": true
+      }
+    ]
+  },
+  "non_claims": [
+    "not one native attention plus MLP proof object",
+    "not a full transformer block proof",
+    "not a NANOZK proof-size win",
+    "not a matched NANOZK workload or benchmark",
+    "not proof that the compressed handoff artifact is a proof object",
+    "not timing evidence",
+    "not recursion or proof-carrying data",
+    "not production-ready zkML"
+  ],
+  "payload_commitment": "sha256:7a3cf807951f64914d393eb0fe714467cdd0e7b97313e6cabd17a77359be483f",
+  "result": "GO_TWO_PROOF_TARGET_PINNED_NO_GO_SINGLE_NATIVE_ATTENTION_MLP_OBJECT_YET",
+  "route_commitment": "blake2b-256:5788ed863a886e48cfe3a02a2649e9c32e5e1a4abcce18b407e20ca508599013",
+  "routes": {
+    "attention_bounded_plus_derived_mlp_fused_separate_proofs": {
+      "attention_json_proof_bytes": 44692,
+      "attention_typed_bytes": 17264,
+      "combined_json_proof_bytes": 113252,
+      "combined_json_ratio_vs_bounded_attention_plus_six_separate_mlp": 0.464854,
+      "combined_typed_bytes": 39840,
+      "combined_typed_ratio_vs_bounded_attention_plus_six_separate_mlp": 0.52005,
+      "derived_input_activation_commitment": "blake2b-256:8168953e32013f1a7b1e6dce37a1c19900c571608d2f305d64925cdda9e99c35",
+      "derived_mlp_fused_json_proof_bytes": 68560,
+      "derived_mlp_fused_typed_bytes": 22576,
+      "source_attention_outputs_commitment": "blake2b-256:d6cb4d179ea7685c4371d1827f215ec0821bb3ee3d6172d5dc6e13e030653638",
+      "status": "GO_CURRENT_VALUE_CONNECTED_TWO_PROOF_ROUTE_WITH_BOUNDED_ATTENTION_SOURCE"
+    },
+    "attention_fused_softmax_table_plus_derived_mlp_fused_separate_proofs": {
+      "attention_fused_json_proof_bytes": 47698,
+      "attention_fused_typed_bytes": 18124,
+      "combined_json_proof_bytes": 116258,
+      "combined_typed_bytes": 40700,
+      "derived_mlp_fused_json_proof_bytes": 68560,
+      "derived_mlp_fused_typed_bytes": 22576,
+      "json_ratio_vs_six_separate_mlp_plus_attention_fused": 0.471377,
+      "json_saving_vs_six_separate_mlp_plus_attention_fused_bytes": 130377,
+      "nanozk_reported_d128_block_proof_bytes": 6900,
+      "six_separate_mlp_plus_attention_fused_json_proof_bytes": 246635,
+      "six_separate_mlp_plus_attention_fused_typed_bytes": 77468,
+      "status": "GO_CURRENT_BEST_TWO_PROOF_FRONTIER_TARGET_NOT_ONE_NATIVE_PROOF",
+      "typed_gap_to_nanozk_reported_bytes": 33800,
+      "typed_ratio_vs_six_separate_mlp_plus_attention_fused": 0.525378,
+      "typed_reduction_needed_to_nanozk_reported_share": 0.830467,
+      "typed_saving_vs_six_separate_mlp_plus_attention_fused_bytes": 36768
+    },
+    "compressed_statement_handoff_plus_derived_mlp_fused": {
+      "compressed_handoff_artifact_bytes": 2559,
+      "compressed_handoff_plus_mlp_json_proof_payload_bytes": 71119,
+      "compressed_to_source_ratio": 0.174986,
+      "proof_size_claim_status": "NO_GO_HANDOFF_ARTIFACT_IS_NOT_A_STARK_PROOF_OBJECT",
+      "source_chain_artifact_bytes": 14624,
+      "status": "GO_COMPACT_VERIFIER_FACING_HANDOFF_BUT_NO_GO_PROOF_SIZE_COMPARISON"
+    },
+    "single_native_attention_plus_derived_mlp_fused": {
+      "first_blocker": "no native AIR/prover currently puts attention arithmetic, lookup membership, adapter, and derived RMSNorm-MLP in one proof object",
+      "mechanism_hint": "MLP-side fusion saved 36,768 typed bytes; 0.905135 of that saving came from shared opening plumbing",
+      "next_smallest_experiment": "build a native value-connected attention-to-RMSNorm adapter surface and compare one proof object against the current 40,700 typed-byte two-proof frontier target",
+      "status": "NO_GO_NATIVE_ATTENTION_PLUS_MLP_PROOF_OBJECT_MISSING"
+    }
+  },
+  "schema": "zkai-d128-attention-mlp-boundary-frontier-gate-v1",
+  "source_artifacts": [
+    {
+      "id": "frontier_accounting",
+      "path": "docs/engineering/evidence/zkai-d128-attention-mlp-boundary-frontier-accounting-2026-05.json",
+      "payload_sha256": "da2fe6cbd1e8ee7bc6fefa618416e2bf15e73c3a4d1ecf9cbf31a5c8764f53a4"
+    },
+    {
+      "id": "attention_bounded_gate",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-gate-2026-05.json",
+      "payload_sha256": "2a6d4253a66fea70ed6a29acba3fb53f110fec994b8bb213579c76c6492ce79e"
+    },
+    {
+      "id": "attention_fused_gate",
+      "path": "docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-gate-2026-05.json",
+      "payload_sha256": "1411c030876912d7f8de449210090167883e70b651565a24861c5dfc3d9a2641"
+    },
+    {
+      "id": "derived_input",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-input-2026-05.json",
+      "payload_sha256": "4687a6728c0979e9f260535072958d2ea077f3ddb59b0f558284732494c1627e"
+    },
+    {
+      "id": "chain_compression",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-statement-chain-compression-2026-05.json",
+      "payload_sha256": "2aececdf7cb992880a3d849e618707a0b86cdca56876a44fc92de00ac19b2fd0"
+    },
+    {
+      "id": "mlp_route",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json",
+      "payload_sha256": "840326bdb65ccfdb63abb81b2897a37f8120ac89a5d46f968cf2f63f32556ed3"
+    },
+    {
+      "id": "mlp_attribution",
+      "path": "docs/engineering/evidence/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05.json",
+      "payload_sha256": "b71390e3d12d7d3bd2fe2d5d669aafccaceca1eecee3392340adc386a2b194b4"
+    }
+  ],
+  "summary": {
+    "attention_fused_typed_bytes": 18124,
+    "compressed_handoff_artifact_bytes": 2559,
+    "derived_mlp_fused_typed_bytes": 22576,
+    "nanozk_reported_d128_block_proof_bytes": 6900,
+    "single_native_attention_mlp_status": "NO_GO_NATIVE_ATTENTION_PLUS_MLP_PROOF_OBJECT_MISSING",
+    "six_separate_mlp_plus_attention_fused_typed_bytes": 77468,
+    "two_proof_frontier_json_proof_bytes": 116258,
+    "two_proof_frontier_typed_bytes": 40700,
+    "typed_gap_to_nanozk_reported_bytes": 33800,
+    "typed_ratio_vs_six_separate_mlp_plus_attention_fused": 0.525378,
+    "typed_reduction_needed_to_nanozk_reported_share": 0.830467,
+    "typed_saving_vs_six_separate_mlp_plus_attention_fused_bytes": 36768
+  },
+  "validation_commands": [
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-fused-softmax-table-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-d128-attention-mlp-boundary-frontier-accounting-2026-05.json",
+    "python3 scripts/zkai_d128_attention_mlp_boundary_frontier_gate.py --write-json docs/engineering/evidence/zkai-d128-attention-mlp-boundary-frontier-2026-05.json --write-tsv docs/engineering/evidence/zkai-d128-attention-mlp-boundary-frontier-2026-05.tsv",
+    "python3 -m py_compile scripts/zkai_d128_attention_mlp_boundary_frontier_gate.py scripts/tests/test_zkai_d128_attention_mlp_boundary_frontier_gate.py",
+    "python3 -m unittest scripts.tests.test_zkai_d128_attention_mlp_boundary_frontier_gate",
+    "python3 scripts/research_issue_lint.py --repo-root .",
+    "python3 scripts/paper/paper_preflight.py --repo-root .",
+    "git diff --check",
+    "just gate-fast",
+    "just gate"
+  ]
+}

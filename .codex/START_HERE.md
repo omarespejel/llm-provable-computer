@@ -104,12 +104,13 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 98. `docs/engineering/zkai-d128-value-adapter-policy-frontier-2026-05-15.md`
 99. `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
 100. `docs/engineering/zkai-attention-derived-d128-mlp-fusion-attribution-2026-05-16.md`
-101. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
-102. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
-103. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
-104. `docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`
-105. `docs/engineering/reproducibility.md`
-106. `git status --short --branch`
+101. `docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`
+102. `docs/engineering/zkai-attention-derived-d128-native-gate-value-projection-2026-05-16.md`
+103. `docs/engineering/zkai-attention-derived-d128-native-activation-swiglu-2026-05-16.md`
+104. `docs/engineering/zkai-attention-derived-d128-native-down-projection-2026-05-16.md`
+105. `docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`
+106. `docs/engineering/reproducibility.md`
+107. `git status --short --branch`
 
 ## What this repository is now
 
@@ -133,13 +134,24 @@ This repository currently has three live lanes.
      baseline is `24,832` typed bytes versus `56,976` typed bytes for six
      separate native proof objects, saving `32,144` typed bytes (`56.4167%`).
      The attention-derived regenerated fused proof now consumes the derived
-     input commitment and is `68,560` JSON proof bytes / `22,576` typed bytes;
-     it saves `23,632` typed bytes versus the four available derived separate
-     envelopes, but that is not a complete six-separate baseline. It is not
-     attention plus MLP, not a full transformer block, and not a NANOZK
-     benchmark win; see
+     input commitment and is `68,560` JSON proof bytes / `22,576` typed bytes.
+     Against the exact six-envelope derived separate baseline it saves
+     `36,768` typed bytes (`0.380426x` ratio) and `130,377` JSON proof bytes
+     (`0.344632x` ratio). It is not attention plus MLP, not a full transformer
+     block, and not a NANOZK benchmark win; see
      `docs/engineering/zkai-d128-rmsnorm-mlp-fused-proof-2026-05-15.md` and
      `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`.
+   - The current d128 attention-plus-MLP frontier is now pinned as a
+     value-connected two-proof target, not one native proof object. The d8
+     fused attention proof is `18,124` local typed bytes, the derived d128
+     RMSNorm-MLP fused proof is `22,576` local typed bytes, and the combined
+     frontier is `40,700` typed bytes / `116,258` JSON proof bytes. This still
+     saves `36,768` typed bytes versus the same attention proof plus six
+     separate derived MLP-side proof objects (`0.525378x` ratio), but matching
+     NANOZK's paper-reported `6,900` byte d128 row would require removing
+     `33,800` typed bytes (`83.0467%`) and the workload/object class is not
+     matched. See
+     `docs/engineering/zkai-d128-attention-mlp-boundary-frontier-2026-05-16.md`.
    - The current attention-to-RMSNorm/MLP boundary is a checked NO-GO for one
      value-connected native proof object: the attention-derived d128 statement
      chain has `199,553` accounted rows (`1.010374x` the MLP fused surface),
@@ -158,8 +170,8 @@ This repository currently has three live lanes.
      `199,553` rows, `6 / 6` derived slice payloads have native component input
      shape, and the regenerated derived RMSNorm-MLP fused proof verifies true.
      The remaining first blocker is attention plus MLP in one native proof
-     object, plus exact six-separate derived baseline accounting once the
-     missing RMSNorm-row and bridge separate envelopes exist. See
+     object; exact six-separate derived MLP-side baseline accounting is now
+     complete. See
      `docs/engineering/zkai-attention-derived-d128-native-mlp-proof-route-2026-05-15.md`
      and
      `docs/engineering/zkai-attention-derived-d128-native-residual-add-2026-05-16.md`.
