@@ -183,7 +183,7 @@ const EXPECTED_ATTENTION_DERIVED_VALIDATION_COMMANDS: &[&str] = &[
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- build-input docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-public-row-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-rmsnorm-to-projection-bridge-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- prove docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
     "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_d128_rmsnorm_mlp_fused_proof -- verify docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json",
+    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-gate-value-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-activation-swiglu-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-down-projection-proof-2026-05.envelope.json docs/engineering/evidence/zkai-attention-derived-d128-native-residual-add-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-binary-accounting-2026-05.json",
     "python3 scripts/zkai_attention_derived_d128_native_mlp_proof_route_gate.py --write-json docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.json --write-tsv docs/engineering/evidence/zkai-attention-derived-d128-native-mlp-proof-route-2026-05.tsv",
     "python3 -m unittest scripts.tests.test_zkai_attention_derived_d128_native_mlp_proof_route_gate",
     "cargo +nightly-2025-07-14 test --locked --features stwo-backend d128_native_rmsnorm_mlp_fused_proof --lib",
@@ -443,16 +443,12 @@ pub fn build_zkai_d128_rmsnorm_mlp_fused_input(
             .iter()
             .map(|value| value.to_string())
             .collect(),
-        validation_commands: EXPECTED_VALIDATION_COMMANDS
+        validation_commands: source_profile
+            .validation_commands
             .iter()
             .map(|value| value.to_string())
             .collect(),
     };
-    input.validation_commands = source_profile
-        .validation_commands
-        .iter()
-        .map(|value| value.to_string())
-        .collect();
     input.statement_commitment = statement_commitment(&input)?;
     input.public_instance_commitment = public_instance_commitment(&input.statement_commitment)?;
     input.proof_native_parameter_commitment =
@@ -718,49 +714,111 @@ struct FusedSourceProfileFields<'a> {
 fn approved_fused_source_profile_fields(
     fields: FusedSourceProfileFields<'_>,
 ) -> Result<FusedSourceProfile> {
-    for profile in fused_source_profiles() {
-        if fields.residual_source_proof_version == profile.residual_source_proof_version
-            && fields.residual_source_statement_commitment
-                == profile.residual_source_statement_commitment
-            && fields.rmsnorm_statement_commitment == profile.rmsnorm_statement_commitment
-            && fields.rmsnorm_public_instance_commitment
-                == profile.rmsnorm_public_instance_commitment
-            && fields.input_activation_commitment == profile.input_activation_commitment
-            && fields.rmsnorm_output_row_commitment == profile.rmsnorm_output_row_commitment
-            && fields.projection_bridge_statement_commitment
-                == profile.projection_bridge_statement_commitment
-            && fields.projection_bridge_public_instance_commitment
-                == profile.projection_bridge_public_instance_commitment
-            && fields.projection_input_row_commitment == profile.projection_input_row_commitment
-            && fields.gate_value_statement_commitment == profile.gate_value_statement_commitment
-            && fields.gate_value_public_instance_commitment
-                == profile.gate_value_public_instance_commitment
-            && fields.gate_projection_output_commitment == profile.gate_projection_output_commitment
-            && fields.value_projection_output_commitment
-                == profile.value_projection_output_commitment
-            && fields.gate_value_projection_output_commitment
-                == profile.gate_value_projection_output_commitment
-            && fields.activation_statement_commitment == profile.activation_statement_commitment
-            && fields.activation_public_instance_commitment
-                == profile.activation_public_instance_commitment
-            && fields.hidden_activation_commitment == profile.hidden_activation_commitment
-            && fields.down_projection_statement_commitment
-                == profile.down_projection_statement_commitment
-            && fields.down_projection_public_instance_commitment
-                == profile.down_projection_public_instance_commitment
-            && fields.residual_delta_commitment == profile.residual_delta_commitment
-            && fields.residual_add_statement_commitment == profile.residual_add_statement_commitment
-            && fields.residual_add_public_instance_commitment
-                == profile.residual_add_public_instance_commitment
-            && fields.output_activation_commitment == profile.output_activation_commitment
-            && fields.residual_add_row_commitment == profile.residual_add_row_commitment
-        {
+    let mut diagnostics = Vec::new();
+    for (index, profile) in fused_source_profiles().into_iter().enumerate() {
+        let mismatches = fused_source_profile_mismatches(&fields, profile);
+        if mismatches.is_empty() {
             return Ok(profile);
         }
+        diagnostics.push(format!("profile_{index}:{}", mismatches.join(",")));
     }
-    Err(fused_error(
-        "fused source profile is not approved: expected synthetic or attention_derived component anchors",
-    ))
+    Err(fused_error(format!(
+        "fused source profile is not approved: expected synthetic or attention_derived component anchors; mismatches={}",
+        diagnostics.join(";")
+    )))
+}
+
+fn fused_source_profile_mismatches(
+    fields: &FusedSourceProfileFields<'_>,
+    profile: FusedSourceProfile,
+) -> Vec<&'static str> {
+    let mut mismatches = Vec::new();
+    macro_rules! check_field {
+        ($name:literal, $field:ident) => {
+            if fields.$field != profile.$field {
+                mismatches.push($name);
+            }
+        };
+    }
+    check_field!(
+        "residual_source_proof_version",
+        residual_source_proof_version
+    );
+    check_field!(
+        "residual_source_statement_commitment",
+        residual_source_statement_commitment
+    );
+    check_field!("rmsnorm_statement_commitment", rmsnorm_statement_commitment);
+    check_field!(
+        "rmsnorm_public_instance_commitment",
+        rmsnorm_public_instance_commitment
+    );
+    check_field!("input_activation_commitment", input_activation_commitment);
+    check_field!(
+        "rmsnorm_output_row_commitment",
+        rmsnorm_output_row_commitment
+    );
+    check_field!(
+        "projection_bridge_statement_commitment",
+        projection_bridge_statement_commitment
+    );
+    check_field!(
+        "projection_bridge_public_instance_commitment",
+        projection_bridge_public_instance_commitment
+    );
+    check_field!(
+        "projection_input_row_commitment",
+        projection_input_row_commitment
+    );
+    check_field!(
+        "gate_value_statement_commitment",
+        gate_value_statement_commitment
+    );
+    check_field!(
+        "gate_value_public_instance_commitment",
+        gate_value_public_instance_commitment
+    );
+    check_field!(
+        "gate_projection_output_commitment",
+        gate_projection_output_commitment
+    );
+    check_field!(
+        "value_projection_output_commitment",
+        value_projection_output_commitment
+    );
+    check_field!(
+        "gate_value_projection_output_commitment",
+        gate_value_projection_output_commitment
+    );
+    check_field!(
+        "activation_statement_commitment",
+        activation_statement_commitment
+    );
+    check_field!(
+        "activation_public_instance_commitment",
+        activation_public_instance_commitment
+    );
+    check_field!("hidden_activation_commitment", hidden_activation_commitment);
+    check_field!(
+        "down_projection_statement_commitment",
+        down_projection_statement_commitment
+    );
+    check_field!(
+        "down_projection_public_instance_commitment",
+        down_projection_public_instance_commitment
+    );
+    check_field!("residual_delta_commitment", residual_delta_commitment);
+    check_field!(
+        "residual_add_statement_commitment",
+        residual_add_statement_commitment
+    );
+    check_field!(
+        "residual_add_public_instance_commitment",
+        residual_add_public_instance_commitment
+    );
+    check_field!("output_activation_commitment", output_activation_commitment);
+    check_field!("residual_add_row_commitment", residual_add_row_commitment);
+    mismatches
 }
 
 fn validate_fused_input(input: &ZkAiD128RmsnormMlpFusedInput) -> Result<()> {

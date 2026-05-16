@@ -44,8 +44,8 @@ envelopes if we want exact six-separate derived baseline accounting.
 - row ratio versus current MLP fused surface: `1.010374x`
 - regenerated fused proof bytes: `68,560`
 - regenerated fused local typed proof-field bytes: `22,576`
-- regenerated fused envelope bytes: `716,944`
-- regenerated fused input bytes: `151,596`
+- regenerated fused envelope bytes: `717,049`
+- regenerated fused input bytes: `151,701`
 - available derived separate envelopes: `4`
 - available separate proof bytes: `163,299`
 - available separate local typed bytes: `46,208`
