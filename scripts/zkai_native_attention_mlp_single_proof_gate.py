@@ -71,20 +71,6 @@ NON_CLAIMS = (
     "not production-ready zkML",
 )
 
-VALIDATION_COMMANDS = (
-    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- build-input docs/engineering/evidence/zkai-attention-kv-stwo-native-d8-bounded-softmax-table-proof-2026-05.json docs/engineering/evidence/zkai-attention-derived-d128-rmsnorm-mlp-fused-proof-2026-05.input.json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.input.json",
-    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- prove docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.input.json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_native_attention_mlp_single_proof -- verify docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json",
-    "cargo +nightly-2025-07-14 run --locked --features stwo-backend --bin zkai_stwo_proof_binary_accounting -- --evidence-dir docs/engineering/evidence docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.envelope.json > docs/engineering/evidence/zkai-native-attention-mlp-single-proof-binary-accounting-2026-05.json",
-    "python3 scripts/zkai_native_attention_mlp_single_proof_gate.py --write-json docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.json --write-tsv docs/engineering/evidence/zkai-native-attention-mlp-single-proof-2026-05.tsv",
-    "python3 -m py_compile scripts/zkai_native_attention_mlp_single_proof_gate.py scripts/tests/test_zkai_native_attention_mlp_single_proof_gate.py",
-    "python3 -m unittest scripts.tests.test_zkai_native_attention_mlp_single_proof_gate",
-    "cargo +nightly-2025-07-14 test --locked --features stwo-backend native_attention_mlp_single_proof --lib",
-    "git diff --check",
-    "just gate-fast",
-    "just gate",
-)
-
 CORE_KEYS = {
     "schema",
     "decision",
@@ -216,6 +202,14 @@ def _bytes(value: Any, label: str) -> bytes:
     return value
 
 
+def _str_list(value: Any, label: str) -> list[str]:
+    items = _list(value, label)
+    result = []
+    for index, item in enumerate(items):
+        result.append(_str(item, f"{label}[{index}]"))
+    return result
+
+
 def read_json(path: pathlib.Path, label: str) -> Any:
     try:
         payload, _raw = route_gate.read_json_and_raw_bytes(path, label)
@@ -292,10 +286,8 @@ def validate_payload(payload: dict[str, Any], *, context: dict[str, Any] | None 
             raise NativeAttentionMlpSingleProofGateError(f"{key} drift")
     if payload.get("non_claims") != list(NON_CLAIMS):
         raise NativeAttentionMlpSingleProofGateError("non-claims drift")
-    if payload.get("validation_commands") != list(VALIDATION_COMMANDS):
-        raise NativeAttentionMlpSingleProofGateError("validation commands drift")
     expected_payload = build_payload_without_mutations(context)
-    for key in ("source_artifacts", "routes", "summary", "mechanism"):
+    for key in ("source_artifacts", "routes", "summary", "mechanism", "validation_commands"):
         if payload.get(key) != expected_payload[key]:
             raise NativeAttentionMlpSingleProofGateError(f"{key} drift")
     if payload.get("route_commitment") != route_commitment(payload["routes"]):
@@ -339,6 +331,7 @@ def build_payload_no_mutations(context: dict[str, Any]) -> dict[str, Any]:
     )
     local = _dict(row.get("local_binary_accounting"), "local binary accounting")
     metadata = _dict(row.get("envelope_metadata"), "envelope metadata")
+    validation_commands = _str_list(input_payload.get("validation_commands"), "input validation commands")
     envelope_bytes = len(_bytes(context.get("envelope_raw_bytes"), "single envelope raw bytes"))
     single_typed = _int(local.get("typed_size_estimate_bytes"), "single typed bytes")
     single_json = _int(row.get("proof_json_size_bytes"), "single JSON proof bytes")
@@ -419,7 +412,7 @@ def build_payload_no_mutations(context: dict[str, Any]) -> dict[str, Any]:
             "research_signal": "the first verified one-proof object saves 32 typed bytes versus the two-proof frontier",
         },
         "non_claims": list(NON_CLAIMS),
-        "validation_commands": list(VALIDATION_COMMANDS),
+        "validation_commands": validation_commands,
         "route_commitment": "",
         "payload_commitment": "",
     }
@@ -439,6 +432,7 @@ def validate_context(context: dict[str, Any]) -> None:
     )
     local = _dict(row.get("local_binary_accounting"), "local binary accounting")
     metadata = _dict(row.get("envelope_metadata"), "envelope metadata")
+    _str_list(input_payload.get("validation_commands"), "input validation commands")
     checks = {
         "proof_backend_version": envelope.get("proof_backend_version"),
         "proof_schema_version": envelope.get("proof_schema_version"),
