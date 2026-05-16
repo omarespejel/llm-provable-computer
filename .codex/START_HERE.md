@@ -114,8 +114,9 @@ This is the fast local entrypoint for a fresh agent working in this repository.
 108. `docs/engineering/zkai-native-attention-mlp-lifting-ablation-2026-05-16.md`
 109. `docs/engineering/zkai-native-attention-mlp-adapter-air-frontier-2026-05-16.md`
 110. `docs/engineering/zkai-native-attention-mlp-adapter-compression-ablation-2026-05-16.md`
-111. `docs/engineering/reproducibility.md`
-112. `git status --short --branch`
+111. `docs/engineering/zkai-native-attention-mlp-transcript-stable-comparison-2026-05-16.md`
+112. `docs/engineering/reproducibility.md`
+113. `git status --short --branch`
 
 ## What this repository is now
 
